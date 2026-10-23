@@ -1,0 +1,12 @@
+{
+  "type": "minecraft:smelting",
+  "category": "misc",
+  "ingredient": {
+    "item": "takemtitans:ice_burst_ore"
+  },
+  "result": {
+    "id": "takemtitans:ice_burst_shard"
+  },
+  "experience": 0.8,
+  "cookingtime": 200
+}

@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "TST",
+    "SGS",
+    "TST"
+  ],
+  "key": {
+    "T": {
+      "item": "minecraft:tnt"
+    },
+    "S": {
+      "item": "takemtitans:ultrahard_steel_ingot"
+    },
+    "G": {
+      "item": "takemtitans:gas_canister"
+    }
+  },
+  "result": {
+    "id": "takemtitans:demolition_charge",
+    "count": 1
+  }
+}

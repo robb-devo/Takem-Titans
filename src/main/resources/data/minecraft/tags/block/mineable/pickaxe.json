@@ -1,0 +1,14 @@
+{
+  "replace": false,
+  "values": [
+    "takemtitans:wall_stone",
+    "takemtitans:wall_stone_bricks",
+    "takemtitans:wall_stone_tiles",
+    "takemtitans:chiseled_wall_stone",
+    "takemtitans:wall_stone_stairs",
+    "takemtitans:wall_stone_slab",
+    "takemtitans:ice_burst_ore",
+    "takemtitans:deepslate_ice_burst_ore",
+    "takemtitans:gate_control"
+  ]
+}

@@ -1,0 +1,795 @@
+{
+  "odm.hook_fire": {
+    "sounds": [
+      "takemtitans:odm/hook_fire1",
+      "takemtitans:odm/hook_fire2",
+      "takemtitans:odm/hook_fire3"
+    ],
+    "subtitle": "subtitles.takemtitans.odm.hook_fire"
+  },
+  "odm.hook_hit": {
+    "sounds": [
+      "takemtitans:odm/hook_hit1",
+      "takemtitans:odm/hook_hit2",
+      "takemtitans:odm/hook_hit3"
+    ],
+    "subtitle": "subtitles.takemtitans.odm.hook_hit"
+  },
+  "odm.hook_hit_flesh": {
+    "sounds": [
+      "takemtitans:odm/hook_hit_flesh1",
+      "takemtitans:odm/hook_hit_flesh2"
+    ],
+    "subtitle": "subtitles.takemtitans.odm.hook_hit_flesh"
+  },
+  "odm.hook_retract": {
+    "sounds": [
+      "takemtitans:odm/hook_retract1",
+      "takemtitans:odm/hook_retract2"
+    ],
+    "subtitle": "subtitles.takemtitans.odm.hook_retract"
+  },
+  "odm.reel": {
+    "sounds": [
+      "takemtitans:odm/reel"
+    ],
+    "subtitle": "subtitles.takemtitans.odm.reel"
+  },
+  "odm.gas": {
+    "sounds": [
+      "takemtitans:odm/gas"
+    ],
+    "subtitle": "subtitles.takemtitans.odm.gas"
+  },
+  "odm.gas_burst": {
+    "sounds": [
+      "takemtitans:odm/gas_burst1",
+      "takemtitans:odm/gas_burst2",
+      "takemtitans:odm/gas_burst3"
+    ],
+    "subtitle": "subtitles.takemtitans.odm.gas_burst"
+  },
+  "odm.gas_empty": {
+    "sounds": [
+      "takemtitans:odm/gas_empty1",
+      "takemtitans:odm/gas_empty2"
+    ],
+    "subtitle": "subtitles.takemtitans.odm.gas_empty"
+  },
+  "odm.wind": {
+    "sounds": [
+      "takemtitans:odm/wind"
+    ],
+    "subtitle": "subtitles.takemtitans.odm.wind"
+  },
+  "odm.refill": {
+    "sounds": [
+      "takemtitans:odm/refill1"
+    ],
+    "subtitle": "subtitles.takemtitans.odm.refill"
+  },
+  "odm.equip": {
+    "sounds": [
+      "takemtitans:odm/equip1",
+      "takemtitans:odm/equip2"
+    ],
+    "subtitle": "subtitles.takemtitans.odm.equip"
+  },
+  "blade.slash": {
+    "sounds": [
+      "takemtitans:blade/slash1",
+      "takemtitans:blade/slash2",
+      "takemtitans:blade/slash3",
+      "takemtitans:blade/slash4"
+    ],
+    "subtitle": "subtitles.takemtitans.blade.slash"
+  },
+  "blade.hit": {
+    "sounds": [
+      "takemtitans:blade/hit1",
+      "takemtitans:blade/hit2",
+      "takemtitans:blade/hit3"
+    ],
+    "subtitle": "subtitles.takemtitans.blade.hit"
+  },
+  "blade.nape": {
+    "sounds": [
+      "takemtitans:blade/nape1",
+      "takemtitans:blade/nape2"
+    ],
+    "subtitle": "subtitles.takemtitans.blade.nape"
+  },
+  "blade.break": {
+    "sounds": [
+      "takemtitans:blade/break1"
+    ],
+    "subtitle": "subtitles.takemtitans.blade.break"
+  },
+  "blade.reload": {
+    "sounds": [
+      "takemtitans:blade/reload1",
+      "takemtitans:blade/reload2"
+    ],
+    "subtitle": "subtitles.takemtitans.blade.reload"
+  },
+  "blade.draw": {
+    "sounds": [
+      "takemtitans:blade/draw1"
+    ],
+    "subtitle": "subtitles.takemtitans.blade.draw"
+  },
+  "titan.step": {
+    "sounds": [
+      {
+        "name": "takemtitans:titan/step1",
+        "volume": 0.5
+      },
+      {
+        "name": "takemtitans:titan/step2",
+        "volume": 0.5
+      },
+      {
+        "name": "takemtitans:titan/step3",
+        "volume": 0.5
+      },
+      {
+        "name": "minecraft:entity.iron_golem.step",
+        "type": "event",
+        "pitch": 0.55,
+        "volume": 0.9
+      }
+    ],
+    "subtitle": "subtitles.takemtitans.titan.step"
+  },
+  "titan.groan": {
+    "sounds": [
+      {
+        "name": "minecraft:entity.zombie.ambient",
+        "type": "event",
+        "pitch": 0.62,
+        "volume": 0.85,
+        "weight": 2
+      },
+      {
+        "name": "minecraft:entity.ravager.ambient",
+        "type": "event",
+        "pitch": 0.75,
+        "volume": 0.8,
+        "weight": 2
+      },
+      {
+        "name": "minecraft:entity.polar_bear.ambient",
+        "type": "event",
+        "pitch": 0.55,
+        "volume": 0.8
+      }
+    ],
+    "subtitle": "subtitles.takemtitans.titan.groan"
+  },
+  "titan.roar": {
+    "sounds": [
+      {
+        "name": "minecraft:entity.ravager.roar",
+        "type": "event",
+        "pitch": 0.72,
+        "weight": 3
+      },
+      {
+        "name": "minecraft:entity.polar_bear.warning",
+        "type": "event",
+        "pitch": 0.55,
+        "volume": 0.9
+      }
+    ],
+    "subtitle": "subtitles.takemtitans.titan.roar"
+  },
+  "titan.hurt": {
+    "sounds": [
+      {
+        "name": "minecraft:entity.ravager.hurt",
+        "type": "event",
+        "pitch": 0.72,
+        "volume": 0.85,
+        "weight": 2
+      },
+      {
+        "name": "minecraft:entity.zombie.hurt",
+        "type": "event",
+        "pitch": 0.55,
+        "volume": 0.8
+      }
+    ],
+    "subtitle": "subtitles.takemtitans.titan.hurt"
+  },
+  "titan.death": {
+    "sounds": [
+      {
+        "name": "minecraft:entity.ravager.death",
+        "type": "event",
+        "pitch": 0.62,
+        "weight": 2
+      },
+      {
+        "name": "minecraft:entity.zombie.death",
+        "type": "event",
+        "pitch": 0.5,
+        "volume": 0.9
+      }
+    ],
+    "subtitle": "subtitles.takemtitans.titan.death"
+  },
+  "titan.steam": {
+    "sounds": [
+      {
+        "name": "minecraft:block.fire.extinguish",
+        "type": "event",
+        "pitch": 0.65,
+        "volume": 0.45
+      },
+      {
+        "name": "minecraft:block.lava.extinguish",
+        "type": "event",
+        "pitch": 0.6,
+        "volume": 0.4
+      }
+    ],
+    "subtitle": "subtitles.takemtitans.titan.steam"
+  },
+  "titan.bite": {
+    "sounds": [
+      {
+        "name": "minecraft:entity.ravager.attack",
+        "type": "event",
+        "pitch": 0.7,
+        "volume": 0.9,
+        "weight": 2
+      },
+      {
+        "name": "minecraft:entity.zoglin.attack",
+        "type": "event",
+        "pitch": 0.6,
+        "volume": 0.8
+      }
+    ],
+    "subtitle": "subtitles.takemtitans.titan.bite"
+  },
+  "titan.grab": {
+    "sounds": [
+      "takemtitans:titan/grab1"
+    ],
+    "subtitle": "subtitles.takemtitans.titan.grab"
+  },
+  "titan.fall": {
+    "sounds": [
+      {
+        "name": "takemtitans:titan/fall1",
+        "volume": 0.75
+      }
+    ],
+    "subtitle": "subtitles.takemtitans.titan.fall"
+  },
+  "titan.abnormal_screech": {
+    "sounds": [
+      {
+        "name": "minecraft:entity.ravager.celebrate",
+        "type": "event",
+        "pitch": 0.85,
+        "volume": 0.85,
+        "weight": 2
+      },
+      {
+        "name": "minecraft:entity.zoglin.angry",
+        "type": "event",
+        "pitch": 0.7,
+        "volume": 0.8
+      }
+    ],
+    "subtitle": "subtitles.takemtitans.titan.abnormal_screech"
+  },
+  "titan.colossal_arrival": {
+    "sounds": [
+      {
+        "name": "takemtitans:titan/colossal_arrival1",
+        "volume": 0.8
+      }
+    ],
+    "subtitle": "subtitles.takemtitans.titan.colossal_arrival"
+  },
+  "titan.colossal_steam": {
+    "sounds": [
+      "takemtitans:titan/colossal_steam1"
+    ],
+    "subtitle": "subtitles.takemtitans.titan.colossal_steam"
+  },
+  "titan.wall_breach": {
+    "sounds": [
+      "takemtitans:titan/wall_breach1"
+    ],
+    "subtitle": "subtitles.takemtitans.titan.wall_breach"
+  },
+  "item.flare_shoot": {
+    "sounds": [
+      "takemtitans:item/flare_shoot1",
+      "takemtitans:item/flare_shoot2"
+    ],
+    "subtitle": "subtitles.takemtitans.item.flare_shoot"
+  },
+  "item.flare_burn": {
+    "sounds": [
+      "takemtitans:item/flare_burn"
+    ],
+    "subtitle": "subtitles.takemtitans.item.flare_burn"
+  },
+  "item.thunder_spear_launch": {
+    "sounds": [
+      "takemtitans:item/thunder_spear_launch1",
+      "takemtitans:item/thunder_spear_launch2"
+    ],
+    "subtitle": "subtitles.takemtitans.item.thunder_spear_launch"
+  },
+  "item.thunder_spear_blast": {
+    "sounds": [
+      "takemtitans:item/thunder_spear_blast1",
+      "takemtitans:item/thunder_spear_blast2"
+    ],
+    "subtitle": "subtitles.takemtitans.item.thunder_spear_blast"
+  },
+  "block.cannon_fire": {
+    "sounds": [
+      "takemtitans:block/cannon_fire1"
+    ],
+    "subtitle": "subtitles.takemtitans.block.cannon_fire"
+  },
+  "block.gate_move": {
+    "sounds": [
+      "takemtitans:block/gate_move1"
+    ],
+    "subtitle": "subtitles.takemtitans.block.gate_move"
+  },
+  "block.alarm_bell": {
+    "sounds": [
+      "takemtitans:block/alarm_bell1"
+    ],
+    "subtitle": "subtitles.takemtitans.block.alarm_bell"
+  },
+  "titan.rumbling_step": {
+    "sounds": [
+      "takemtitans:titan/rumbling_step1",
+      "takemtitans:titan/rumbling_step2",
+      "takemtitans:titan/rumbling_step3"
+    ],
+    "subtitle": "subtitles.takemtitans.titan.rumbling_step"
+  },
+  "titan.rumbling_emerge": {
+    "sounds": [
+      "takemtitans:titan/rumbling_emerge1"
+    ],
+    "subtitle": "subtitles.takemtitans.titan.rumbling_emerge"
+  },
+  "titan.hit_flesh": {
+    "sounds": [
+      {
+        "name": "minecraft:entity.slime.squish",
+        "type": "event",
+        "pitch": 0.65,
+        "volume": 0.7
+      },
+      {
+        "name": "minecraft:block.mud.break",
+        "type": "event",
+        "pitch": 0.7,
+        "volume": 0.8
+      },
+      {
+        "name": "minecraft:block.honey_block.break",
+        "type": "event",
+        "pitch": 0.75,
+        "volume": 0.6
+      }
+    ],
+    "subtitle": "subtitles.takemtitans.titan.hit_flesh"
+  },
+  "event.rumbling_horn": {
+    "sounds": [
+      "takemtitans:event/rumbling_horn1"
+    ],
+    "subtitle": "subtitles.takemtitans.event.rumbling_horn"
+  },
+  "event.rumbling_quake": {
+    "sounds": [
+      "takemtitans:event/rumbling_quake1",
+      "takemtitans:event/rumbling_quake2"
+    ],
+    "subtitle": "subtitles.takemtitans.event.rumbling_quake"
+  },
+  "event.boulder_whoosh": {
+    "sounds": [
+      "takemtitans:event/boulder_whoosh1",
+      "takemtitans:event/boulder_whoosh2"
+    ],
+    "subtitle": "subtitles.takemtitans.event.boulder_whoosh"
+  },
+  "event.boulder_impact": {
+    "sounds": [
+      "takemtitans:event/boulder_impact1",
+      "takemtitans:event/boulder_impact2",
+      "takemtitans:event/boulder_impact3"
+    ],
+    "subtitle": "subtitles.takemtitans.event.boulder_impact"
+  },
+  "event.boulder_throw": {
+    "sounds": [
+      "takemtitans:event/boulder_throw1"
+    ],
+    "subtitle": "subtitles.takemtitans.event.boulder_throw"
+  },
+  "event.rift_open": {
+    "sounds": [
+      "takemtitans:event/rift_open1"
+    ],
+    "subtitle": "subtitles.takemtitans.event.rift_open"
+  },
+  "event.rift_hum": {
+    "sounds": [
+      "takemtitans:event/rift_hum1"
+    ],
+    "subtitle": "subtitles.takemtitans.event.rift_hum"
+  },
+  "event.rift_implode": {
+    "sounds": [
+      "takemtitans:event/rift_implode1"
+    ],
+    "subtitle": "subtitles.takemtitans.event.rift_implode"
+  },
+  "event.rift_detonate": {
+    "sounds": [
+      "takemtitans:event/rift_detonate1"
+    ],
+    "subtitle": "subtitles.takemtitans.event.rift_detonate"
+  },
+  "event.building_collapse": {
+    "sounds": [
+      "takemtitans:event/building_collapse1",
+      "takemtitans:event/building_collapse2",
+      "takemtitans:event/building_collapse3"
+    ],
+    "subtitle": "subtitles.takemtitans.event.building_collapse"
+  },
+  "event.glass_shatter": {
+    "sounds": [
+      "takemtitans:event/glass_shatter1",
+      "takemtitans:event/glass_shatter2",
+      "takemtitans:event/glass_shatter3"
+    ],
+    "subtitle": "subtitles.takemtitans.event.glass_shatter"
+  },
+  "odm.sonic_boom": {
+    "sounds": [
+      "takemtitans:odm/sonic_boom1",
+      "takemtitans:odm/sonic_boom2"
+    ],
+    "subtitle": "subtitles.takemtitans.odm.sonic_boom"
+  },
+  "odm.afterburner": {
+    "sounds": [
+      "takemtitans:odm/afterburner"
+    ],
+    "subtitle": "subtitles.takemtitans.odm.afterburner"
+  },
+  "blade.slash_wave": {
+    "sounds": [
+      "takemtitans:blade/slash_wave1",
+      "takemtitans:blade/slash_wave2",
+      "takemtitans:blade/slash_wave3"
+    ],
+    "subtitle": "subtitles.takemtitans.blade.slash_wave"
+  },
+  "blade.slash_wave_cut": {
+    "sounds": [
+      "takemtitans:blade/slash_wave_cut1",
+      "takemtitans:blade/slash_wave_cut2"
+    ],
+    "subtitle": "subtitles.takemtitans.blade.slash_wave_cut"
+  },
+  "blade.impact": {
+    "sounds": [
+      "takemtitans:blade/impact1",
+      "takemtitans:blade/impact2",
+      "takemtitans:blade/impact3"
+    ],
+    "subtitle": "subtitles.takemtitans.blade.impact"
+  },
+  "blade.nape_thunder": {
+    "sounds": [
+      "takemtitans:blade/nape_thunder1",
+      "takemtitans:blade/nape_thunder2"
+    ],
+    "subtitle": "subtitles.takemtitans.blade.nape_thunder"
+  },
+  "odm.meteor_slam": {
+    "sounds": [
+      "takemtitans:odm/meteor_slam1",
+      "takemtitans:odm/meteor_slam2"
+    ],
+    "subtitle": "subtitles.takemtitans.odm.meteor_slam"
+  },
+  "npc.scream": {
+    "sounds": [
+      {
+        "name": "minecraft:entity.player.hurt",
+        "type": "event",
+        "pitch": 1.15,
+        "volume": 0.55,
+        "weight": 2
+      },
+      {
+        "name": "minecraft:entity.villager.no",
+        "type": "event",
+        "volume": 0.5
+      },
+      {
+        "name": "minecraft:entity.villager.hurt",
+        "type": "event",
+        "pitch": 1.05,
+        "volume": 0.5
+      }
+    ],
+    "subtitle": "subtitles.takemtitans.npc.scream"
+  },
+  "titan.armor_clang": {
+    "sounds": [
+      {
+        "name": "takemtitans:titan/armor_clang1",
+        "volume": 0.6
+      },
+      {
+        "name": "takemtitans:titan/armor_clang2",
+        "volume": 0.6
+      },
+      {
+        "name": "takemtitans:titan/armor_clang3",
+        "volume": 0.6
+      }
+    ],
+    "subtitle": "subtitles.takemtitans.titan.armor_clang"
+  },
+  "titan.armor_shatter": {
+    "sounds": [
+      "takemtitans:titan/armor_shatter1"
+    ],
+    "subtitle": "subtitles.takemtitans.titan.armor_shatter"
+  },
+  "titan.beast_roar": {
+    "sounds": [
+      {
+        "name": "minecraft:entity.polar_bear.warning",
+        "type": "event",
+        "pitch": 0.5,
+        "weight": 2
+      },
+      {
+        "name": "minecraft:entity.ravager.roar",
+        "type": "event",
+        "pitch": 0.55
+      }
+    ],
+    "subtitle": "subtitles.takemtitans.titan.beast_roar"
+  },
+  "story.level_up": {
+    "sounds": [
+      "takemtitans:story/level_up1"
+    ],
+    "subtitle": "subtitles.takemtitans.story.level_up"
+  },
+  "story.quest_complete": {
+    "sounds": [
+      "takemtitans:story/quest_complete1"
+    ],
+    "subtitle": "subtitles.takemtitans.story.quest_complete"
+  },
+  "story.cutscene_sting": {
+    "sounds": [
+      "takemtitans:story/cutscene_sting1"
+    ],
+    "subtitle": "subtitles.takemtitans.story.cutscene_sting"
+  },
+  "story.dialogue_blip": {
+    "sounds": [
+      {
+        "name": "takemtitans:story/dialogue_blip1",
+        "volume": 0.5
+      }
+    ],
+    "subtitle": "subtitles.takemtitans.story.dialogue_blip"
+  },
+  "story.boss_music": {
+    "sounds": [
+      {
+        "name": "takemtitans:story/boss_music",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.takemtitans.story.boss_music"
+  },
+  "explosive.throw": {
+    "sounds": [
+      {
+        "name": "takemtitans:explosive/throw1",
+        "attenuation_distance": 16
+      },
+      {
+        "name": "takemtitans:explosive/throw2",
+        "attenuation_distance": 16
+      }
+    ],
+    "subtitle": "subtitles.takemtitans.explosive.throw"
+  },
+  "explosive.charge_stick": {
+    "sounds": [
+      {
+        "name": "takemtitans:explosive/charge_stick1",
+        "attenuation_distance": 16
+      }
+    ],
+    "subtitle": "subtitles.takemtitans.explosive.charge_stick"
+  },
+  "explosive.charge_beep": {
+    "sounds": [
+      {
+        "name": "takemtitans:explosive/charge_beep1",
+        "attenuation_distance": 16
+      }
+    ],
+    "subtitle": "subtitles.takemtitans.explosive.charge_beep"
+  },
+  "explosive.cluster_split": {
+    "sounds": [
+      {
+        "name": "takemtitans:explosive/cluster_split1",
+        "attenuation_distance": 64
+      }
+    ],
+    "subtitle": "subtitles.takemtitans.explosive.cluster_split"
+  },
+  "explosive.bomblet_pop": {
+    "sounds": [
+      {
+        "name": "takemtitans:explosive/bomblet_pop1",
+        "attenuation_distance": 16
+      },
+      {
+        "name": "takemtitans:explosive/bomblet_pop2",
+        "attenuation_distance": 16
+      },
+      {
+        "name": "takemtitans:explosive/bomblet_pop3",
+        "attenuation_distance": 16
+      }
+    ],
+    "subtitle": "subtitles.takemtitans.explosive.bomblet_pop"
+  },
+  "explosive.thermo_cloud": {
+    "sounds": [
+      {
+        "name": "takemtitans:explosive/thermo_cloud1",
+        "attenuation_distance": 64
+      }
+    ],
+    "subtitle": "subtitles.takemtitans.explosive.thermo_cloud"
+  },
+  "explosive.thermo_blast": {
+    "sounds": [
+      {
+        "name": "takemtitans:explosive/thermo_blast1",
+        "attenuation_distance": 64
+      }
+    ],
+    "subtitle": "subtitles.takemtitans.explosive.thermo_blast"
+  },
+  "explosive.big_blast": {
+    "sounds": [
+      {
+        "name": "takemtitans:explosive/big_blast1",
+        "attenuation_distance": 64
+      },
+      {
+        "name": "takemtitans:explosive/big_blast2",
+        "attenuation_distance": 64
+      },
+      {
+        "name": "takemtitans:explosive/big_blast3",
+        "attenuation_distance": 64
+      }
+    ],
+    "subtitle": "subtitles.takemtitans.explosive.big_blast"
+  },
+  "explosive.blast_tail": {
+    "sounds": [
+      {
+        "name": "takemtitans:explosive/blast_tail1",
+        "attenuation_distance": 64
+      }
+    ],
+    "subtitle": "subtitles.takemtitans.explosive.blast_tail"
+  },
+  "tunnel.heart_beat": {
+    "sounds": [
+      {
+        "name": "takemtitans:tunnel/heart_beat1",
+        "attenuation_distance": 24
+      }
+    ],
+    "subtitle": "subtitles.takemtitans.tunnel.heart_beat"
+  },
+  "tunnel.heart_hit": {
+    "sounds": [
+      {
+        "name": "takemtitans:tunnel/heart_hit1",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "takemtitans:tunnel/heart_hit2",
+        "attenuation_distance": 24
+      }
+    ],
+    "subtitle": "subtitles.takemtitans.tunnel.heart_hit"
+  },
+  "tunnel.heart_burst": {
+    "sounds": [
+      {
+        "name": "takemtitans:tunnel/heart_burst1",
+        "attenuation_distance": 96
+      }
+    ],
+    "subtitle": "subtitles.takemtitans.tunnel.heart_burst"
+  },
+  "tunnel.ambience": {
+    "sounds": [
+      {
+        "name": "takemtitans:tunnel/ambience1",
+        "attenuation_distance": 24
+      }
+    ],
+    "subtitle": "subtitles.takemtitans.tunnel.ambience"
+  },
+  "cannon.fire": {
+    "sounds": [
+      {
+        "name": "takemtitans:cannon/fire1",
+        "attenuation_distance": 96
+      },
+      {
+        "name": "takemtitans:cannon/fire2",
+        "attenuation_distance": 96
+      }
+    ],
+    "subtitle": "subtitles.takemtitans.cannon.fire"
+  },
+  "cannon.heavy": {
+    "sounds": [
+      {
+        "name": "takemtitans:cannon/heavy1",
+        "attenuation_distance": 96
+      }
+    ],
+    "subtitle": "subtitles.takemtitans.cannon.heavy"
+  },
+  "cannon.battery": {
+    "sounds": [
+      {
+        "name": "takemtitans:cannon/battery1",
+        "attenuation_distance": 96
+      }
+    ],
+    "subtitle": "subtitles.takemtitans.cannon.battery"
+  },
+  "cannon.reload": {
+    "sounds": [
+      {
+        "name": "takemtitans:cannon/reload1",
+        "attenuation_distance": 24
+      }
+    ],
+    "subtitle": "subtitles.takemtitans.cannon.reload"
+  }
+}

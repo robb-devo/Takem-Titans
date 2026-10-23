@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    "NSN",
+    " B "
+  ],
+  "key": {
+    "N": {
+      "item": "minecraft:netherite_scrap"
+    },
+    "S": {
+      "item": "takemtitans:ultrahard_steel_ingot"
+    },
+    "B": {
+      "item": "takemtitans:veteran_blades"
+    }
+  },
+  "result": {
+    "id": "takemtitans:ackerman_blades",
+    "count": 1
+  }
+}

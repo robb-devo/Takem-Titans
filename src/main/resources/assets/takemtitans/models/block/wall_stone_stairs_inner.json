@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/inner_stairs",
+  "textures": {
+    "bottom": "takemtitans:block/wall_stone_bricks",
+    "top": "takemtitans:block/wall_stone_bricks",
+    "side": "takemtitans:block/wall_stone_bricks"
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    "  T",
+    " S ",
+    "S  "
+  ],
+  "key": {
+    "T": {
+      "item": "minecraft:tnt"
+    },
+    "S": {
+      "item": "takemtitans:ultrahard_steel_ingot"
+    }
+  },
+  "result": {
+    "id": "takemtitans:thunder_spear",
+    "count": 1
+  }
+}

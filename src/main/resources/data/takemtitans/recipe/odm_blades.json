@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    "S S",
+    "S S",
+    "I I"
+  ],
+  "key": {
+    "S": {
+      "item": "takemtitans:ultrahard_steel_ingot"
+    },
+    "I": {
+      "item": "minecraft:iron_ingot"
+    }
+  },
+  "result": {
+    "id": "takemtitans:odm_blades",
+    "count": 1
+  }
+}

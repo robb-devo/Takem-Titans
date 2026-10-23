@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    "I",
+    "C",
+    "I"
+  ],
+  "key": {
+    "I": {
+      "item": "minecraft:iron_ingot"
+    },
+    "C": {
+      "item": "takemtitans:ice_burst_shard"
+    }
+  },
+  "result": {
+    "id": "takemtitans:gas_canister",
+    "count": 2
+  }
+}
