@@ -857,7 +857,8 @@ public final class Destruction {
                             if (kind[i] == 1) {
                                 dist[i] = 0;
                                 buckets[0].add(i);
-                            } else if (kind[i] == 2 && (yxx == 0 || yxx == sy - 1 || x == 0 || z == 0 || x == sx - 1 || z == sz - 1)) {
+                            } else if (kind[i] == 2 && (yxx == 0 || x == 0 || z == 0 || x == sx - 1 || z == sz - 1)) {
+                                // the top of the scan is open sky, not support: a roof must rest on something
                                 dist[i] = 0;
                                 buckets[0].add(i);
                             }
