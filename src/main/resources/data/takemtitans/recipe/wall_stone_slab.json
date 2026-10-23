@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "pattern": [
+    "BBB"
+  ],
+  "key": {
+    "B": {
+      "item": "takemtitans:wall_stone_bricks"
+    }
+  },
+  "result": {
+    "id": "takemtitans:wall_stone_slab",
+    "count": 6
+  }
+}

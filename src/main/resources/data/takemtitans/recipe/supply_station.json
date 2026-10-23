@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "CBC",
+    "PPP"
+  ],
+  "key": {
+    "C": {
+      "item": "takemtitans:gas_canister"
+    },
+    "B": {
+      "item": "takemtitans:blade_pack"
+    },
+    "P": {
+      "tag": "minecraft:planks"
+    }
+  },
+  "result": {
+    "id": "takemtitans:supply_station",
+    "count": 1
+  }
+}

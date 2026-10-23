@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "pattern": [
+    "BB",
+    "BB"
+  ],
+  "key": {
+    "B": {
+      "item": "takemtitans:wall_stone_bricks"
+    }
+  },
+  "result": {
+    "id": "takemtitans:wall_stone_tiles",
+    "count": 4
+  }
+}

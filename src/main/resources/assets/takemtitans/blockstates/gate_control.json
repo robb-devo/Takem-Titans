@@ -1,0 +1,34 @@
+{
+  "variants": {
+    "facing=north,open=false": {
+      "model": "takemtitans:block/gate_control"
+    },
+    "facing=north,open=true": {
+      "model": "takemtitans:block/gate_control_open"
+    },
+    "facing=east,open=false": {
+      "model": "takemtitans:block/gate_control",
+      "y": 90
+    },
+    "facing=east,open=true": {
+      "model": "takemtitans:block/gate_control_open",
+      "y": 90
+    },
+    "facing=south,open=false": {
+      "model": "takemtitans:block/gate_control",
+      "y": 180
+    },
+    "facing=south,open=true": {
+      "model": "takemtitans:block/gate_control_open",
+      "y": 180
+    },
+    "facing=west,open=false": {
+      "model": "takemtitans:block/gate_control",
+      "y": 270
+    },
+    "facing=west,open=true": {
+      "model": "takemtitans:block/gate_control_open",
+      "y": 270
+    }
+  }
+}

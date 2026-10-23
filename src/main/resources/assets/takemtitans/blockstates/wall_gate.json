@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "open=false": {
+      "model": "takemtitans:block/wall_gate"
+    },
+    "open=true": {
+      "model": "takemtitans:block/wall_gate"
+    }
+  }
+}

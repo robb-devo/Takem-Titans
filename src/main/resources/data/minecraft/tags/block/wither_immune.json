@@ -1,0 +1,12 @@
+{
+  "replace": false,
+  "values": [
+    "takemtitans:wall_stone",
+    "takemtitans:wall_stone_bricks",
+    "takemtitans:wall_stone_tiles",
+    "takemtitans:chiseled_wall_stone",
+    "takemtitans:wall_stone_stairs",
+    "takemtitans:wall_stone_slab",
+    "takemtitans:wall_gate"
+  ]
+}

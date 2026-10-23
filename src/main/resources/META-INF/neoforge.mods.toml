@@ -1,0 +1,40 @@
+modLoader="javafml"
+loaderVersion="[4,)"
+license="MIT"
+issueTrackerURL=""
+
+[[mods]]
+modId="takemtitans"
+version="2.0.0"
+displayName="Takém Titans"
+authors="Pit"
+logoFile="takemtitans_logo.png"
+description='''
+Attack on Titan in Minecraft: ODM gear, titans that only die through the nape, and a full story campaign across the walls.
+
+ - Omni-directional mobility gear: twin hooks, gas boost and dash, swing physics, Blade Rush, spinning slash, Meteor Dive
+ - Training Corps: arrive empty-handed, learn the gear from Instructor Brandt in eight drills against wooden titans
+ - Titans: Pure titans of every size, Abnormals, Crawlers, the Armored, Beast, Jaw, Ravager and Colossal Titans
+ - Only the nape kills: speed is damage, and a gold marker shows when your blades line up with it
+ - Story, ranks, a skill tree, a squad of Jaegers and a shop whose gear unlocks as the story advances
+ - Survey Corps horses: blow the whistle and yours gallops in, fire your hooks to launch off the saddle
+ - Shiganshina, Trost, Mitras and four more walled districts, living townsfolk, titan raids and wall cannons
+ - Collapsing buildings, falling rubble with real physics, the Colossal Serum and the Rumbling
+'''
+
+[[mixins]]
+config="takemtitans.mixins.json"
+
+[[dependencies.takemtitans]]
+    modId="neoforge"
+    type="required"
+    versionRange="[21.1.200,)"
+    ordering="NONE"
+    side="BOTH"
+
+[[dependencies.takemtitans]]
+    modId="minecraft"
+    type="required"
+    versionRange="[1.21.1,1.21.2)"
+    ordering="NONE"
+    side="BOTH"

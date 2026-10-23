@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "S S",
+    "S S"
+  ],
+  "key": {
+    "S": {
+      "item": "takemtitans:ultrahard_steel_ingot"
+    }
+  },
+  "result": {
+    "id": "takemtitans:vanguard_boots",
+    "count": 1
+  }
+}

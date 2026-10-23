@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " G ",
+    "GBG",
+    " I "
+  ],
+  "key": {
+    "G": {
+      "item": "takemtitans:gas_canister"
+    },
+    "B": {
+      "item": "minecraft:blaze_powder"
+    },
+    "I": {
+      "item": "takemtitans:ultrahard_steel_ingot"
+    }
+  },
+  "result": {
+    "id": "takemtitans:thermobaric_canister",
+    "count": 2
+  }
+}

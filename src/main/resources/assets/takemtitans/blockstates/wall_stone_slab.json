@@ -1,0 +1,13 @@
+{
+  "variants": {
+    "type=bottom": {
+      "model": "takemtitans:block/wall_stone_slab"
+    },
+    "type=top": {
+      "model": "takemtitans:block/wall_stone_slab_top"
+    },
+    "type=double": {
+      "model": "takemtitans:block/wall_stone_bricks"
+    }
+  }
+}

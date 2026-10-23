@@ -1,0 +1,35 @@
+{
+  "loader": "neoforge:separate_transforms",
+  "gui_light": "front",
+  "base": {
+    "parent": "takemtitans:item/serrated_blades_3d"
+  },
+  "perspectives": {
+    "gui": {
+      "parent": "minecraft:item/generated",
+      "textures": {
+        "layer0": "takemtitans:item/serrated_blades"
+      }
+    },
+    "ground": {
+      "parent": "minecraft:item/generated",
+      "textures": {
+        "layer0": "takemtitans:item/serrated_blades"
+      }
+    },
+    "fixed": {
+      "parent": "minecraft:item/generated",
+      "textures": {
+        "layer0": "takemtitans:item/serrated_blades"
+      }
+    }
+  },
+  "overrides": [
+    {
+      "predicate": {
+        "takemtitans:broken": 1
+      },
+      "model": "takemtitans:item/serrated_blades_broken"
+    }
+  ]
+}

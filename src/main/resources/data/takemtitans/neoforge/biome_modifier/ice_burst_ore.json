@@ -1,0 +1,6 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": "#minecraft:is_overworld",
+  "features": "takemtitans:ice_burst_ore",
+  "step": "underground_ores"
+}
