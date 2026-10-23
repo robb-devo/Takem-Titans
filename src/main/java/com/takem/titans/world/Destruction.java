@@ -779,6 +779,7 @@ public final class Destruction {
         } else {
             int n = sx * sy * sz;
             byte[] kind = new byte[n];
+            java.util.BitSet wallCell = new java.util.BitSet(n);
             BlockState[] states = new BlockState[n];
             MutableBlockPos m = new MutableBlockPos();
             int structural = 0;
@@ -806,8 +807,12 @@ public final class Destruction {
                                     kind[i] = 3;
                                     states[i] = s;
                                     leaves++;
-                                } else if (!s.getCollisionShape(level, m).isEmpty()) {
+                                } else if (!s.getCollisionShape(level, m).isEmpty() && (isAnchor(s) || s.is(BlockTags.LOGS) || s.getDestroySpeed(level, m) < 0.0F)) {
+                                    // only real ground holds things up: a lantern or a flower pot is not a foundation
                                     kind[i] = 1;
+                                    if (isWallStone(s)) {
+                                        wallCell.set(i);
+                                    }
                                 }
                             }
                         }
@@ -881,7 +886,8 @@ public final class Destruction {
                                 relax(i - sx * sz, d + 12 + 3 * load[i - sx * sz], kind, dist, buckets);
                             }
 
-                            for (int k = 0; k < 4; k++) {
+                            // a house leaning on the Wall isn't held up by it: the Wall only carries what sits on top of it
+                            for (int k = 0; k < 4 && !wallCell.get(i); k++) {
                                 int nx = xx + hx[k];
                                 int nz = z + hz[k];
                                 if (nx >= 0 && nz >= 0 && nx < sx && nz < sz) {
