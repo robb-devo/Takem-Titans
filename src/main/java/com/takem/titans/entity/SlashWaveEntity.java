@@ -66,6 +66,12 @@ public class SlashWaveEntity extends Entity implements IEntityWithComplexSpawn {
 
     public static void fire(ServerPlayer player, OdmPlayerData d, int roll) {
         ItemStack blades = player.getMainHandItem();
+        if (blades.getItem() instanceof BladeItem b0 && b0.tier == BladeTier.FOUNDER) {
+            // the Founder's Edge throws no wave: it tears space open where you look
+            com.takem.titans.item.FounderEdge.rend(player, d, roll);
+            return;
+        }
+
         if (blades.getItem() instanceof BladeItem b && b.tier.waves() && !BladeItem.isBroken(blades) && d.waveCooldown <= 0) {
             boolean founder = b.tier == BladeTier.FOUNDER;
             d.waveCooldown = founder ? (d.overdrive() ? 3 : 5) : (d.overdrive() ? 4 : 8);
@@ -123,12 +129,17 @@ public class SlashWaveEntity extends Entity implements IEntityWithComplexSpawn {
     }
 
     public static void sonicBoom(ServerPlayer player, OdmPlayerData d) {
-        if (d.boomCooldown <= 0 && OdmGear.tier(OdmGear.getGear(player)) == GearTier.GODSPEED) {
+        GearTier tier = OdmGear.tier(OdmGear.getGear(player));
+        if (d.boomCooldown <= 0 && tier.supersonic()) {
             d.boomCooldown = 30;
             ServerLevel level = player.serverLevel();
             Vec3 at = player.position().add(0.0, 1.0, 0.0);
             Vec3 v = d.velocity.lengthSqr() > 1.0E-4 ? d.velocity.normalize() : player.getLookAngle();
             Fx.send(level, 20, at.x, at.y, at.z, (float)v.x, (float)v.y, (float)v.z, (float)d.velocity.length(), 300.0);
+            if (tier == GearTier.EVENT_HORIZON) {
+                // the Event Horizon rig doesn't just break the sound barrier, it bruises space: a violet rift burst
+                Fx.send(level, 41, at, 7.0F, 0.0F, 300.0);
+            }
             level.playSound(null, at.x, at.y, at.z, ModSounds.SONIC_BOOM.get(), SoundSource.PLAYERS, 8.0F, 0.9F + player.getRandom().nextFloat() * 0.2F);
             DamageSource src = level.damageSources().playerAttack(player);
 

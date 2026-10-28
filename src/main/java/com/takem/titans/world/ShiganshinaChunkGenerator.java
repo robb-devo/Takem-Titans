@@ -148,7 +148,11 @@ public class ShiganshinaChunkGenerator extends ChunkGenerator {
         if (depth >= 0.0) {
             this.wall(col, depth);
         } else if (region == ShiganshinaLayout.Region.DISTRICT) {
-            TownPlan.column(col);
+            if (ShiganshinaLayout.inArena((double)x + 0.5, (double)z + 0.5)) {
+                ArenaPlan.column(col);
+            } else {
+                TownPlan.column(col);
+            }
         } else {
             this.nature(col, h, region);
             if (forest) {
@@ -323,6 +327,10 @@ public class ShiganshinaChunkGenerator extends ChunkGenerator {
     private void nature(ColumnBuffer col, int h, ShiganshinaLayout.Region region) {
         int x = col.x;
         int z = col.z;
+        if (h >= 63 && !(Math.abs(x) <= 2 && z < -100 && z > -848) && Countryside.column(col, h, region)) {
+            return;
+        }
+
         if (h >= 63) {
             double near = ShiganshinaLayout.distToWall((double)x + 0.5, (double)z + 0.5);
             double forest = ShiganshinaLayout.forestFactor((double)x, (double)z);

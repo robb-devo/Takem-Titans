@@ -75,6 +75,13 @@ public final class ModBlocks {
         "gate_control", () -> new GateControlBlock(Properties.of().mapColor(MapColor.METAL).strength(5.0F, 1200.0F).sound(SoundType.METAL).noOcclusion())
     );
 
+    public static final DeferredBlock<com.takem.titans.block.WaystoneBlock> WAYSTONE = BLOCKS.register(
+        "waystone",
+        () -> new com.takem.titans.block.WaystoneBlock(
+            Properties.of().mapColor(MapColor.COLOR_BLACK).strength(-1.0F, 3600000.0F).sound(SoundType.AMETHYST).lightLevel(s -> 11).noOcclusion()
+        )
+    );
+
     private ModBlocks() {
     }
 

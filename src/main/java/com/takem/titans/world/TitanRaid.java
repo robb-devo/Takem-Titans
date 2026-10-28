@@ -53,12 +53,13 @@ public final class TitanRaid {
             return false;
         } else {
             String zone = Rebuild.zoneAt(player.getX(), player.getZ());
-            if (zone == null || zone.contains("wall")) {
+            // Valgard is kept for the waves
+            if (zone == null || zone.contains("wall") || zone.startsWith("arena")) {
                 double best = 1.7976931348623157E308;
 
                 for (ShiganshinaLayout.Bulge b : ShiganshinaLayout.BULGES) {
                     double d = player.distanceToSqr(b.cx(), player.getY(), b.cz());
-                    if (d < best) {
+                    if (d < best && b.ring() != ShiganshinaLayout.ARENA_RING) {
                         best = d;
                         zone = b.name();
                     }

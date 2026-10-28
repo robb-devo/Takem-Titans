@@ -3,7 +3,11 @@ package com.takem.titans.client;
 import com.takem.titans.TakemConfig;
 import com.takem.titans.block.GateControlBlock;
 import com.takem.titans.block.SupplyStationBlock;
+import com.takem.titans.client.fx.ClientFx;
+import com.takem.titans.client.fx.GhostTrail;
+import com.takem.titans.client.fx.HyperFx;
 import com.takem.titans.client.fx.WorldFx;
+import com.takem.titans.client.gui.ScreenFx;
 import com.takem.titans.client.story.Cutscene;
 import com.takem.titans.entity.DebrisEntity;
 import com.takem.titans.entity.FallingSectionEntity;
@@ -11,12 +15,16 @@ import com.takem.titans.entity.titan.AbstractTitan;
 import com.takem.titans.entity.titan.TitanPart;
 import com.takem.titans.item.BladeItem;
 import com.takem.titans.item.BladeTier;
+import com.takem.titans.item.FounderEdge;
+import com.takem.titans.item.GearMod;
+import com.takem.titans.item.GearTier;
 import com.takem.titans.network.HookActionPayload;
 import com.takem.titans.network.OdmActionPayload;
 import com.takem.titans.network.OdmInputPayload;
 import com.takem.titans.odm.Grapple;
 import com.takem.titans.odm.HookSide;
 import com.takem.titans.odm.HookState;
+import com.takem.titans.odm.Hyperspace;
 import com.takem.titans.odm.OdmGear;
 import com.takem.titans.odm.OdmMovementHooks;
 import com.takem.titans.odm.OdmPhysics;
@@ -33,6 +41,7 @@ import javax.annotation.Nullable;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Options;
+import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.BlockParticleOption;
@@ -113,12 +122,15 @@ public final class ClientOdm implements OdmMovementHooks.Controller, OdmPhysics.
     public int rushCharge;
     public int rushTicks;
     public int diveTicks;
-    public final int[] cd = new int[2];
-    public final int[] cdMax = new int[]{1, 1};
+    /** Ability cooldowns for the HUD: 0 Meteor Dive, 1 Gas Nova, 2 Hyperspace Jump. */
+    public final int[] cd = new int[3];
+    public final int[] cdMax = new int[]{1, 1, 1};
     public double diveSpeed;
     public double diveStartY;
     private boolean diveLock;
     public int rushCooldown;
+    /** Ticks until the Founder's Edge can sever again (mirrors the server). */
+    public int severCooldown;
     private Vec3 rushDir = Vec3.ZERO;
     public int overdrive;
     private int lastFlags = -1;
@@ -210,6 +222,29 @@ public final class ClientOdm implements OdmMovementHooks.Controller, OdmPhysics.
     @Override
     public double boostScale() {
         return this.overdrive > 0 ? 1.3 : 1.0;
+    }
+
+    @Override
+    public double reelMul(Player p) {
+        return Skills.reelMul(p) * (OdmGear.hasMod(p, GearMod.WINCH) ? 1.2 : 1.0);
+    }
+
+    @Override
+    public double airMul() {
+        Player p = Minecraft.getInstance().player;
+        return p != null && OdmGear.hasMod(p, GearMod.FRAME) ? 1.33 : 1.0;
+    }
+
+    @Override
+    public double gravityMul() {
+        Player p = Minecraft.getInstance().player;
+        return p != null && OdmGear.hasMod(p, GearMod.FRAME) ? 0.9 : 1.0;
+    }
+
+    @Override
+    public double swingKeep() {
+        // tweak live with swing_keep=... in config/takemtitans-tune.properties
+        return (double)DevTune.get("swing_keep", 0.7F);
     }
 
     private void rushMove(Player p) {
@@ -480,6 +515,15 @@ public final class ClientOdm implements OdmMovementHooks.Controller, OdmPhysics.
                         && p.getXRot() > 25.0F
                         && heightAboveGround(p) > 3.0) {
                         this.dive(p);
+                    } else if (dashDown
+                        && !this.dashWasDown
+                        && boostDown
+                        && airborne
+                        && canFly(p)
+                        && OdmGear.tier(p) == GearTier.EVENT_HORIZON
+                        && this.cd[2] <= 0
+                        && (freeGas || OdmGear.getGas(gear) >= Hyperspace.GAS)) {
+                        this.hyperJump(p);
                     } else if (dashDown && !this.dashWasDown && hasGas && canFly(p) && (airborne || this.anyAttached())) {
                         if (this.dashCooldown <= 0) {
                             this.dash(p, freeGas || OdmGear.getGas(gear) >= 25);
@@ -509,6 +553,10 @@ public final class ClientOdm implements OdmMovementHooks.Controller, OdmPhysics.
                         this.rushCooldown--;
                     }
 
+                    if (this.severCooldown > 0) {
+                        this.severCooldown--;
+                    }
+
                     if (!attackDown) {
                         this.diveLock = false;
                     }
@@ -517,7 +565,9 @@ public final class ClientOdm implements OdmMovementHooks.Controller, OdmPhysics.
                         this.rushCharge++;
                         this.chargeEffects(p);
                     } else {
-                        if (!attackDown
+                        if (!attackDown && this.rushCharge >= FounderEdge.SEVER_CHARGE && this.severCooldown <= 0 && FounderEdge.holds(p)) {
+                            this.sever(p);
+                        } else if (!attackDown
                             && this.rushCharge >= this.rushChargeNeeded()
                             && this.rushCooldown <= 0
                             && bladesReady(p)
@@ -756,9 +806,12 @@ public final class ClientOdm implements OdmMovementHooks.Controller, OdmPhysics.
             look = look.yRot((float)Math.toRadians(-yawOffsetDeg));
         }
 
-        double range = OdmGear.hookRange();
+        double range = OdmGear.hookRange(p);
         ClientOdm.Aim exact = trace(p, eye, look, range, false);
-        if (exact != null) {
+        ClientOdm.Aim nape = napeLock(p, eye, look, range);
+        if (nape != null && (exact == null || exact.distance >= nape.distance - 1.5 || exact.entity)) {
+            return nape;
+        } else if (exact != null) {
             return exact;
         } else {
             Vec3 rightV = look.cross(new Vec3(0.0, 1.0, 0.0));
@@ -791,6 +844,55 @@ public final class ClientOdm implements OdmMovementHooks.Controller, OdmPhysics.
 
             return null;
         }
+    }
+
+    /**
+     * A soft lock on the nape: if the line of sight passes close by a titan's nape - a few degrees, about a nape's width
+     * plus a little - the hook goes for the nape itself. You still have to aim at it: nothing snaps from the knees, and
+     * a wall or the titan's own head in the way breaks the lock.
+     */
+    @Nullable
+    private static ClientOdm.Aim napeLock(Player p, Vec3 eye, Vec3 look, double range) {
+        Level level = p.level();
+        ClientOdm.Aim best = null;
+        double bestScore = Double.MAX_VALUE;
+
+        for (AbstractTitan t : level.getEntitiesOfClass(AbstractTitan.class, p.getBoundingBox().inflate(range), e -> e.isAlive() && !e.isDeadOrDying())) {
+            TitanPart[] parts = t.getTitanParts();
+            TitanPart nape = parts.length > 0 ? parts[0] : null;
+            if (nape != null && nape.active) {
+                AABB box = nape.getBoundingBox();
+                Vec3 c = box.getCenter();
+                Vec3 to = c.subtract(eye);
+                double along = to.dot(look);
+                if (along > 2.0 && along <= range) {
+                    double miss = to.subtract(look.scale(along)).length();
+                    double size = Math.max(box.getXsize(), box.getYsize()) * 0.5;
+                    double tol = Math.min(size + 0.7, along * NAPE_LOCK_TAN);
+                    if (miss <= tol) {
+                        Vec3 hit = box.clip(eye, c).orElse(c);
+                        double reach = hit.distanceTo(eye);
+                        boolean blocked = level.clip(new ClipContext(eye, hit, net.minecraft.world.level.ClipContext.Block.COLLIDER, Fluid.NONE, p))
+                                .getType()
+                            != Type.MISS;
+
+                        for (int i = 1; i < parts.length && !blocked; i++) {
+                            if (parts[i].active && parts[i].getBoundingBox().clip(eye, hit).map(h -> h.distanceTo(eye) < reach - 0.3).orElse(false)) {
+                                blocked = true;
+                            }
+                        }
+
+                        double score = miss / tol + reach * 0.002;
+                        if (!blocked && score < bestScore) {
+                            bestScore = score;
+                            best = new ClientOdm.Aim(hit, reach, true, true, true);
+                        }
+                    }
+                }
+            }
+        }
+
+        return best;
     }
 
     @Nullable
@@ -834,7 +936,7 @@ public final class ClientOdm implements OdmMovementHooks.Controller, OdmPhysics.
                 target = this.findAim(p, 0.0);
             }
 
-            Vec3 point = target != null ? target.point : p.getEyePosition(1.0F).add(p.getViewVector(1.0F).scale(OdmGear.hookRange()));
+            Vec3 point = target != null ? target.point : p.getEyePosition(1.0F).add(p.getViewVector(1.0F).scale(OdmGear.hookRange(p)));
             Vec3 dir = point.subtract(origin);
             if (dir.lengthSqr() < 1.0E-6) {
                 dir = p.getViewVector(1.0F);
@@ -926,7 +1028,7 @@ public final class ClientOdm implements OdmMovementHooks.Controller, OdmPhysics.
                 } else {
                     h.pos = to;
                     h.traveled = h.traveled + h.vel.length();
-                    if (h.traveled > OdmGear.hookRange() + 2.0 || h.age > 40) {
+                    if (h.traveled > OdmGear.hookRange(p) + 2.0 || h.age > 40) {
                         this.release(p, i);
                     }
                 }
@@ -936,7 +1038,7 @@ public final class ClientOdm implements OdmMovementHooks.Controller, OdmPhysics.
                 if (this.lostTicks[i] <= 0 && this.anchorValid(p, i)) {
                     this.lastAnchor[i] = h.anchor(p.level(), 1.0F);
                     double dist = h.anchor(p.level(), 1.0F).distanceTo(ropeOrigin(p));
-                    if (dist > OdmGear.hookRange() + 24.0) {
+                    if (dist > OdmGear.hookRange(p) + 24.0) {
                         this.release(p, i);
                     }
                 } else if (!h.tether && this.regripOk[i]) {
@@ -1236,8 +1338,47 @@ public final class ClientOdm implements OdmMovementHooks.Controller, OdmPhysics.
         return this.rushCharge <= 2 ? 0.0F : Mth.clamp((float)(this.rushCharge - 2) / (float)(this.rushChargeNeeded() - 2), 0.0F, 1.0F);
     }
 
+    /** How far an overcharge towards Severance has got, 0..1; 0 unless the Founder's Edge is ready to cut. */
+    public float severFraction() {
+        Player p = Minecraft.getInstance().player;
+        int need = this.rushChargeNeeded();
+        if (p == null || this.severCooldown > 0 || this.rushCharge <= need || !FounderEdge.holds(p)) {
+            return 0.0F;
+        } else {
+            return Mth.clamp((float)(this.rushCharge - need) / (float)(FounderEdge.SEVER_CHARGE - need), 0.0F, 1.0F);
+        }
+    }
+
+    /** Severance: the Founder's Edge, overcharged and let go. The server makes the cut; here the world holds its breath. */
+    private void sever(LocalPlayer p) {
+        this.severCooldown = FounderEdge.SEVER_COOLDOWN;
+        this.rushCooldown = 30;
+        for (int i = 0; i < 2; i++) {
+            if (this.hooks[i].isActive()) {
+                this.release(p, i);
+            }
+        }
+
+        PacketDistributor.sendToServer(new OdmActionPayload(23, 0));
+        p.swing(InteractionHand.MAIN_HAND);
+        this.hitStop(8);
+        p.level().playLocalSound(p.getX(), p.getY() + 1.0, p.getZ(), SoundEvents.TRIDENT_THUNDER.value(), SoundSource.PLAYERS, 2.0F, 0.6F, false);
+    }
+
     private void chargeEffects(LocalPlayer p) {
         int need = this.rushChargeNeeded();
+        if (FounderEdge.holds(p) && this.severCooldown <= 0 && this.rushCharge > need) {
+            // past a full rush the Founder's Edge keeps drinking the charge: the world leans in, then it rings
+            com.takem.titans.client.fx.SeverFx.charging(p, this.severFraction(), this.rushCharge >= FounderEdge.SEVER_CHARGE, this.rushCharge - need);
+            if (this.rushCharge == FounderEdge.SEVER_CHARGE) {
+                com.takem.titans.client.fx.SeverFx.ready(p);
+                p.level().playLocalSound(p.getX(), p.getY() + 1.0, p.getZ(), SoundEvents.BEACON_ACTIVATE, SoundSource.PLAYERS, 1.5F, 1.6F, false);
+                p.level().playLocalSound(p.getX(), p.getY() + 1.0, p.getZ(), SoundEvents.LIGHTNING_BOLT_THUNDER, SoundSource.PLAYERS, 0.6F, 2.0F, false);
+                ScreenFx.warp(0.35F);
+                ClientEffects.kick(2.0F);
+            }
+        }
+
         if (this.rushCharge == need) {
             p.level().playLocalSound(p.getX(), p.getY() + 1.0, p.getZ(), SoundEvents.TRIDENT_RETURN, SoundSource.PLAYERS, 1.2F, 1.6F, false);
             p.level().playLocalSound(p.getX(), p.getY() + 1.0, p.getZ(), SoundEvents.AMETHYST_BLOCK_RESONATE, SoundSource.PLAYERS, 1.4F, 1.4F, false);
@@ -1456,6 +1597,9 @@ public final class ClientOdm implements OdmMovementHooks.Controller, OdmPhysics.
             dir = dir.normalize().add(0.0, 0.12, 0.0).normalize();
             this.impulse = this.impulse.add(dir.scale(0.95 * OdmGear.tier(p).dash * Skills.dashMul(p) * (this.overdrive > 0 ? 1.2 : 1.0)));
             this.dashCooldown = Skills.dashCooldown(p, this.overdrive > 0 ? 8 : 16);
+            if (OdmGear.hasMod(p, GearMod.TWIN_CHAMBER)) {
+                this.dashCooldown = Math.max(1, this.dashCooldown * 2 / 3);
+            }
             this.ticksSinceDash = 0;
             this.odmAirborne = true;
             PacketDistributor.sendToServer(new OdmActionPayload(0, 0));
@@ -1463,6 +1607,16 @@ public final class ClientOdm implements OdmMovementHooks.Controller, OdmPhysics.
                 .playLocalSound(
                     p.getX(), p.getY() + 1.0, p.getZ(), ModSounds.GAS_BURST.get(), SoundSource.PLAYERS, 1.0F, 0.9F + p.getRandom().nextFloat() * 0.2F, false
                 );
+            GearTier tier = OdmGear.tier(p);
+            if (tier.phases()) {
+                // the rig slips you out of the world for the length of the dash, leaving afterimages where you were
+                PacketDistributor.sendToServer(new OdmActionPayload(21, 0));
+                GhostTrail.burst(p, 8, tier == GearTier.EVENT_HORIZON ? HyperFx.VIOLET : HyperFx.PHANTOM);
+                HyperFx.phaseBurst((ClientLevel)p.level(), p.position().add(0.0, 1.0, 0.0), p.getRandom());
+                ClientEffects.phase();
+                ScreenFx.phase(0.8F);
+                p.level().playLocalSound(p.getX(), p.getY() + 1.0, p.getZ(), SoundEvents.ILLUSIONER_MIRROR_MOVE, SoundSource.PLAYERS, 0.9F, 1.25F, false);
+            }
             ClientEffects.shake(0.25F, 5);
             Vec3 back = p.position().add(0.0, 1.0, 0.0).subtract(dir.scale(0.5));
 
@@ -1479,6 +1633,26 @@ public final class ClientOdm implements OdmMovementHooks.Controller, OdmPhysics.
                     );
             }
         }
+    }
+
+    /**
+     * Event Horizon: boost and dash together fold space and put you up to 28 blocks along your line of sight. The server
+     * moves you; here the cables let go (a hook left in a wall would yank you back across the fold) and the momentum of
+     * the jump is added.
+     */
+    private void hyperJump(LocalPlayer p) {
+        for (int i = 0; i < 2; i++) {
+            this.release(p, i);
+        }
+
+        this.cd[2] = Hyperspace.COOLDOWN;
+        this.cdMax[2] = Hyperspace.COOLDOWN;
+        this.odmAirborne = true;
+        this.ticksSinceDash = 0;
+        this.impulse = this.impulse.add(p.getLookAngle().scale(0.85));
+        PacketDistributor.sendToServer(new OdmActionPayload(22, 0));
+        p.level().playLocalSound(p.getX(), p.getY() + 1.0, p.getZ(), ModSounds.RIFT_OPEN.get(), SoundSource.PLAYERS, 1.0F, 1.6F, false);
+        ScreenFx.warp(0.35F);
     }
 
     private void emitGas(LocalPlayer p) {
@@ -1541,6 +1715,12 @@ public final class ClientOdm implements OdmMovementHooks.Controller, OdmPhysics.
         }
     }
 
-    public static record Aim(Vec3 point, double distance, boolean entity, boolean assisted) {
+    /** tan of the widest angle (about 4 degrees) at which the line of sight still locks onto a nape. */
+    private static final double NAPE_LOCK_TAN = 0.07;
+
+    public static record Aim(Vec3 point, double distance, boolean entity, boolean assisted, boolean nape) {
+        public Aim(Vec3 point, double distance, boolean entity, boolean assisted) {
+            this(point, distance, entity, assisted, false);
+        }
     }
 }

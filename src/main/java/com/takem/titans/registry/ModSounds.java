@@ -51,6 +51,8 @@ public final class ModSounds {
     public static final DeferredHolder<SoundEvent, SoundEvent> TITAN_GRAB = reg("titan.grab");
     public static final DeferredHolder<SoundEvent, SoundEvent> TITAN_FALL = reg("titan.fall");
     public static final DeferredHolder<SoundEvent, SoundEvent> ABNORMAL_SCREECH = reg("titan.abnormal_screech");
+    public static final DeferredHolder<SoundEvent, SoundEvent> FEMALE_SCREAM = reg("titan.female_scream");
+    public static final DeferredHolder<SoundEvent, SoundEvent> GHOUL_SHRIEK = reg("titan.ghoul_shriek");
     public static final DeferredHolder<SoundEvent, SoundEvent> COLOSSAL_ARRIVAL = reg("titan.colossal_arrival");
     public static final DeferredHolder<SoundEvent, SoundEvent> COLOSSAL_STEAM = reg("titan.colossal_steam");
     public static final DeferredHolder<SoundEvent, SoundEvent> WALL_BREACH = reg("titan.wall_breach");

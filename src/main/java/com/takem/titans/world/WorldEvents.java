@@ -154,6 +154,7 @@ public final class WorldEvents {
 
         give(player, new ItemStack(ModItems.BLADE_PACK.get(), 2));
         give(player, new ItemStack(ModItems.GAS_CANISTER.get(), 2));
+        give(player, new ItemStack(ModItems.FIELD_MANUAL.get()));
     }
 
     /** The rest of a soldier's kit, handed over at graduation. */

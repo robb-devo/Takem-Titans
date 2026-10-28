@@ -37,7 +37,10 @@ public final class Gore {
 
     public static void gib(ServerLevel level, AbstractTitan t, int joint, Vec3 vel) {
         Vec3 at = t.skeletonPoint(joint, centre(joint));
-        level.addFreshEntity(TitanGibEntity.of(level, t, joint, at, vel));
+        TitanGibEntity g = TitanGibEntity.of(level, t, joint, at, vel);
+        level.addFreshEntity(g);
+        // strands of sinew stretch between the stump and the limb until they tear
+        com.takem.titans.fx.Fx.send(level, com.takem.titans.fx.Fx.SINEW, at.x, at.y, at.z, (float)g.getId(), (float)t.getId(), (float)joint, t.getTitanScale(), 128.0);
         level.playSound(null, at.x, at.y, at.z, SoundEvents.SLIME_BLOCK_BREAK, SoundSource.HOSTILE, 3.0F, 0.4F);
         level.playSound(null, at.x, at.y, at.z, SoundEvents.HONEY_BLOCK_BREAK, SoundSource.HOSTILE, 3.0F, 0.5F);
         splatter(level, at, 50 + (int)(t.getTitanScale() * 10.0F), 0.9);

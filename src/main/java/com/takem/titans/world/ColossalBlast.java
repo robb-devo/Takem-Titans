@@ -418,8 +418,7 @@ public final class ColossalBlast {
         if (level.getBlockState(p).isAir()) {
             BlockState fire = BaseFireBlock.getState(level, p);
             if (fire.canSurvive(level, p)) {
-                level.setBlock(p, fire, 3);
-                Rebuild.mark(level, p);
+                Destruction.flame(level, p);
             }
         }
     }

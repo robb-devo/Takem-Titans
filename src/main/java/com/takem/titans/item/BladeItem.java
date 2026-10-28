@@ -179,6 +179,7 @@ public class BladeItem extends Item {
             } else if (this.tier == BladeTier.FOUNDER) {
                 tooltip.add(Component.translatable("tooltip.takemtitans.founder").withStyle(ChatFormatting.YELLOW));
                 tooltip.add(Component.translatable("tooltip.takemtitans.founder2").withStyle(ChatFormatting.YELLOW));
+                tooltip.add(Component.translatable("tooltip.takemtitans.founder3").withStyle(ChatFormatting.LIGHT_PURPLE));
             } else if (this.tier == BladeTier.SERRATED) {
                 tooltip.add(Component.translatable("tooltip.takemtitans.serrated").withStyle(ChatFormatting.YELLOW));
             }

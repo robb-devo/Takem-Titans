@@ -11,6 +11,8 @@ import com.takem.titans.client.Waypoints;
 import com.takem.titans.client.story.StoryClient;
 import com.takem.titans.entity.npc.JaegerEntity;
 import com.takem.titans.odm.HookState;
+import java.util.Map;
+import java.util.WeakHashMap;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.model.geom.PartPose;
@@ -197,26 +199,50 @@ public final class RopeRenderer {
         Vec3 span = end.subtract(start);
         double dist = span.length();
         if (!(dist < 0.05)) {
-            double sag;
+            double target;
             if (h.isAttached()) {
                 double slack = Math.max(0.0, h.ropeLength - dist);
-                sag = Math.min(slack * 0.45, 8.0);
+                target = Math.min(slack * 0.45, 8.0);
             } else if (h.phase == HookState.Phase.FLYING) {
-                sag = Math.min(1.6, dist * 0.025);
+                target = Math.min(1.6, dist * 0.025);
             } else {
-                sag = Math.min(2.5, dist * 0.09);
+                target = Math.min(2.5, dist * 0.09);
             }
 
-            int segments = sag > 0.05 ? Mth.clamp((int)(dist / 1.0), 6, 48) : 1;
+            // the cable has weight: it swings into its sag and out of it, and twangs when it is snapped taut
+            RopeRenderer.Cable c = CABLES.computeIfAbsent(h, k -> new RopeRenderer.Cable());
+            float now = (float)level.getGameTime() + pt;
+            float dt = c.last < 0.0F ? 0.0F : Mth.clamp(now - c.last, 0.0F, 2.0F);
+            c.last = now;
+            if (dt <= 0.0F && c.sag == 0.0F) {
+                c.sag = (float)target;
+            }
+
+            c.sagVel = c.sagVel + ((float)target - c.sag) * 0.45F * dt - c.sagVel * 0.75F * dt;
+            c.sag = c.sag + c.sagVel * dt;
+            if (c.sag < 0.0F) {
+                if (c.sagVel < -0.15F && h.isAttached()) {
+                    c.twang = Math.min(0.6F, c.twang - c.sagVel * 0.5F);
+                }
+
+                c.sag = 0.0F;
+                c.sagVel = 0.0F;
+            }
+
+            c.twang = c.twang * (float)Math.pow(0.8, (double)dt);
+            double sag = (double)c.sag;
+            int segments = sag > 0.05 || c.twang > 0.01F || h.reeling ? Mth.clamp((int)(dist / 1.0), 6, 48) : 1;
             Vec3[] pts = new Vec3[segments + 1];
-            double wobble = h.reeling ? Math.sin((double)((float)p.tickCount + pt) * 2.7) * 0.012 : 0.0;
+            double wobble = h.reeling ? Math.sin((double)now * 2.7) * 0.012 : 0.0;
+            double ring = (double)c.twang * Math.sin((double)now * 2.4);
             Vec3 perp = span.cross(new Vec3(0.0, 1.0, 0.0));
             perp = perp.lengthSqr() < 1.0E-6 ? new Vec3(1.0, 0.0, 0.0) : perp.normalize();
 
             for (int i = 0; i <= segments; i++) {
                 double t = (double)i / (double)segments;
                 double bow = 4.0 * t * (1.0 - t);
-                pts[i] = start.add(span.scale(t)).add(0.0, -sag * bow, 0.0).add(perp.scale(wobble * bow * dist * 0.2));
+                double hum = Math.sin(t * Math.PI) * ring;
+                pts[i] = start.add(span.scale(t)).add(0.0, -sag * bow + hum * 0.6, 0.0).add(perp.scale(wobble * bow * dist * 0.2 + hum));
             }
 
             VertexConsumer vc = buffers.getBuffer(RenderType.entityCutoutNoCull(CABLE));
@@ -261,6 +287,16 @@ public final class RopeRenderer {
             hookModel().render(ps, buffers.getBuffer(RenderType.entityCutoutNoCull(HOOK)), light, OverlayTexture.NO_OVERLAY);
             ps.popPose();
         }
+    }
+
+    /** The drawn cable's own motion, per hook: how far it sags right now, how fast that changes, and how hard it rings. */
+    private static final Map<HookState, RopeRenderer.Cable> CABLES = new WeakHashMap<>();
+
+    private static final class Cable {
+        float sag;
+        float sagVel;
+        float twang;
+        float last = -1.0F;
     }
 
     private static Vec3 side(Vec3 point, Vec3 dir, Vec3 cam) {

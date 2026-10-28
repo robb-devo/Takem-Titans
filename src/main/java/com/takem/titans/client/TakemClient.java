@@ -3,10 +3,18 @@ package com.takem.titans.client;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.takem.titans.TakemTitans;
 import com.takem.titans.client.fx.ClientFx;
+import com.takem.titans.client.fx.DebrisFx;
+import com.takem.titans.client.gui.FieldManualScreen;
+import com.takem.titans.client.gui.GearIntro;
+import com.takem.titans.item.FieldManualItem;
+import net.minecraft.client.Minecraft;
+import com.takem.titans.fx.LocalFx;
 import com.takem.titans.client.gui.AbilityHud;
 import com.takem.titans.client.gui.ScreenFx;
 import com.takem.titans.client.gui.TTGui;
 import com.takem.titans.client.hud.OdmHud;
+import com.takem.titans.client.particle.DustParticle;
+import com.takem.titans.client.particle.RubbleParticle;
 import com.takem.titans.client.particle.TakemParticle;
 import com.takem.titans.client.render.CannonRenderer;
 import com.takem.titans.client.render.CloakLayer;
@@ -74,6 +82,8 @@ public final class TakemClient {
     @SubscribeEvent
     public static void onClientSetup(FMLClientSetupEvent event) {
         OdmMovementHooks.setController(ClientOdm.INSTANCE);
+        LocalFx.install(DebrisFx.LOCAL);
+        FieldManualItem.opener = () -> Minecraft.getInstance().setScreen(new FieldManualScreen());
         TakemNetwork.hookSyncHandler = RemoteHooks::handle;
         TakemNetwork.feedbackHandler = FeedbackHandler::handle;
         TakemNetwork.fxHandler = ClientFx::handle;
@@ -113,6 +123,7 @@ public final class TakemClient {
         event.registerAbove(OdmHud.PANEL, StoryClient.HUD, StoryClient::renderHud);
         event.registerAbove(VanillaGuiLayers.CROSSHAIR, CannonClient.HUD, CannonClient::render);
         event.registerAbove(VanillaGuiLayers.HOTBAR, AbilityHud.LAYER, AbilityHud::render);
+        event.registerAbove(VanillaGuiLayers.HOTBAR, GearIntro.LAYER, GearIntro::render);
         event.registerAboveAll(Cutscene.LAYER, Cutscene::render);
     }
 
@@ -125,7 +136,10 @@ public final class TakemClient {
         event.registerSpriteSet(ModParticles.SPARK.get(), TakemParticle.factory(TakemParticle.Style.SPARK));
         event.registerSpriteSet(ModParticles.FLARE_SMOKE.get(), TakemParticle.factory(TakemParticle.Style.FLARE_SMOKE));
         event.registerSpriteSet(ModParticles.WIND_STREAK.get(), TakemParticle.factory(TakemParticle.Style.WIND_STREAK));
-        event.registerSpriteSet(ModParticles.DUST_CLOUD.get(), TakemParticle.factory(TakemParticle.Style.DUST_CLOUD));
+        event.registerSpriteSet(ModParticles.DUST_CLOUD.get(), DustParticle.factory(DustParticle.Style.CLOUD));
+        event.registerSpriteSet(ModParticles.DUST_WAVE.get(), DustParticle.factory(DustParticle.Style.WAVE));
+        event.registerSpriteSet(ModParticles.HAZE.get(), DustParticle.factory(DustParticle.Style.HAZE));
+        event.registerSpecial(ModParticles.RUBBLE.get(), new RubbleParticle.Provider());
         event.registerSpriteSet(ModParticles.FIREBALL.get(), TakemParticle.factory(TakemParticle.Style.FIREBALL));
         event.registerSpriteSet(ModParticles.EMBER.get(), TakemParticle.factory(TakemParticle.Style.EMBER));
         event.registerSpriteSet(ModParticles.MUSHROOM.get(), TakemParticle.factory(TakemParticle.Style.MUSHROOM));
@@ -145,9 +159,13 @@ public final class TakemClient {
         event.registerEntityRenderer(ModEntities.TRAINING_DUMMY.get(), ctx -> new TitanRenderer(ctx, "training_dummy", 1, 0, 1.0F));
         event.registerEntityRenderer(ModEntities.ABNORMAL_TITAN.get(), ctx -> new TitanRenderer(ctx, "abnormal_titan", 3, 0, 0.88F));
         event.registerEntityRenderer(ModEntities.CRAWLER_TITAN.get(), ctx -> new TitanRenderer(ctx, "crawler_titan", 2, 2, 1.0F));
+        event.registerEntityRenderer(ModEntities.GHOUL_TITAN.get(), ctx -> new TitanRenderer(ctx, "ghoul_titan", 1, 2, 0.78F));
         event.registerEntityRenderer(ModEntities.COLOSSAL_TITAN.get(), ctx -> new TitanRenderer(ctx, "colossal_titan", 1, 0, 1.0F));
         event.registerEntityRenderer(ModEntities.RUMBLING_TITAN.get(), ctx -> new TitanRenderer(ctx, "wall_titan", 3, 0, 1.0F));
         event.registerEntityRenderer(ModEntities.ARMORED_TITAN.get(), ctx -> new TitanRenderer(ctx, "armored_titan", 2, 0, 1.12F));
+        event.registerEntityRenderer(ModEntities.FEMALE_TITAN.get(), ctx -> new TitanRenderer(ctx, "female_titan", 2, 0, 0.88F));
+        event.registerEntityRenderer(ModEntities.WAR_HAMMER_TITAN.get(), ctx -> new TitanRenderer(ctx, "war_hammer_titan", 1, 0, 0.92F));
+        event.registerEntityRenderer(ModEntities.CART_TITAN.get(), ctx -> new TitanRenderer(ctx, "cart_titan", 2, 2, 1.0F));
         event.registerEntityRenderer(ModEntities.BEAST_TITAN.get(), ctx -> new TitanRenderer(ctx, "beast_titan", 1, 1, 1.18F));
         event.registerEntityRenderer(ModEntities.TOWNSFOLK.get(), TownsfolkRenderer::new);
         event.registerEntityRenderer(ModEntities.WALL_TITAN.get(), ctx -> new TitanRenderer(ctx, "wall_titan", 3, 0, 1.0F));

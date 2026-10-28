@@ -298,8 +298,7 @@ public final class BoulderBarrage {
                 if (rnd.nextFloat() < 0.5F && level.getBlockState(up).isAir()) {
                     BlockState fire = BaseFireBlock.getState(level, up);
                     if (fire.canSurvive(level, up)) {
-                        level.setBlock(up, fire, 3);
-                        Rebuild.mark(level, up);
+                        Destruction.flame(level, up);
                     }
                 }
             }

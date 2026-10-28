@@ -17,10 +17,23 @@ public final class ScreenFx {
     private static final float[] cur = new float[4];
     private static float blood;
     private static float bloodSeed;
+    private static float warp;
+    private static float phase;
+    private static long lastFrame = Util.getMillis();
 
     public static void blood(float amount, int seed) {
         blood = Math.min(1.0F, Math.max(blood, 0.0F) + amount);
         bloodSeed = (float)(seed % 997);
+    }
+
+    /** Hyperspace: star streaks race out from the centre of the view and the rim burns violet. */
+    public static void warp(float amount) {
+        warp = Math.max(warp, amount);
+    }
+
+    /** A phase dash: a cold shimmer around the edge of the view. */
+    public static void phase(float amount) {
+        phase = Math.max(phase, amount);
     }
 
     private ScreenFx() {
@@ -45,8 +58,14 @@ public final class ScreenFx {
 
             float hp = p.getHealth() / Math.max(1.0F, p.getMaxHealth());
             want[3] = p.isAlive() && hp < 0.3F ? (0.3F - hp) / 0.3F * 0.8F + 0.2F : 0.0F;
-            boolean any = blood > 0.01F;
+            boolean any = blood > 0.01F || warp > 0.01F || phase > 0.01F;
             blood *= 0.992F;
+            // these two fade by the clock, not by the frame, so a jump looks the same at 30 and at 240 fps
+            long now = Util.getMillis();
+            float secs = Math.min(0.25F, (float)(now - lastFrame) / 1000.0F);
+            lastFrame = now;
+            warp *= (float)Math.pow(0.03, (double)secs);
+            phase *= (float)Math.pow(0.01, (double)secs);
 
             for (int i = 0; i < 4; i++) {
                 cur[i] = cur[i] + (want[i] - cur[i]) * 0.08F;
@@ -60,6 +79,7 @@ public final class ScreenFx {
                 TTGui.uniform(TTGui.screenFx, "Aspect", (float)g.guiWidth() / (float)Math.max(1, g.guiHeight()));
                 TTGui.uniform(TTGui.screenFx, "Fx", cur[0], cur[1], cur[2], cur[3]);
                 TTGui.uniform(TTGui.screenFx, "Blood", blood, bloodSeed);
+                TTGui.uniform(TTGui.screenFx, "Warp", warp, phase);
                 TTGui.shaderQuad(g, TTGui.screenFx, 0.0F, 0.0F, (float)g.guiWidth(), (float)g.guiHeight());
             }
         }

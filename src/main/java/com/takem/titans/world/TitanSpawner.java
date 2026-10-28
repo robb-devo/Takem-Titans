@@ -143,6 +143,10 @@ public final class TitanSpawner {
             default -> 30;
         };
         int crawler = tier == 0 ? 0 : (tier == 1 ? 5 : 12);
+        if (tier >= 2 && roll >= 96) {
+            return ModEntities.GHOUL_TITAN.get();
+        }
+
         if (roll < abnormal) {
             return ModEntities.ABNORMAL_TITAN.get();
         } else {

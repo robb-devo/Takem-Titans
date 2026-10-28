@@ -5,6 +5,9 @@ import com.takem.titans.item.BladeItem;
 import com.takem.titans.item.BladePackItem;
 import com.takem.titans.item.HorseWhistleItem;
 import com.takem.titans.item.BladeTier;
+import com.takem.titans.item.FieldManualItem;
+import com.takem.titans.item.GearMod;
+import com.takem.titans.item.GearModItem;
 import com.takem.titans.item.CannonItem;
 import com.takem.titans.item.ClusterSpearItem;
 import com.takem.titans.item.ColossalSerumItem;
@@ -55,9 +58,28 @@ public final class ModItems {
     public static final DeferredItem<BladeItem> ACKERMAN_BLADES = ITEMS.register(
         "ackerman_blades", () -> new BladeItem(new Properties().stacksTo(1).durability(120).rarity(Rarity.EPIC), BladeTier.ACKERMAN)
     );
+    public static final DeferredItem<FieldManualItem> FIELD_MANUAL = ITEMS.register(
+        "field_manual", () -> new FieldManualItem(new Properties().stacksTo(1).rarity(Rarity.UNCOMMON))
+    );
+    public static final DeferredItem<GearModItem> MOD_RECYCLER = gearMod(GearMod.RECYCLER);
+    public static final DeferredItem<GearModItem> MOD_WINCH = gearMod(GearMod.WINCH);
+    public static final DeferredItem<GearModItem> MOD_FRAME = gearMod(GearMod.FRAME);
+    public static final DeferredItem<GearModItem> MOD_LONG_HOOKS = gearMod(GearMod.LONG_HOOKS);
+    public static final DeferredItem<GearModItem> MOD_BARBS = gearMod(GearMod.BARBS);
+    public static final DeferredItem<GearModItem> MOD_TWIN_CHAMBER = gearMod(GearMod.TWIN_CHAMBER);
+    public static final DeferredItem<OdmGearItem> PHANTOM_ODM_GEAR = ITEMS.register(
+        "phantom_odm_gear",
+        () -> new OdmGearItem(ModArmorMaterials.ODM_HARNESS, Type.LEGGINGS, new Properties().stacksTo(1).rarity(Rarity.RARE), GearTier.PHANTOM)
+    );
     public static final DeferredItem<OdmGearItem> GODSPEED_ODM_GEAR = ITEMS.register(
         "godspeed_odm_gear",
         () -> new OdmGearItem(ModArmorMaterials.ODM_HARNESS, Type.LEGGINGS, new Properties().stacksTo(1).rarity(Rarity.EPIC), GearTier.GODSPEED)
+    );
+    public static final DeferredItem<OdmGearItem> EVENT_HORIZON_ODM_GEAR = ITEMS.register(
+        "event_horizon_odm_gear",
+        () -> new OdmGearItem(
+            ModArmorMaterials.ODM_HARNESS, Type.LEGGINGS, new Properties().stacksTo(1).rarity(Rarity.EPIC).fireResistant(), GearTier.EVENT_HORIZON
+        )
     );
     public static final DeferredItem<BladeItem> TITANBREAKER_BLADES = ITEMS.register(
         "titanbreaker_blades", () -> new BladeItem(new Properties().stacksTo(1).durability(300).rarity(Rarity.EPIC), BladeTier.TITANBREAKER)
@@ -117,6 +139,9 @@ public final class ModItems {
     public static final DeferredItem<DeferredSpawnEggItem> ABNORMAL_TITAN_SPAWN_EGG = ITEMS.register(
         "abnormal_titan_spawn_egg", () -> new DeferredSpawnEggItem(ModEntities.ABNORMAL_TITAN, 13208683, 2829099, new Properties())
     );
+    public static final DeferredItem<DeferredSpawnEggItem> GHOUL_TITAN_SPAWN_EGG = ITEMS.register(
+        "ghoul_titan_spawn_egg", () -> new DeferredSpawnEggItem(ModEntities.GHOUL_TITAN, 14408667, 2631720, new Properties())
+    );
     public static final DeferredItem<DeferredSpawnEggItem> CRAWLER_TITAN_SPAWN_EGG = ITEMS.register(
         "crawler_titan_spawn_egg", () -> new DeferredSpawnEggItem(ModEntities.CRAWLER_TITAN, 14725264, 6962474, new Properties())
     );
@@ -125,6 +150,15 @@ public final class ModItems {
     );
     public static final DeferredItem<DeferredSpawnEggItem> ARMORED_TITAN_SPAWN_EGG = ITEMS.register(
         "armored_titan_spawn_egg", () -> new DeferredSpawnEggItem(ModEntities.ARMORED_TITAN, 15262418, 11560494, new Properties().rarity(Rarity.EPIC))
+    );
+    public static final DeferredItem<DeferredSpawnEggItem> FEMALE_TITAN_SPAWN_EGG = ITEMS.register(
+        "female_titan_spawn_egg", () -> new DeferredSpawnEggItem(ModEntities.FEMALE_TITAN, 13532544, 15912810, new Properties().rarity(Rarity.EPIC))
+    );
+    public static final DeferredItem<DeferredSpawnEggItem> WAR_HAMMER_TITAN_SPAWN_EGG = ITEMS.register(
+        "war_hammer_titan_spawn_egg", () -> new DeferredSpawnEggItem(ModEntities.WAR_HAMMER_TITAN, 15132400, 13691903, new Properties().rarity(Rarity.EPIC))
+    );
+    public static final DeferredItem<DeferredSpawnEggItem> CART_TITAN_SPAWN_EGG = ITEMS.register(
+        "cart_titan_spawn_egg", () -> new DeferredSpawnEggItem(ModEntities.CART_TITAN, 6052956, 9139029, new Properties().rarity(Rarity.EPIC))
     );
     public static final DeferredItem<DeferredSpawnEggItem> BEAST_TITAN_SPAWN_EGG = ITEMS.register(
         "beast_titan_spawn_egg", () -> new DeferredSpawnEggItem(ModEntities.BEAST_TITAN, 7231040, 14207144, new Properties().rarity(Rarity.EPIC))
@@ -217,6 +251,11 @@ public final class ModItems {
     public static final DeferredItem<BlockItem> SUPPLY_STATION = ITEMS.registerSimpleBlockItem(ModBlocks.SUPPLY_STATION);
     public static final DeferredItem<BlockItem> WALL_GATE = ITEMS.registerSimpleBlockItem(ModBlocks.WALL_GATE);
     public static final DeferredItem<BlockItem> GATE_CONTROL = ITEMS.registerSimpleBlockItem(ModBlocks.GATE_CONTROL);
+    public static final DeferredItem<BlockItem> WAYSTONE = ITEMS.registerSimpleBlockItem(ModBlocks.WAYSTONE);
+
+    private static DeferredItem<GearModItem> gearMod(GearMod mod) {
+        return ITEMS.register("mod_" + mod.id(), () -> new GearModItem(new Properties().stacksTo(1).rarity(Rarity.RARE), mod));
+    }
 
     private ModItems() {
     }

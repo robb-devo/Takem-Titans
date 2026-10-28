@@ -113,6 +113,15 @@ public final class StoryClient {
         Minecraft mc = Minecraft.getInstance();
         String var2 = tag.getString("t");
         switch (var2) {
+            case "waystones":
+                mc.setScreen(new com.takem.titans.client.gui.WaystoneScreen(tag));
+                break;
+            case "fog":
+                com.takem.titans.client.fx.NightFog.handle(tag);
+                break;
+            case "tunnelfog":
+                com.takem.titans.client.fx.NightFog.tunnel(tag.getBoolean("on"));
+                break;
             case "sync":
                 has = true;
                 xp = tag.getInt("xp");

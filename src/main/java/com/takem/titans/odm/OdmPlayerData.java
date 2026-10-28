@@ -40,6 +40,14 @@ public final class OdmPlayerData implements INBTSerializable<CompoundTag> {
     public int rushCooldown;
     public int waveCooldown;
     public int boomCooldown;
+    public int warpCooldown;
+    public int severCooldown;
+    /** Districts whose waystone this player has woken. */
+    public final java.util.Set<String> waystones = new java.util.LinkedHashSet<>();
+    /** A journey being gathered: the waystone index and the game time it leaves. Not saved. */
+    public int travelTo = -1;
+    public long travelAt;
+    public long travelReadyAt;
     public int diveGrace;
     public double diveStartY;
     public Vec3 rushFrom;
@@ -90,6 +98,8 @@ public final class OdmPlayerData implements INBTSerializable<CompoundTag> {
     public int carryNotice;
     public final List<String> squad = new ArrayList<>();
     public final Map<String, int[]> squadStats = new HashMap<>();
+    /** Squad members carried off wounded, and the game time they rejoin. Not saved: a restart patches everyone up. */
+    public final Map<String, Long> squadDown = new HashMap<>();
     public boolean squadHold;
     public int townCheer;
 
@@ -155,6 +165,13 @@ public final class OdmPlayerData implements INBTSerializable<CompoundTag> {
         }
 
         tag.put("SquadStats", st);
+        ListTag ws = new ListTag();
+
+        for (String w : this.waystones) {
+            ws.add(StringTag.valueOf(w));
+        }
+
+        tag.put("Waystones", ws);
         return tag;
     }
 
@@ -204,5 +221,11 @@ public final class OdmPlayerData implements INBTSerializable<CompoundTag> {
         }
 
         this.squadHold = tag.getBoolean("SquadHold");
+        this.waystones.clear();
+        ListTag ws = tag.getList("Waystones", 8);
+
+        for (int i = 0; i < ws.size(); i++) {
+            this.waystones.add(ws.getString(i));
+        }
     }
 }

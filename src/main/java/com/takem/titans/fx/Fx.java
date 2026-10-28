@@ -33,6 +33,44 @@ public final class Fx {
     public static final int GLASS_BURST = 23;
     public static final int BLADE_IMPACT = 24;
     public static final int METEOR_SLAM = 25;
+    /** A falling piece of building lands: a = diameter, b = impact speed, c = block state id of its material, d = blocks. */
+    public static final int COLLAPSE = 30;
+    /** Fragments breaking off: a = count, b = burst speed (0 = trickle), c = block state id, d = source width. */
+    public static final int CRUMBLE = 31;
+    /** A phase dash: a = entity id of the dasher, b = ticks of afterimages. */
+    public static final int PHASE = 32;
+    /** A hyperspace jump from here to (a, b, c); d = entity id of the jumper. */
+    public static final int HYPERSPACE = 33;
+    /** Severance: a blade of light from here along (a, b, c), d blocks long. */
+    public static final int SEVER = 34;
+    /** A waystone journey gathering around a player: a = ticks until it leaves. */
+    public static final int TRAVEL_CHARGE = 35;
+    /** A traveller leaving (here) for (a, b, c). */
+    public static final int TRAVEL_OUT = 36;
+    /** A traveller arriving here; a = entity id. */
+    public static final int TRAVEL_IN = 37;
+    /** A waystone woken for the first time. */
+    public static final int WAYSTONE_WAKE = 38;
+    /** The Female Titan screams; a = power. */
+    public static final int SCREAM = 39;
+    /** A crystal spike erupts; a = height. */
+    public static final int CRYSTAL = 42;
+    /** Crystal floods over a nape (a = 1) or splits off it (a = 0). */
+    public static final int HARDEN = 43;
+    /** A Cart Titan gun fires; a, b, c = barrel direction. */
+    public static final int MUZZLE = 44;
+    /** The War Hammer forges a hammer in the air. */
+    public static final int FORGE = 45;
+    /** The Founder's Edge tears space open; a, b, c = the seam's direction, d = half its length. */
+    public static final int REND = 46;
+    /** The golden thread from the blade to the tear; a, b, c = where the tear is. */
+    public static final int REND_THREAD = 47;
+    /** A tear snapping shut. */
+    public static final int REND_SNAP = 48;
+    /** Sinew torn between a stump and a severed limb; a = limb entity, b = titan entity, c = the limb's joint, d = scale. */
+    public static final int SINEW = 49;
+    /** A block put back by the builders; a = its state id. */
+    public static final int REBUILD = 50;
 
     private Fx() {
     }

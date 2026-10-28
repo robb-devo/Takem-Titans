@@ -1,0 +1,33 @@
+{
+  "display": {
+    "icon": {
+      "id": "takemtitans:beast_titan_spawn_egg"
+    },
+    "title": {
+      "translate": "advancement.takemtitans.beast"
+    },
+    "description": {
+      "translate": "advancement.takemtitans.beast.desc"
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true
+  },
+  "criteria": {
+    "kill": {
+      "trigger": "minecraft:player_killed_entity",
+      "conditions": {
+        "entity": [
+          {
+            "condition": "minecraft:entity_properties",
+            "entity": "this",
+            "predicate": {
+              "type": "takemtitans:beast_titan"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "parent": "takemtitans:armored"
+}

@@ -1,0 +1,29 @@
+{
+  "display": {
+    "icon": {
+      "id": "takemtitans:field_manual"
+    },
+    "title": {
+      "translate": "advancement.takemtitans.manual"
+    },
+    "description": {
+      "translate": "advancement.takemtitans.manual.desc"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": false
+  },
+  "criteria": {
+    "book": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "takemtitans:field_manual"
+          }
+        ]
+      }
+    }
+  },
+  "parent": "takemtitans:root"
+}

@@ -37,6 +37,12 @@ public class OdmGearItem extends ArmorItem {
     }
 
     @Override
+    public boolean isFoil(ItemStack stack) {
+        // space itself shimmers across the Event Horizon rig
+        return this.tier == GearTier.EVENT_HORIZON || super.isFoil(stack);
+    }
+
+    @Override
     public int getBarWidth(ItemStack stack) {
         return Math.round(13.0F * OdmGear.gasFraction(stack));
     }
@@ -51,8 +57,30 @@ public class OdmGearItem extends ArmorItem {
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
         if (this.tier == GearTier.ADVANCED) {
             tooltip.add(Component.translatable("tooltip.takemtitans.advanced_gear").withStyle(ChatFormatting.GOLD));
+        } else if (this.tier == GearTier.PHANTOM) {
+            tooltip.add(Component.translatable("tooltip.takemtitans.phantom_gear").withStyle(ChatFormatting.DARK_AQUA));
         } else if (this.tier == GearTier.GODSPEED) {
             tooltip.add(Component.translatable("tooltip.takemtitans.godspeed").withStyle(ChatFormatting.AQUA));
+        } else if (this.tier == GearTier.EVENT_HORIZON) {
+            tooltip.add(Component.translatable("tooltip.takemtitans.event_horizon_gear").withStyle(ChatFormatting.LIGHT_PURPLE));
+            tooltip.add(Component.translatable("tooltip.takemtitans.event_horizon_gear.jump").withStyle(ChatFormatting.DARK_PURPLE));
+        }
+
+        if (this.tier.phases()) {
+            tooltip.add(Component.translatable("tooltip.takemtitans.phase_dash").withStyle(ChatFormatting.DARK_AQUA));
+        }
+
+        int fitted = OdmGear.mods(stack);
+        int slots = GearMod.slots(this.tier);
+        for (GearMod m : GearMod.values()) {
+            if ((fitted & m.bit()) != 0) {
+                tooltip.add(Component.literal(" \u2699 ").append(Component.translatable("item.takemtitans.mod_" + m.id())).withStyle(ChatFormatting.GOLD));
+            }
+        }
+
+        int free = slots - Integer.bitCount(fitted);
+        if (free > 0) {
+            tooltip.add(Component.translatable("tooltip.takemtitans.mod_slots", free).withStyle(ChatFormatting.DARK_GRAY));
         }
 
         int gas = OdmGear.getGas(stack);

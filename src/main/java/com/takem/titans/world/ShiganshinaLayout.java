@@ -30,13 +30,19 @@ public final class ShiganshinaLayout {
     public static final double FOREST_R = 300.0;
     public static final int SPAWN_X = 0;
     public static final int SPAWN_Z = 4;
+    /** Valgard, the arena city: a walled ring of its own out on the plain, built to be fought through and torn down. */
+    public static final int ARENA_RING = 10;
+    public static final double ARENA_X = 640.0;
+    public static final double ARENA_Z = 720.0;
+    public static final double ARENA_R = 240.0;
     public static final ShiganshinaLayout.Bulge[] BULGES = new ShiganshinaLayout.Bulge[]{
         new ShiganshinaLayout.Bulge(2, "shiganshina", 0.0, -100.0, 200.0, 0),
         new ShiganshinaLayout.Bulge(4, "trost", 0.0, -500.0, 200.0, 1),
         new ShiganshinaLayout.Bulge(6, "karanes", 600.0, -1100.0, 180.0, 1),
         new ShiganshinaLayout.Bulge(7, "krolva", -600.0, -1100.0, 180.0, 1),
         new ShiganshinaLayout.Bulge(8, "stohess", 250.0, -1100.0, 110.0, 2),
-        new ShiganshinaLayout.Bulge(9, "ehrmich", -250.0, -1100.0, 110.0, 2)
+        new ShiganshinaLayout.Bulge(9, "ehrmich", -250.0, -1100.0, 110.0, 2),
+        new ShiganshinaLayout.Bulge(10, "arena", 640.0, 720.0, 240.0, 0)
     };
     private static final double HALF = 6.0;
 
@@ -208,6 +214,13 @@ public final class ShiganshinaLayout {
         } else {
             return dm <= 1006.0 ? ShiganshinaLayout.Region.WALL : bulgeRegion(x, z, ShiganshinaLayout.Region.OUTSIDE);
         }
+    }
+
+    /** Inside Valgard, the arena district (its wall not included). */
+    public static boolean inArena(double x, double z) {
+        double dx = x - ARENA_X;
+        double dz = z - ARENA_Z;
+        return dx * dx + dz * dz < (ARENA_R - 6.0) * (ARENA_R - 6.0);
     }
 
     public static boolean insideWalls(double x, double z) {

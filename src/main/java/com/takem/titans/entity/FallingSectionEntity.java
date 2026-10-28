@@ -4,6 +4,7 @@ import com.takem.titans.TakemConfig;
 import com.takem.titans.entity.titan.AbstractTitan;
 import com.takem.titans.entity.titan.TitanPart;
 import com.takem.titans.fx.Fx;
+import com.takem.titans.fx.LocalFx;
 import com.takem.titans.network.SectionDetachPayload;
 import com.takem.titans.odm.Grapple;
 import com.takem.titans.odm.Tether;
@@ -16,6 +17,7 @@ import com.takem.titans.world.Chunks;
 import com.takem.titans.world.Destruction;
 import com.takem.titans.world.Rebuild;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -25,7 +27,6 @@ import java.util.UUID;
 import javax.annotation.Nullable;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.BlockPos.MutableBlockPos;
-import net.minecraft.core.particles.BlockParticleOption;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.RegistryFriendlyByteBuf;
@@ -90,6 +91,15 @@ public class FallingSectionEntity extends Entity implements IEntityWithComplexSp
     private int ghostTicks;
     private int generation;
     private int restTicks;
+    /** Pieces broken from the same body share this, and ignore each other while they drift apart. */
+    private int family;
+    @Nullable
+    private LongOpenHashSet cellCache;
+    private int cellTick = -1;
+    private double lerpX;
+    private double lerpY;
+    private double lerpZ;
+    private boolean lerping;
     public static final byte KIND_SECTION = 0;
     public static final byte KIND_BOULDER = 1;
     public byte kind = 0;
@@ -156,6 +166,7 @@ public class FallingSectionEntity extends Entity implements IEntityWithComplexSp
         e.startCentre = cm;
         e.massFactor = (float)Math.min(10.0, 1.0 + Math.sqrt((double)count) / 2.0);
         RandomSource rnd = level.random;
+        e.family = rnd.nextInt();
         if (hingeAt != null && tipDir != null) {
             e.hinged = true;
             e.hinge = hingeAt;
@@ -220,7 +231,8 @@ public class FallingSectionEntity extends Entity implements IEntityWithComplexSp
                 Vec3 r = prev.subtract(this.hinge);
                 double lever = r.x * this.tip.x + r.z * this.tip.z;
                 float alpha = (float)(0.04 * Math.max(lever, 0.12) / (double)this.inertia);
-                this.omega = (this.omega + alpha) * 0.998F;
+                // keep the tip from whipping outer beams halfway across the district
+                this.omega = Math.min(0.055F, (this.omega + alpha) * 0.998F);
                 this.angle = this.angle + this.omega;
                 this.rotation.identity().rotateAxis(this.angle, this.axis.x, this.axis.y, this.axis.z);
                 Vector3f c = new Vector3f(
@@ -300,10 +312,20 @@ public class FallingSectionEntity extends Entity implements IEntityWithComplexSp
         Vector3f w = new Vector3f(this.axis).mul(this.omega);
         this.spin.set(w);
         Vec3 r = this.position().subtract(this.hinge);
-        this.velocity = new Vec3((double)w.y * r.z - (double)w.z * r.y, (double)w.z * r.x - (double)w.x * r.z, (double)w.x * r.y - (double)w.y * r.x);
+        this.velocity = clampMotion(
+            new Vec3((double)w.y * r.z - (double)w.z * r.y, (double)w.z * r.x - (double)w.x * r.z, (double)w.x * r.y - (double)w.y * r.x)
+        );
+    }
+
+    /** Outer beams used to inherit tip speed from a long hinge swing and sail across the street. */
+    private static Vec3 clampMotion(Vec3 v) {
+        double max = 0.85;
+        double len = v.length();
+        return len > max ? v.scale(max / len) : v;
     }
 
     private Vec3 pointVelocity(Vector3f o) {
+        Vec3 raw;
         if (this.hinged) {
             double rx = this.getX() + (double)o.x - this.hinge.x;
             double ry = this.getY() + (double)o.y - this.hinge.y;
@@ -311,15 +333,16 @@ public class FallingSectionEntity extends Entity implements IEntityWithComplexSp
             double wx = (double)(this.axis.x * this.omega);
             double wy = (double)(this.axis.y * this.omega);
             double wz = (double)(this.axis.z * this.omega);
-            return new Vec3(wy * rz - wz * ry, wz * rx - wx * rz, wx * ry - wy * rx);
+            raw = new Vec3(wy * rz - wz * ry, wz * rx - wx * rz, wx * ry - wy * rx);
         } else {
-            return this.velocity
+            raw = this.velocity
                 .add(
                     (double)(this.spin.y * o.z - this.spin.z * o.y),
                     (double)(this.spin.z * o.x - this.spin.x * o.z),
                     (double)(this.spin.x * o.y - this.spin.y * o.x)
                 );
         }
+        return clampMotion(raw);
     }
 
     private void collide() {
@@ -338,6 +361,7 @@ public class FallingSectionEntity extends Entity implements IEntityWithComplexSp
         double sumX = 0.0;
         double sumY = 0.0;
         double sumZ = 0.0;
+        BlockState struck = null;
 
         for (int i = 0; i < this.states.length; i++) {
             if (!this.gone[i]) {
@@ -368,16 +392,21 @@ public class FallingSectionEntity extends Entity implements IEntityWithComplexSp
                         && smashed < (thrown ? 320 : 180)
                         && h >= 0.0F
                         && h <= (thrown ? 9.0F : 6.0F)
-                        && Destruction.isStructural(sl, m, s)
+                        && Destruction.isBreakable(sl, m, s)
                         && (double)punch * u2 >= (double)h * 0.38 + 0.025) {
+                        // what the piece smashes through is carried on with it, spraying a little sideways
                         Destruction.smash(
                             sl,
                             m.immutable(),
                             s,
-                            u.scale(0.55).add((rnd.nextDouble() - 0.5) * 0.2, 0.05 + rnd.nextDouble() * 0.15, (rnd.nextDouble() - 0.5) * 0.2),
+                            u.scale(0.55).add((rnd.nextDouble() - 0.5) * 0.12, 0.02 + rnd.nextDouble() * 0.08, (rnd.nextDouble() - 0.5) * 0.12),
                             0.2F,
                             u2 > 0.6 ? 1 : 0
                         );
+                        if (struck == null) {
+                            struck = s;
+                        }
+
                         smashed++;
                         sumX += px;
                         sumY += py;
@@ -407,7 +436,9 @@ public class FallingSectionEntity extends Entity implements IEntityWithComplexSp
                 if (this.life - this.lastCrunch > 5) {
                     this.lastCrunch = this.life;
                     Destruction.crunch(sl, at, Math.min(4.0F, 1.0F + (float)smashed / 12.0F));
-                    Fx.send(sl, 0, at, Math.min(8.0F, 2.0F + (float)smashed / 6.0F), 1.0F, 160.0);
+                    BlockState chip = struck != null ? struck : this.material();
+                    Destruction.crumble(sl, at, chip, Math.min(30, 6 + smashed * 2), (float)Math.min(0.45, 0.15 + this.velocity.length() * 0.3), 2.0F);
+                    Destruction.dustCloud(sl, at, chip, Math.min(8.0F, 2.0F + (float)smashed / 6.0F), 1.0F);
                 }
 
                 if (this.life - this.lastCollapse > 6) {
@@ -438,54 +469,157 @@ public class FallingSectionEntity extends Entity implements IEntityWithComplexSp
         }
     }
 
+    /**
+     * Falling pieces only touch where their blocks really overlap: a long beam's bounding sphere is mostly empty air,
+     * and treating it as solid used to fling neighbouring pieces apart before they ever met. Where blocks do meet, the
+     * pieces are eased apart over a few ticks and knock against each other softly - masonry hardly bounces. Pieces that
+     * just broke off the same body get a moment to drift apart before they count as separate bodies at all.
+     */
     private void collideSections(ServerLevel sl) {
+        if ((this.life & 1) != 0 || this.ghostTicks > 0) {
+            return;
+        }
+
         for (FallingSectionEntity o : sl.getEntitiesOfClass(
             FallingSectionEntity.class,
             this.getBoundingBox().inflate((double)this.radius * 2.0 + 2.0),
             e -> e != this && e.getId() > this.getId() && e.kind == 0 && !e.hinged && !e.isRemoved()
         )) {
+            if (o.ghostTicks > 0 || o.family == this.family && this.life < 24 && o.life < 24) {
+                continue;
+            }
+
             Vec3 d = o.position().subtract(this.position());
             double dist = d.length();
-            double min = (double)(this.radius + o.radius) * 0.62;
-            if (dist < min && dist > 0.001) {
-                Vec3 n = d.scale(1.0 / dist);
-                double m1 = (double)Math.max(1, this.aliveCount());
-                double m2 = (double)Math.max(1, o.aliveCount());
-                double push = (min - dist) * 0.5;
-                this.setPos(this.position().subtract(n.scale(push * m2 / (m1 + m2))));
-                o.setPos(o.position().add(n.scale(push * m1 / (m1 + m2))));
-                double closing = this.velocity.subtract(o.velocity).dot(n);
-                if (closing > 0.0) {
-                    double j = 1.25 * closing / (1.0 / m1 + 1.0 / m2);
-                    this.velocity = this.velocity.subtract(n.scale(j / m1));
-                    o.velocity = o.velocity.add(n.scale(j / m2));
-                    Vec3 tangent = this.velocity.subtract(o.velocity).subtract(n.scale(this.velocity.subtract(o.velocity).dot(n)));
-                    Vector3f twist = new Vector3f(
-                        (float)(n.y * tangent.z - n.z * tangent.y), (float)(n.z * tangent.x - n.x * tangent.z), (float)(n.x * tangent.y - n.y * tangent.x)
-                    );
-                    this.spin.add(new Vector3f(twist).mul((float)(0.08 * m2 / (m1 + m2))));
-                    o.spin.sub(new Vector3f(twist).mul((float)(0.08 * m1 / (m1 + m2))));
-                    Vec3 contact = this.position().add(n.scale((double)this.radius * 0.6));
-                    if (closing > 0.35) {
-                        Destruction.crunch(sl, contact, (float)Math.min(5.0, 1.0 + closing * 3.0));
-                        sl.sendParticles(ModParticles.DUST_CLOUD.get(), contact.x, contact.y, contact.z, 6, 0.8, 0.8, 0.8, 0.05);
-                    }
+            if (dist > (double)(this.radius + o.radius) || dist < 0.001) {
+                continue;
+            }
 
-                    if (closing > 0.9) {
-                        (m1 < m2 ? this : o).shatter(contact);
-                        if (this.isRemoved()) {
-                            return;
-                        }
+            int aliveThis = this.aliveCount();
+            int aliveOther = o.aliveCount();
+            FallingSectionEntity big = aliveThis >= aliveOther ? this : o;
+            FallingSectionEntity small = big == this ? o : this;
+            LongOpenHashSet cells = big.cells();
+            Vector3f p = new Vector3f();
+            int hits = 0;
+            double cx = 0.0;
+            double cy = 0.0;
+            double cz = 0.0;
+            int step = small.states.length > 900 ? 3 : 1;
+
+            for (int i = 0; i < small.states.length; i += step) {
+                if (!small.gone[i]) {
+                    p.set(small.ox[i], small.oy[i], small.oz[i]);
+                    small.rotation.transform(p);
+                    double wx = small.getX() + (double)p.x;
+                    double wy = small.getY() + (double)p.y;
+                    double wz = small.getZ() + (double)p.z;
+                    if (cells.contains(BlockPos.asLong(Mth.floor(wx), Mth.floor(wy), Mth.floor(wz)))) {
+                        hits++;
+                        cx += wx;
+                        cy += wy;
+                        cz += wz;
+                    }
+                }
+            }
+
+            if (hits == 0) {
+                continue;
+            }
+
+            Vec3 contact = new Vec3(cx / (double)hits, cy / (double)hits, cz / (double)hits);
+            Vec3 n = d.scale(1.0 / dist);
+            double m1 = (double)Math.max(1, aliveThis);
+            double m2 = (double)Math.max(1, aliveOther);
+            // ease the overlap out over a few ticks: a shove, never a teleport
+            double push = Math.min(0.22, 0.035 * Math.sqrt((double)hits));
+            this.setPos(this.position().subtract(n.scale(push * m2 / (m1 + m2))));
+            o.setPos(o.position().add(n.scale(push * m1 / (m1 + m2))));
+            Vec3 va = this.pointVelocity(contact.subtract(this.position()).toVector3f());
+            Vec3 vb = o.pointVelocity(contact.subtract(o.position()).toVector3f());
+            double closing = va.subtract(vb).dot(n);
+            if (closing > 0.0) {
+                // restitution 0.15: masonry and timber thud into each other, they don't bounce
+                double j = 1.15 * closing / (1.0 / m1 + 1.0 / m2);
+                this.velocity = this.velocity.subtract(n.scale(j / m1));
+                o.velocity = o.velocity.add(n.scale(j / m2));
+                Vec3 rel = va.subtract(vb);
+                Vec3 tangent = rel.subtract(n.scale(rel.dot(n)));
+                Vector3f twist = new Vector3f(
+                    (float)(n.y * tangent.z - n.z * tangent.y), (float)(n.z * tangent.x - n.x * tangent.z), (float)(n.x * tangent.y - n.y * tangent.x)
+                );
+                this.spin.add(new Vector3f(twist).mul((float)(0.04 * m2 / (m1 + m2))));
+                o.spin.sub(new Vector3f(twist).mul((float)(0.04 * m1 / (m1 + m2))));
+                if (closing > 0.3) {
+                    Destruction.crunch(sl, contact, (float)Math.min(5.0, 1.0 + closing * 3.0));
+                    BlockState chip = small.material();
+                    Destruction.crumble(sl, contact, chip, Math.min(24, 4 + hits), (float)Math.min(0.4, closing * 0.35), 1.5F);
+                    Destruction.dustCloud(sl, contact, chip, (float)Math.min(5.0, 1.5 + closing * 3.0), 1.0F);
+                }
+
+                if (closing > 0.9) {
+                    (m1 < m2 ? this : o).shatter(contact);
+                    if (this.isRemoved()) {
+                        return;
                     }
                 }
             }
         }
     }
 
+    /** The blocks this piece fills right now, as world block positions; worked out at most once a tick. */
+    private LongOpenHashSet cells() {
+        if (this.cellCache == null || this.cellTick != this.life) {
+            LongOpenHashSet set = new LongOpenHashSet(this.states.length * 2);
+            Vector3f p = new Vector3f();
+
+            for (int i = 0; i < this.states.length; i++) {
+                if (!this.gone[i]) {
+                    p.set(this.ox[i], this.oy[i], this.oz[i]);
+                    this.rotation.transform(p);
+                    set.add(BlockPos.asLong(Mth.floor(this.getX() + (double)p.x), Mth.floor(this.getY() + (double)p.y), Mth.floor(this.getZ() + (double)p.z)));
+                }
+            }
+
+            this.cellCache = set;
+            this.cellTick = this.life;
+        }
+
+        return this.cellCache;
+    }
+
+    /** What this piece is mostly made of, for the colour of its dust and the look of its fragments. */
+    public BlockState material() {
+        BlockState best = null;
+        int bestCount = 0;
+        int n = this.states.length;
+        int step = Math.max(1, n / 24);
+
+        for (int i = 0; i < n; i += step) {
+            BlockState s = this.states[i];
+            if (s != null && (this.level().isClientSide || !this.gone[i])) {
+                int c = 0;
+                for (int j = 0; j < n; j += step) {
+                    if (this.states[j] != null && this.states[j].getBlock() == s.getBlock()) {
+                        c++;
+                    }
+                }
+
+                if (c > bestCount) {
+                    bestCount = c;
+                    best = s;
+                }
+            }
+        }
+
+        return best != null ? best : Blocks.COBBLESTONE.defaultBlockState();
+    }
+
     private void restOn(Vec3 contact, int touching, int alive) {
         Vec3 c = this.position();
         Vec3 r = contact.subtract(c);
-        this.setPos(c.x, c.y + 0.1, c.z);
+        // lift it back by what gravity sank it this tick, no more: a bigger lift made resting pieces bob up and down
+        this.setPos(c.x, c.y + Math.min(0.1, Math.max(0.0, -this.velocity.y) + 0.005), c.z);
         this.velocity = new Vec3(this.velocity.x * 0.55, Math.max(0.0, -this.velocity.y * 0.15), this.velocity.z * 0.55);
         float k = 0.01F / Math.max(1.0F, this.inertia);
         this.spin.mul(0.82F).add(new Vector3f((float)(-r.z) * k, 0.0F, (float)r.x * k));
@@ -519,10 +653,14 @@ public class FallingSectionEntity extends Entity implements IEntityWithComplexSp
         }
 
         Vec3 at = this.position();
+        BlockState mat = this.material();
         Destruction.crunch(sl, at, Math.min(5.0F, 1.0F + (float)placed / 60.0F));
-        sl.sendParticles(ModParticles.DUST_CLOUD.get(), at.x, at.y, at.z, 10 + placed / 10, (double)this.radius * 0.6, 0.6, (double)this.radius * 0.6, 0.03);
+        Destruction.dustCloud(sl, at, mat, Math.min(9.0F, this.radius * 1.2F + 1.0F), 1.2F);
+        Destruction.crumble(sl, at, mat, Math.min(24, 4 + placed / 8), 0.1F, this.radius);
         sl.playSound(null, at.x, at.y, at.z, SoundEvents.STONE_PLACE, SoundSource.BLOCKS, 2.0F, 0.5F);
         this.discard();
+        // where it came to rest it may overhang a ledge: whatever sticks out unsupported breaks off next
+        Destruction.requestCollapse(sl, BlockPos.containing(at), Mth.clamp((int)this.radius + 6, 8, 24), 24, 6, this.drops, 4);
     }
 
     private static boolean isGround(ServerLevel sl, MutableBlockPos m) {
@@ -547,7 +685,9 @@ public class FallingSectionEntity extends Entity implements IEntityWithComplexSp
                 o.set(this.ox[i], this.oy[i], this.oz[i]);
                 this.rotation.transform(o);
                 Vec3 u = this.pointVelocity(o);
-                Vec3 v = u.scale(0.8).add((rnd.nextDouble() - 0.5) * 0.12, rnd.nextDouble() * 0.08, (rnd.nextDouble() - 0.5) * 0.12);
+                Vec3 v = clampMotion(
+                    u.scale(0.55).add((rnd.nextDouble() - 0.5) * 0.06, rnd.nextDouble() * 0.03, (rnd.nextDouble() - 0.5) * 0.06)
+                );
                 Destruction.throwOrSettle(sl, this.position().add((double)o.x, (double)o.y, (double)o.z), this.states[i], v, rubble, 0);
             }
         }
@@ -623,17 +763,22 @@ public class FallingSectionEntity extends Entity implements IEntityWithComplexSp
             Vector3f o = new Vector3f();
             double minY = 1.7976931348623157E308;
             double speed = 0.0;
+            BlockState mat = this.material();
+            int count = 0;
 
             for (int i = 0; i < this.states.length; i++) {
                 if (!this.gone[i]) {
+                    count++;
                     o.set(this.ox[i], this.oy[i], this.oz[i]);
                     this.rotation.transform(o);
                     Vec3 p = this.position().add((double)o.x, (double)o.y, (double)o.z);
                     Vec3 u = this.pointVelocity(o);
                     speed = Math.max(speed, u.length());
-                    // pieces carry on with the section's own motion and crumble outwards a little; they don't spring up
-                    double kick = Math.min(0.28, u.length() * 0.25);
-                    Vec3 v = u.scale(0.7).add((rnd.nextDouble() - 0.5) * kick * 1.6, rnd.nextDouble() * kick * 0.45, (rnd.nextDouble() - 0.5) * kick * 1.6);
+                    // keep rubble close: a little outwards scatter, no beam-flinging across the district
+                    double kick = Math.min(0.14, u.length() * 0.18);
+                    Vec3 v = clampMotion(
+                        u.scale(0.55).add((rnd.nextDouble() - 0.5) * kick, rnd.nextDouble() * kick * 0.25, (rnd.nextDouble() - 0.5) * kick)
+                    );
                     if (this.drops && this.states[i].is(BlockTags.LOGS)) {
                         Block.dropResources(this.states[i], sl, BlockPos.containing(p));
                     } else {
@@ -656,9 +801,9 @@ public class FallingSectionEntity extends Entity implements IEntityWithComplexSp
                 Math.min(8.0F, 2.0F + (float)this.states.length / 100.0F),
                 0.35F
             );
-            Fx.send(sl, 1, hit.x, Math.min(hit.y, minY + 0.5), hit.z, size, (float)speed, 0.0F, 0.0F, 256.0);
+            // fragments, the billow, the surge along the street and the pall: all from this one packet
+            Fx.send(sl, Fx.COLLAPSE, hit.x, Math.min(hit.y, minY + 0.5), hit.z, size, (float)speed, (float)Block.getId(mat), (float)count, 320.0);
             if (this.states.length > 120) {
-                Fx.send(sl, 22, hit.x, Math.min(hit.y, minY + 0.5), hit.z, Math.min(70.0F, 18.0F + (float)this.states.length / 20.0F), 7.0F, 0.0F, 0.0F, 320.0);
                 sl.playSound(
                     null,
                     hit.x,
@@ -695,6 +840,7 @@ public class FallingSectionEntity extends Entity implements IEntityWithComplexSp
         }
 
         if (this.generation < 2 && alive >= 40) {
+            BlockState mat = this.material();
             int k = Mth.clamp(alive / 35, 2, 7);
             int[] idx = new int[alive];
             float[] wx = new float[alive];
@@ -766,8 +912,11 @@ public class FallingSectionEntity extends Entity implements IEntityWithComplexSp
                     Vec3 away = new Vec3(c.x + (double)cm.x - hit.x, 0.0, c.z + (double)cm.z - hit.z);
                     away = away.lengthSqr() < 1.0E-4 ? new Vec3(rnd.nextDouble() - 0.5, 0.0, rnd.nextDouble() - 0.5).normalize() : away.normalize();
                     double speed = u.length();
-                    Vec3 v = new Vec3(u.x * 0.6, Math.abs(u.y) * 0.1 + 0.04 + rnd.nextDouble() * 0.06, u.z * 0.6)
-                        .add(away.scale(0.08 + Math.min(0.28, speed * 0.22) + rnd.nextDouble() * 0.06));
+                    // fractured chunks peel off nearby — not launch like rockets
+                    Vec3 v = clampMotion(
+                        new Vec3(u.x * 0.45, Math.min(0.18, Math.abs(u.y) * 0.08 + 0.03 + rnd.nextDouble() * 0.04), u.z * 0.45)
+                            .add(away.scale(0.04 + Math.min(0.12, speed * 0.12) + rnd.nextDouble() * 0.03))
+                    );
                     if (size[jx] >= 12 && budgetFor(size[jx])) {
                         FallingSectionEntity piece = new FallingSectionEntity(ModEntities.FALLING_SECTION.get(), sl);
                         int m = size[jx];
@@ -801,10 +950,11 @@ public class FallingSectionEntity extends Entity implements IEntityWithComplexSp
                         piece.massFactor = (float)Math.min(10.0, 1.0 + Math.sqrt((double)m) / 2.0);
                         piece.drops = this.drops;
                         piece.generation = this.generation + 1;
+                        piece.family = this.family;
                         piece.entityData.set(ROTATION, new Quaternionf());
                         piece.launch(
                             v,
-                            new Vector3f(this.spin).add((rnd.nextFloat() - 0.5F) * 0.15F, (rnd.nextFloat() - 0.5F) * 0.08F, (rnd.nextFloat() - 0.5F) * 0.15F)
+                            new Vector3f(this.spin).add((rnd.nextFloat() - 0.5F) * 0.06F, (rnd.nextFloat() - 0.5F) * 0.03F, (rnd.nextFloat() - 0.5F) * 0.06F)
                         );
                         piece.ghostTicks = 3;
                         sl.addFreshEntity(piece);
@@ -816,7 +966,9 @@ public class FallingSectionEntity extends Entity implements IEntityWithComplexSp
                                     sl,
                                     p,
                                     this.states[idx[axx]],
-                                    v.add((rnd.nextDouble() - 0.5) * 0.2, rnd.nextDouble() * 0.1, (rnd.nextDouble() - 0.5) * 0.2),
+                                    clampMotion(
+                                        v.add((rnd.nextDouble() - 0.5) * 0.08, rnd.nextDouble() * 0.04, (rnd.nextDouble() - 0.5) * 0.08)
+                                    ),
                                     rubble,
                                     0
                                 );
@@ -829,9 +981,8 @@ public class FallingSectionEntity extends Entity implements IEntityWithComplexSp
             float sz = this.radius * 2.0F;
             Destruction.crunch(sl, hit, Math.min(6.0F, 1.5F + (float)alive / 80.0F));
             sl.playSound(null, hit.x, hit.y, hit.z, SoundEvents.GENERIC_EXPLODE.value(), SoundSource.BLOCKS, Math.min(8.0F, 2.0F + (float)alive / 100.0F), 0.4F);
-            Fx.send(sl, 1, hit.x, hit.y, hit.z, sz, (float)this.velocity.length(), 0.0F, 0.0F, 256.0);
+            Fx.send(sl, Fx.COLLAPSE, hit.x, hit.y, hit.z, sz, (float)this.velocity.length(), (float)Block.getId(mat), (float)alive, 320.0);
             if (alive > 120) {
-                Fx.send(sl, 22, hit.x, hit.y, hit.z, Math.min(70.0F, 18.0F + (float)alive / 20.0F), 7.0F, 0.0F, 0.0F, 320.0);
                 sl.playSound(
                     null,
                     hit.x,
@@ -1045,6 +1196,57 @@ public class FallingSectionEntity extends Entity implements IEntityWithComplexSp
         return e;
     }
 
+    /**
+     * The War Hammer's hammer: a crystal head with a haft standing up out of it, dropped as a boulder so it lands like one
+     * (it bursts and throws its crystal about) instead of settling into the street.
+     */
+    public static FallingSectionEntity hammer(ServerLevel level, Vec3 at, BlockState[] crystal, @Nullable UUID owner) {
+        RandomSource rnd = level.random;
+        List<float[]> pts = new ArrayList<>();
+
+        for (int x = -4; x <= 4; x++) {
+            for (int y = -2; y <= 1; y++) {
+                for (int z = -2; z <= 2; z++) {
+                    if (Math.abs(x) < 4 || (Math.abs(y + 0.5F) < 1.5F && Math.abs(z) < 2)) {
+                        pts.add(new float[]{(float)x, (float)y, (float)z});
+                    }
+                }
+            }
+        }
+
+        for (int y = 2; y <= 9; y++) {
+            pts.add(new float[]{0.0F, (float)y, 0.0F});
+        }
+
+        FallingSectionEntity e = new FallingSectionEntity(ModEntities.FALLING_SECTION.get(), level);
+        int m = pts.size();
+        e.ox = new float[m];
+        e.oy = new float[m];
+        e.oz = new float[m];
+        e.states = new BlockState[m];
+        e.gone = new boolean[m];
+
+        for (int i = 0; i < m; i++) {
+            float[] p = pts.get(i);
+            e.ox[i] = p[0];
+            e.oy[i] = p[1];
+            e.oz[i] = p[2];
+            e.states[i] = crystal[rnd.nextInt(crystal.length)];
+        }
+
+        e.radius = 4.5F;
+        e.setPos(at.x, at.y, at.z);
+        e.xo = at.x;
+        e.yo = at.y;
+        e.zo = at.z;
+        e.startCentre = at;
+        e.massFactor = 10.0F;
+        e.kind = 1;
+        e.owner = owner;
+        e.entityData.set(ROTATION, new Quaternionf());
+        return e;
+    }
+
     @Nullable
     public Entity owner() {
         return this.owner != null && this.level() instanceof ServerLevel sl ? sl.getEntity(this.owner) : null;
@@ -1075,11 +1277,44 @@ public class FallingSectionEntity extends Entity implements IEntityWithComplexSp
         return out;
     }
 
+    /**
+     * Vanilla puts a plain entity at each new position the moment the packet arrives, while the rotation here eases a
+     * tick behind - so a toppling wall stepped at 20 Hz and slid against its own spin. Hold the position back to the
+     * next tick instead, where it moves in step with the rotation and is drawn smoothly in between.
+     */
+    @Override
+    public void lerpTo(double x, double y, double z, float yRot, float xRot, int steps) {
+        this.lerpX = x;
+        this.lerpY = y;
+        this.lerpZ = z;
+        this.lerping = true;
+    }
+
+    @Override
+    public double lerpTargetX() {
+        return this.lerping ? this.lerpX : this.getX();
+    }
+
+    @Override
+    public double lerpTargetY() {
+        return this.lerping ? this.lerpY : this.getY();
+    }
+
+    @Override
+    public double lerpTargetZ() {
+        return this.lerping ? this.lerpZ : this.getZ();
+    }
+
     private void clientTick() {
         this.rotO.set(this.rotR);
         this.rotR.set((Quaternionfc)this.entityData.get(ROTATION));
         if (this.tickCount <= 1) {
             this.rotO.set(this.rotR);
+        }
+
+        if (this.lerping) {
+            this.lerping = false;
+            this.setPos(this.lerpX, this.lerpY, this.lerpZ);
         }
 
         if (this.kind == 1) {
@@ -1110,24 +1345,23 @@ public class FallingSectionEntity extends Entity implements IEntityWithComplexSp
                     (this.random.nextDouble() - 0.5) * 0.3
                 );
         } else if (this.states.length > 0) {
-            Vector3f o = new Vector3f();
-            int puffs = Math.min(4, 1 + this.states.length / 200);
+            // the broken faces shed chips and dust on the way down, more the faster it goes
+            Vec3 v = new Vec3(this.getX() - this.xo, this.getY() - this.yo, this.getZ() - this.zo);
+            double speed = v.length();
+            if (speed > 0.03 || this.tickCount < 6) {
+                Vector3f o = new Vector3f();
+                int bits = Math.min(4, 1 + this.states.length / 250);
+                float dust = (float)Mth.clamp(speed * 1.2, 0.08, 0.6);
 
-            for (int k = 0; k < puffs; k++) {
-                int i = this.random.nextInt(this.states.length);
-                if (this.states[i] != null) {
-                    o.set(this.ox[i], this.oy[i] - 0.5F, this.oz[i]);
-                    this.rotR.transform(o);
-                    this.level()
-                        .addParticle(
-                            new BlockParticleOption(ParticleTypes.BLOCK, this.states[i]),
-                            this.getX() + (double)o.x,
-                            this.getY() + (double)o.y,
-                            this.getZ() + (double)o.z,
-                            0.0,
-                            -0.1,
-                            0.0
+                for (int k = 0; k < bits; k++) {
+                    int i = this.random.nextInt(this.states.length);
+                    if (this.states[i] != null) {
+                        o.set(this.ox[i], this.oy[i], this.oz[i]);
+                        this.rotR.transform(o);
+                        LocalFx.crumbleOff(
+                            this.level(), new Vec3(this.getX() + (double)o.x, this.getY() + (double)o.y, this.getZ() + (double)o.z), this.states[i], v, dust
                         );
+                    }
                 }
             }
         }

@@ -1,5 +1,6 @@
 package com.takem.titans.client;
 
+import com.takem.titans.client.fx.HyperFx;
 import com.takem.titans.client.fx.WorldFx;
 import com.takem.titans.entity.SlashWaveEntity;
 import com.takem.titans.item.BladeItem;
@@ -91,7 +92,8 @@ public final class GodGearClient {
 
             clicked = false;
             ClientOdm odm = ClientOdm.INSTANCE;
-            boolean god = OdmGear.tier(p) == GearTier.GODSPEED;
+            GearTier tier = OdmGear.tier(p);
+            boolean god = tier.supersonic();
             if (god && odm.inFlight() && odm.speed > 3.6 && !supersonic) {
                 supersonic = true;
                 PacketDistributor.sendToServer(new OdmActionPayload(6, 0));
@@ -99,18 +101,29 @@ public final class GodGearClient {
                 supersonic = false;
             }
 
-            if (god && odm.boosting) {
-                afterburner(p, odm.velocity, supersonic, rnd);
+            if (odm.boosting) {
+                wake(p, tier, odm.velocity, supersonic, rnd, true);
             }
 
             for (Player other : mc.level.players()) {
-                if (other != p && !(other.distanceToSqr(p) > 9216.0) && RemoteHooks.isBoosting(other.getId()) && OdmGear.tier(other) == GearTier.GODSPEED) {
-                    afterburner(other, other.getDeltaMovement(), other.getDeltaMovement().length() > 3.6, rnd);
+                if (other != p && !(other.distanceToSqr(p) > 9216.0) && RemoteHooks.isBoosting(other.getId())) {
+                    wake(other, OdmGear.tier(other), other.getDeltaMovement(), other.getDeltaMovement().length() > 3.6, rnd, false);
                 }
             }
         } else {
             attackHeld = 0;
             supersonic = false;
+        }
+    }
+
+    /** What each rig leaves behind under boost: flame for Godspeed, frost and afterimages for Phantom, bent space for Event Horizon. */
+    private static void wake(Player p, GearTier tier, Vec3 vel, boolean hot, RandomSource rnd, boolean local) {
+        switch (tier) {
+            case GODSPEED -> afterburner(p, vel, hot, rnd);
+            case PHANTOM -> HyperFx.phantomWake(p, vel, rnd, local);
+            case EVENT_HORIZON -> HyperFx.horizonWake(p, vel, hot, rnd);
+            default -> {
+            }
         }
     }
 

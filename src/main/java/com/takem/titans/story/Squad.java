@@ -134,6 +134,16 @@ public final class Squad {
                     }
                 }
 
+                Long back = d.squadDown.get(nm);
+                if (back != null) {
+                    if (level.getGameTime() < back) {
+                        continue;
+                    }
+
+                    d.squadDown.remove(nm);
+                    player.sendSystemMessage(Component.translatable("message.takemtitans.jaeger_back", nm).withStyle(ChatFormatting.GREEN));
+                }
+
                 if (!found) {
                     JaegerEntity spawned = spawnNear(level, player, nm, variant(entry), player.getUUID(), false, i);
                     if (spawned != null) {
@@ -199,11 +209,36 @@ public final class Squad {
         j.discard();
     }
 
+    /** Brings a Jaeger in just behind the leader: behind, then to either side, then above - wherever there is room. */
     public static void arrive(ServerLevel level, JaegerEntity j, ServerPlayer leader) {
-        Vec3 back = leader.position().subtract(leader.getLookAngle().multiply(1.0, 0.0, 1.0).scale(5.0));
-        int y = level.getHeight(Types.MOTION_BLOCKING_NO_LEAVES, Mth.floor(back.x), Mth.floor(back.z));
-        j.teleportTo(back.x, Math.max((double)y, leader.getY()), back.z);
+        Vec3 look = leader.getLookAngle().multiply(1.0, 0.0, 1.0);
+        look = look.lengthSqr() < 1.0E-4 ? new Vec3(0.0, 0.0, 1.0) : look.normalize();
+        Vec3 side = new Vec3(-look.z, 0.0, look.x);
+        Vec3[] offsets = new Vec3[]{
+            look.scale(-5.0), look.scale(-4.0).add(side.scale(3.0)), look.scale(-4.0).add(side.scale(-3.0)), new Vec3(0.0, 3.0, 0.0), side.scale(2.0)
+        };
+        Vec3 at = leader.position();
+
+        for (Vec3 off : offsets) {
+            Vec3 c = leader.position().add(off);
+            if (leader.onGround()) {
+                int y = level.getHeight(Types.MOTION_BLOCKING_NO_LEAVES, Mth.floor(c.x), Mth.floor(c.z));
+                if (Math.abs((double)y - leader.getY()) > 3.0) {
+                    continue;
+                }
+
+                c = new Vec3(c.x, (double)y, c.z);
+            }
+
+            if (level.noCollision(j, j.getType().getDimensions().makeBoundingBox(c))) {
+                at = c;
+                break;
+            }
+        }
+
+        j.teleportTo(at.x, at.y, at.z);
         level.sendParticles(ModParticles.GAS.get(), j.getX(), j.getY() + 1.0, j.getZ(), 30, 0.4, 0.6, 0.4, 0.08);
+        level.playSound(null, j.getX(), j.getY(), j.getZ(), ModSounds.GAS_BURST.get(), SoundSource.NEUTRAL, 1.0F, 1.1F);
     }
 
     static void patrols(ServerLevel level, ServerPlayer player) {
@@ -372,10 +407,12 @@ public final class Squad {
     public static void onDeath(ServerLevel level, JaegerEntity j) {
         if (j.owner() != null && level.getPlayerByUUID(j.owner()) instanceof ServerPlayer p) {
             OdmPlayerData d = OdmServer.data(p);
-            if (!j.isTemporary() && d.squad.remove(j.jaegerName() + "|" + j.getVariant())) {
-                d.squadStats.remove(j.jaegerName());
+            // A downed squad member is carried off the field and rejoins two minutes later, rank and kills intact:
+            // losing someone you paid for and trained to one bad grab felt like a bug, not like war.
+            if (!j.isTemporary() && d.squad.contains(j.jaegerName() + "|" + j.getVariant())) {
+                d.squadDown.put(j.jaegerName(), level.getGameTime() + 2400L);
                 level.playSound(null, p.getX(), p.getY(), p.getZ(), SoundEvents.BELL_RESONATE, SoundSource.PLAYERS, 1.0F, 0.6F);
-                p.sendSystemMessage(Component.translatable("message.takemtitans.jaeger_fallen", j.jaegerName()).withStyle(ChatFormatting.RED));
+                p.sendSystemMessage(Component.translatable("message.takemtitans.jaeger_wounded", j.jaegerName()).withStyle(ChatFormatting.RED));
                 Story.sync(p);
             }
         }

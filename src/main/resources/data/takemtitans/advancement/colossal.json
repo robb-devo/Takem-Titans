@@ -1,0 +1,33 @@
+{
+  "display": {
+    "icon": {
+      "id": "takemtitans:colossal_titan_spawn_egg"
+    },
+    "title": {
+      "translate": "advancement.takemtitans.colossal"
+    },
+    "description": {
+      "translate": "advancement.takemtitans.colossal.desc"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true
+  },
+  "criteria": {
+    "kill": {
+      "trigger": "minecraft:player_killed_entity",
+      "conditions": {
+        "entity": [
+          {
+            "condition": "minecraft:entity_properties",
+            "entity": "this",
+            "predicate": {
+              "type": "takemtitans:colossal_titan"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "parent": "takemtitans:first_blood"
+}

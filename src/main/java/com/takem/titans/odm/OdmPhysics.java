@@ -27,9 +27,9 @@ public final class OdmPhysics {
             }
         }
 
-        v = v.add(0.0, -p.getGravity() * 0.85, 0.0);
+        v = v.add(0.0, -p.getGravity() * 0.85 * f.gravityMul(), 0.0);
         Vec3 wish = inputDirection(input, p.getYRot());
-        v = v.add(wish.scale(hooked ? 0.016 : 0.022));
+        v = v.add(wish.scale((hooked ? 0.016 : 0.022) * f.airMul()));
         if (f.isBoosting()) {
             Vec3 dir = p.getLookAngle().add(wish.scale(0.85));
             if (dir.lengthSqr() > 1.0E-6) {
@@ -74,6 +74,7 @@ public final class OdmPhysics {
         }
 
         Vec3 correction = Vec3.ZERO;
+        double keep = Mth.clamp(f.swingKeep(), 0.0, 1.0);
 
         for (int pass = 0; pass < 2; pass++) {
             for (HookState hxx : hooks) {
@@ -86,7 +87,20 @@ public final class OdmPhysics {
                         Vec3 n = toAnchor.scale(1.0 / nd);
                         double radial = v.dot(n);
                         if (radial < 0.0) {
+                            // Two things hide in this outward component. Moving away from the anchor right now is a
+                            // real tug on the cable, and the cable takes it. The rest is only the swing curving round
+                            // the anchor during the tick: the cable turns that motion but must not brake it, or every
+                            // swing bleeds a few percent of its speed each tick and feels sticky.
+                            Vec3 toNow = anchor.subtract(origin);
+                            double tn = toNow.length();
+                            Vec3 u = tn > 0.001 ? toNow.scale(1.0 / tn) : n;
+                            double tug = Math.min(0.0, v.dot(u));
+                            double carried = v.subtract(u.scale(tug)).length();
                             v = v.subtract(n.scale(radial));
+                            double len = v.length();
+                            if (pass == 0 && keep > 0.0 && len > 1.0E-4 && carried > len) {
+                                v = v.scale(Mth.lerp(keep, len, carried) / len);
+                            }
                         }
 
                         double excess = nd - hxx.ropeLength;
@@ -152,6 +166,21 @@ public final class OdmPhysics {
 
         default double boostScale() {
             return 1.0;
+        }
+
+        /** Steering in the air, 1 = normal (a lighter frame steers better). */
+        default double airMul() {
+            return 1.0;
+        }
+
+        /** How hard the rig pulls you down, 1 = normal. */
+        default double gravityMul() {
+            return 1.0;
+        }
+
+        /** How much of the speed a taut cable shaves off a swing by bending it comes back (0 = the old sticky swing). */
+        default double swingKeep() {
+            return 0.7;
         }
 
         default double reelMul(Player p) {

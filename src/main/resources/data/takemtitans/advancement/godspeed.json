@@ -1,0 +1,29 @@
+{
+  "display": {
+    "icon": {
+      "id": "takemtitans:godspeed_odm_gear"
+    },
+    "title": {
+      "translate": "advancement.takemtitans.godspeed"
+    },
+    "description": {
+      "translate": "advancement.takemtitans.godspeed.desc"
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true
+  },
+  "criteria": {
+    "gear": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "takemtitans:godspeed_odm_gear"
+          }
+        ]
+      }
+    }
+  },
+  "parent": "takemtitans:phantom"
+}

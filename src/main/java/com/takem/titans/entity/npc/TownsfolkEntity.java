@@ -113,6 +113,10 @@ public class TownsfolkEntity extends PathfinderMob implements Merchant {
     private int shoutTicks;
     private int cowerTicks;
     private int chatter = 200;
+    /** A conversation in progress: who with, how long it has left, and whether this one opened it. */
+    private int talkWith = -1;
+    private int talkTicks;
+    private boolean talkLead;
     private int reactCooldown;
 
     public TownsfolkEntity(EntityType<? extends TownsfolkEntity> type, Level level) {
@@ -545,11 +549,58 @@ public class TownsfolkEntity extends PathfinderMob implements Merchant {
             }
         }
 
+        this.tickTalk(level);
         if (TakemConfig.TOWN_REACTIONS.get() && !this.isStoryCharacter() && --this.chatter <= 0) {
             this.chatter = 500 + this.random.nextInt(900);
             if (this.panicTicks <= 0 && this.cheerTicks <= 0 && level.getNearestPlayer(this, 20.0) != null) {
                 boolean night = !level.isDay();
                 this.shout(this.getRole() == 1 ? "watch" : (night ? "night" : "chatter"), ChatFormatting.GRAY);
+            }
+        }
+    }
+
+    /**
+     * Two townsfolk who meet in the street stop, turn to each other and talk a while - the day's news, the price of bread,
+     * the rumours: the arena out on the plain, the things that hunt at night, the Scout everyone is talking about.
+     */
+    private void tickTalk(ServerLevel level) {
+        boolean calm = this.panicTicks <= 0 && this.cheerTicks <= 0 && this.cowerTicks <= 0 && !this.isStoryCharacter() && this.getRole() == 0;
+        if (this.talkTicks > 0) {
+            this.talkTicks--;
+            if (!calm || !(level.getEntity(this.talkWith) instanceof TownsfolkEntity other) || other.distanceToSqr(this) > 64.0 || this.nearestTitan(level, 32.0) != null) {
+                this.talkTicks = 0;
+                return;
+            }
+
+            this.getNavigation().stop();
+            this.getLookControl().setLookAt(other, 30.0F, 30.0F);
+            int beat = this.talkTicks % 70;
+            if (beat == (this.talkLead ? 0 : 35)) {
+                this.shout("talk", ChatFormatting.WHITE);
+                this.swing(net.minecraft.world.InteractionHand.MAIN_HAND);
+            } else if (beat == (this.talkLead ? 20 : 55) && this.random.nextInt(3) == 0) {
+                // a nod, a shrug
+                this.setDeltaMovement(this.getDeltaMovement().add(0.0, 0.18, 0.0));
+            }
+
+            return;
+        }
+
+        if (calm && TakemConfig.TOWN_REACTIONS.get() && this.tickCount % 40 == Math.floorMod(this.getId(), 40) && this.random.nextInt(10) == 0
+            && level.getNearestPlayer(this, 32.0) != null) {
+            for (TownsfolkEntity other : level.getEntitiesOfClass(TownsfolkEntity.class, this.getBoundingBox().inflate(5.0))) {
+                if (other != this && other.talkTicks <= 0 && other.getRole() == 0 && !other.isStoryCharacter() && !other.panicking()) {
+                    int ticks = 160 + this.random.nextInt(160);
+                    this.talkWith = other.getId();
+                    this.talkTicks = ticks;
+                    this.talkLead = true;
+                    other.talkWith = this.getId();
+                    other.talkTicks = ticks;
+                    other.talkLead = false;
+                    other.getNavigation().stop();
+                    this.getNavigation().stop();
+                    break;
+                }
             }
         }
     }
@@ -618,6 +669,7 @@ public class TownsfolkEntity extends PathfinderMob implements Merchant {
                 case "builder_done" -> 4;
                 case "greet" -> 8;
                 case "salute" -> 5;
+                case "talk" -> 16;
                 default -> 10;
             };
             this.setCustomName(Component.translatable("shout.takemtitans." + group + "." + this.random.nextInt(n)).withStyle(color));

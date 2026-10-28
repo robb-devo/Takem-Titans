@@ -1,7 +1,7 @@
 package com.takem.titans.entity;
 
 import com.takem.titans.entity.titan.AbstractTitan;
-import com.takem.titans.entity.titan.WallTitan;
+import com.takem.titans.entity.titan.CoreHost;
 import com.takem.titans.fx.Fx;
 import com.takem.titans.network.FeedbackPayload;
 import com.takem.titans.odm.OdmServer;
@@ -61,7 +61,7 @@ public class TitanHeartEntity extends Entity {
         return h;
     }
 
-    public static TitanHeartEntity core(ServerLevel level, WallTitan boss, int slot, float hp) {
+    public static TitanHeartEntity core(ServerLevel level, CoreHost boss, int slot, float hp) {
         TitanHeartEntity h = new TitanHeartEntity(ModEntities.TITAN_HEART.get(), level);
         h.setPos(boss.corePos(slot));
         h.slot = slot;
@@ -116,7 +116,7 @@ public class TitanHeartEntity extends Entity {
         } else if (this.level() instanceof ServerLevel sl) {
             int owner = this.entityData.get(OWNER);
             if (owner >= 0) {
-                if (!(sl.getEntity(owner) instanceof WallTitan boss) || !boss.isAlive()) {
+                if (!(sl.getEntity(owner) instanceof CoreHost boss) || !boss.isAlive()) {
                     this.discard();
                     return;
                 }
@@ -201,7 +201,7 @@ public class TitanHeartEntity extends Entity {
         sl.addFreshEntity(new ItemEntity(sl, c.x, c.y, c.z, new ItemStack(ModItems.TITAN_HEART_SHARD.get(), this.isCore() ? 1 : 2)));
         int owner = this.entityData.get(OWNER);
         if (owner >= 0) {
-            if (sl.getEntity(owner) instanceof WallTitan boss) {
+            if (sl.getEntity(owner) instanceof CoreHost boss) {
                 boss.onCoreDestroyed(sl, this.slot, by);
             }
         } else {

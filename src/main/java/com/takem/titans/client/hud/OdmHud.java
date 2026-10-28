@@ -524,7 +524,8 @@ public final class OdmHud {
                 ClientOdm.Aim aim = odm.aim;
                 int cx = g.guiWidth() / 2;
                 int cy = g.guiHeight() / 2;
-                int base = aim == null ? 1442840575 : (aim.entity() ? -38053 : (aim.assisted() ? -575082241 : -285212673));
+                // locked onto a nape the sights turn gold
+                int base = aim == null ? 1442840575 : (aim.nape() ? -15934 : (aim.entity() ? -38053 : (aim.assisted() ? -575082241 : -285212673)));
                 drawBracket(g, cx, cy, -1, colorFor(odm.left, base), odm.left.isAttached());
                 drawBracket(g, cx, cy, 1, colorFor(odm.right, base), odm.right.isAttached());
                 float charge = odm.rushChargeFraction();
@@ -543,6 +544,22 @@ public final class OdmHud {
                         int a = i < lit ? (int)(255.0F * pulse) : 64;
                         int sz = ready ? 2 : 1;
                         g.fill(x - sz / 2, y - sz / 2, x - sz / 2 + sz, y - sz / 2 + sz, a << 24 | (i < lit ? rgb : 16777215));
+                    }
+                }
+
+                float sever = odm.severFraction();
+                if (sever > 0.0F) {
+                    // the Founder's overcharge: a second, violet ring closing around the first
+                    int ticks = 40;
+                    int lit = Math.round((float)ticks * sever);
+                    float pulse = sever >= 1.0F ? 0.6F + 0.4F * Mth.sin(((float)hudTicks + delta.getGameTimeDeltaPartialTick(false)) * 1.6F) : 1.0F;
+
+                    for (int i = 0; i < ticks; i++) {
+                        double ang = -1.5707963267948966 + (double)(6.2831855F * (float)i / (float)ticks);
+                        int x = cx + (int)Math.round(Math.cos(ang) * 22.0);
+                        int y = cy + (int)Math.round(Math.sin(ang) * 22.0);
+                        int a = i < lit ? (int)(255.0F * pulse) : 48;
+                        g.fill(x - 1, y - 1, x + 1, y + 1, a << 24 | (i < lit ? 0xC58CFF : 0xFFFFFF));
                     }
                 }
 

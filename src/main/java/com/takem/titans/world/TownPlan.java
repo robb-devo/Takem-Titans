@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import javax.annotation.Nullable;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Direction.Axis;
 import net.minecraft.world.level.block.AnvilBlock;
@@ -235,6 +236,10 @@ public final class TownPlan {
     }
 
     static TownPlan.Lot lotAt(int x, int z) {
+        if (ShiganshinaLayout.inArena((double)x + 0.5, (double)z + 0.5)) {
+            return null;
+        }
+
         int ax = x >= 0 ? x : -x;
         int side = x >= 0 ? 1 : -1;
         if (ax < 8) {
@@ -490,9 +495,17 @@ public final class TownPlan {
     public static void column(ColumnBuffer col) {
         int x = col.x;
         int z = col.z;
+        if (Landmarks.column(col)) {
+            return;
+        }
+
         TownPlan.Lot lot = lotAt(x, z);
         if (lot == null) {
             street(col);
+            TownPlan.Bridge over = bridgeAt(x, z, null);
+            if (over != null) {
+                bridge(col, over, x, z);
+            }
         } else {
             int lx = x - lot.x0;
             int lz = z - lot.z0;
@@ -511,6 +524,12 @@ public final class TownPlan {
             for (TownPlan.Building b : lot.buildings) {
                 if (b.contains(x, z)) {
                     building(col, b);
+                    TownPlan.Bridge door = bridgeAt(x, z, lot);
+                    if (door != null && door.door(x, z)) {
+                        col.set(BRIDGE_Y + 1, Blocks.AIR.defaultBlockState());
+                        col.set(BRIDGE_Y + 2, Blocks.AIR.defaultBlockState());
+                    }
+
                     return;
                 }
 
@@ -542,7 +561,144 @@ public final class TownPlan {
             if (ring != null) {
                 exterior(col, ring, x - ring.x0, z - ring.z0);
             }
+
+            TownPlan.Bridge over = bridgeAt(x, z, lot);
+            if (over != null && over.deck(x, z)) {
+                bridge(col, over, x, z);
+            }
         }
+    }
+
+    /** Floor of the walkways: the first-floor level inside the houses, so a walkway steps straight in. */
+    static final int BRIDGE_Y = 70;
+
+    /**
+     * The walkway touching this column, if any: one from its own lot (across an alley, or out of it), or one coming in
+     * from the lot to the west or the north, or one over the street from the lot just west or north of it.
+     */
+    @Nullable
+    static TownPlan.Bridge bridgeAt(int x, int z, @Nullable TownPlan.Lot here) {
+        TownPlan.Lot[] owners = here != null
+            ? new TownPlan.Lot[]{here, lotAt(x - 26, z), lotAt(x, z - 26)}
+            : new TownPlan.Lot[]{lotAt(x - 6, z), lotAt(x, z - 6)};
+
+        for (TownPlan.Lot l : owners) {
+            if (l != null) {
+                for (TownPlan.Bridge b : bridges(l)) {
+                    if (b.deck(x, z) || b.door(x, z)) {
+                        return b;
+                    }
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /** The walkways a lot owns: across alleys between its own houses, and over the side streets to its east and south. */
+    private static List<TownPlan.Bridge> bridges(TownPlan.Lot lot) {
+        List<TownPlan.Bridge> out = lot.bridges;
+        if (out == null) {
+            out = new ArrayList<>();
+            if (lot.kind == TownPlan.LotKind.HOUSES || lot.kind == TownPlan.LotKind.GARDEN) {
+                List<TownPlan.Building> bs = lot.buildings;
+
+                for (int i = 0; i < bs.size(); i++) {
+                    for (int j = i + 1; j < bs.size(); j++) {
+                        span(out, bs.get(i), bs.get(j), lot.seed * 31 + i * 7 + j, 0.6);
+                    }
+                }
+
+                TownPlan.Lot east = lotAt(lot.x0 + 36, lot.z0 + 10);
+                if (east != null && east.x0 == lot.x0 + 26 && east.z0 == lot.z0) {
+                    TownPlan.Building a = edge(lot, 1, true);
+                    TownPlan.Building b = edge(east, -1, true);
+                    if (a != null && b != null) {
+                        span(out, a, b, lot.seed * 17 + 3, 0.3);
+                    }
+                }
+
+                TownPlan.Lot south = lotAt(lot.x0 + 10, lot.z0 + 36);
+                if (south != null && south.z0 == lot.z0 + 26 && south.x0 == lot.x0) {
+                    TownPlan.Building a = edge(lot, 1, false);
+                    TownPlan.Building b = edge(south, -1, false);
+                    if (a != null && b != null) {
+                        span(out, a, b, lot.seed * 13 + 5, 0.3);
+                    }
+                }
+            }
+
+            lot.bridges = out;
+        }
+
+        return out;
+    }
+
+    /** The house standing furthest east (dir 1) or west (dir -1) on a lot - or south / north when not alongX. */
+    @Nullable
+    private static TownPlan.Building edge(TownPlan.Lot lot, int dir, boolean alongX) {
+        TownPlan.Building best = null;
+
+        for (TownPlan.Building b : lot.buildings) {
+            int key = alongX ? (dir > 0 ? b.x0 + b.w : -b.x0) : (dir > 0 ? b.z0 + b.d : -b.z0);
+            int bestKey = best == null ? Integer.MIN_VALUE : (alongX ? (dir > 0 ? best.x0 + best.w : -best.x0) : (dir > 0 ? best.z0 + best.d : -best.z0));
+            if (key > bestKey) {
+                best = b;
+            }
+        }
+
+        return best;
+    }
+
+    /** A walkway between two houses if they face each other across a gap of two to eight blocks and both have an upper floor. */
+    private static void span(List<TownPlan.Bridge> out, TownPlan.Building a, TownPlan.Building b, int seed, double chance) {
+        if (a.floors >= 2 && b.floors >= 2 && !(WorldNoise.rand(seed, 4, 0, 77) >= chance)) {
+            for (int axis = 0; axis < 2; axis++) {
+                boolean alongX = axis == 0;
+                TownPlan.Building lo = (alongX ? a.x0 < b.x0 : a.z0 < b.z0) ? a : b;
+                TownPlan.Building hi = lo == a ? b : a;
+                int end = alongX ? lo.x0 + lo.w : lo.z0 + lo.d;
+                int start = alongX ? hi.x0 : hi.z0;
+                int gap = start - end;
+                // the centre line keeps the three-wide deck clear of both houses' corners
+                int from = Math.max(alongX ? lo.z0 : lo.x0, alongX ? hi.z0 : hi.x0) + 2;
+                int to = Math.min(alongX ? lo.z0 + lo.d : lo.x0 + lo.w, alongX ? hi.z0 + hi.d : hi.x0 + hi.w) - 3;
+                if (gap >= 2 && gap <= 8 && to >= from) {
+                    out.add(new TownPlan.Bridge(alongX, end, start - 1, (from + to) / 2, lo.pal));
+                    return;
+                }
+            }
+        }
+    }
+
+    /**
+     * One column of a walkway: a plank floor with a timber beam and a railing along each side, and a lantern hung under
+     * the middle. It has no roof on purpose - an open span is light enough to carry itself, and only comes down when one
+     * of its houses does.
+     */
+    private static void bridge(ColumnBuffer col, TownPlan.Bridge br, int x, int z) {
+        if (br.deck(x, z)) {
+            int a = br.alongX ? x : z;
+            boolean side = (br.alongX ? z : x) != br.c;
+            Axis axis = br.alongX ? Axis.X : Axis.Z;
+            col.set(BRIDGE_Y, side ? log(br.pal.timber(), axis) : br.pal.floor());
+            col.set(BRIDGE_Y + 1, side ? railing(br.pal.timber(), br.alongX) : Blocks.AIR.defaultBlockState());
+            col.set(BRIDGE_Y + 2, Blocks.AIR.defaultBlockState());
+            if (!side && a == (br.a0 + br.a1) / 2) {
+                col.set(BRIDGE_Y - 1, Blocks.LANTERN.defaultBlockState().setValue(LanternBlock.HANGING, Boolean.valueOf(true)));
+            }
+        }
+    }
+
+    private static BlockState railing(Block timber, boolean alongX) {
+        String name = net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(timber).getPath();
+        Block fence = name.contains("dark_oak")
+            ? Blocks.DARK_OAK_FENCE
+            : (name.contains("spruce") ? Blocks.SPRUCE_FENCE : (name.contains("birch") ? Blocks.BIRCH_FENCE : Blocks.OAK_FENCE));
+        BlockState s = fence.defaultBlockState();
+        return alongX
+            ? s.setValue(CrossCollisionBlock.EAST, Boolean.valueOf(true)).setValue(CrossCollisionBlock.WEST, Boolean.valueOf(true))
+            : s.setValue(CrossCollisionBlock.NORTH, Boolean.valueOf(true)).setValue(CrossCollisionBlock.SOUTH, Boolean.valueOf(true));
     }
 
     /**
@@ -685,6 +841,26 @@ public final class TownPlan {
         double d = Math.sqrt(dx * dx + dz * dz);
         boolean ring = (int)d % 6 == 0;
         col.set(66, ring ? Blocks.STONE_BRICKS.defaultBlockState() : Blocks.POLISHED_ANDESITE.defaultBlockState());
+        if (lot.kind == TownPlan.LotKind.PLAZA && !lot.local && ShiganshinaLayout.districtOffset((double)z) == -1100 && d < 10.0) {
+            // Mitras: the royal fountain, a wide basin round a gilded obelisk
+            if (d >= 9.0) {
+                col.set(67, Blocks.POLISHED_DIORITE.defaultBlockState());
+            } else if (d < 1.6) {
+                col.fill(67, 88, Blocks.QUARTZ_PILLAR.defaultBlockState());
+                col.set(89, Blocks.GOLD_BLOCK.defaultBlockState());
+                if (d < 0.8) {
+                    col.fill(90, 92, Blocks.GOLD_BLOCK.defaultBlockState());
+                }
+            } else if (d < 2.6) {
+                col.fill(67, 69, Blocks.CHISELED_QUARTZ_BLOCK.defaultBlockState());
+            } else {
+                col.set(66, Blocks.WATER.defaultBlockState());
+                col.set(65, Blocks.QUARTZ_BRICKS.defaultBlockState());
+            }
+
+            return;
+        }
+
         if (lot.kind == TownPlan.LotKind.PLAZA && d < 5.5) {
             if (d >= 4.5) {
                 col.set(67, Blocks.STONE_BRICK_WALL.defaultBlockState());
@@ -1060,6 +1236,10 @@ public final class TownPlan {
         if (col.x == b.chimneyX && col.z == b.chimneyZ) {
             col.fill(top + 1, surface + 2, Blocks.BRICKS.defaultBlockState());
             col.set(surface + 3, Blocks.BRICK_SLAB.defaultBlockState());
+            // about a third of the hearths are lit: smoke rises through the cap and the town looks lived in
+            if (WorldNoise.rand(b.chimneyX, 5, b.chimneyZ, 31) < 0.35) {
+                col.set(surface + 2, Blocks.CAMPFIRE.defaultBlockState());
+            }
         }
     }
 
@@ -1132,6 +1312,36 @@ public final class TownPlan {
         }
     }
 
+    /** A walkway spanning [a0, a1] along one axis, three blocks wide around the centre line c across it. */
+    static final class Bridge {
+        final boolean alongX;
+        final int a0;
+        final int a1;
+        final int c;
+        final TownPlan.Palette pal;
+
+        Bridge(boolean alongX, int a0, int a1, int c, TownPlan.Palette pal) {
+            this.alongX = alongX;
+            this.a0 = a0;
+            this.a1 = a1;
+            this.c = c;
+            this.pal = pal;
+        }
+
+        boolean deck(int x, int z) {
+            int a = this.alongX ? x : z;
+            int k = this.alongX ? z : x;
+            return a >= this.a0 && a <= this.a1 && Math.abs(k - this.c) <= 1;
+        }
+
+        /** The doorway column in the wall of the house at either end. */
+        boolean door(int x, int z) {
+            int a = this.alongX ? x : z;
+            int k = this.alongX ? z : x;
+            return k == this.c && (a == this.a0 - 1 || a == this.a1 + 1);
+        }
+    }
+
     static final class Lot {
         final int x0;
         final int z0;
@@ -1139,6 +1349,8 @@ public final class TownPlan {
         final List<TownPlan.Building> buildings = new ArrayList<>();
         final int seed;
         boolean local;
+        /** Worked out on first use; deterministic, so two generator threads racing to fill it agree. */
+        volatile List<TownPlan.Bridge> bridges;
 
         Lot(int x0, int z0, TownPlan.LotKind kind, int seed) {
             this.x0 = x0;

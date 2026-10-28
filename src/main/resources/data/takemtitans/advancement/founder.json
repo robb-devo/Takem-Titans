@@ -1,0 +1,29 @@
+{
+  "display": {
+    "icon": {
+      "id": "takemtitans:founder_blades"
+    },
+    "title": {
+      "translate": "advancement.takemtitans.founder"
+    },
+    "description": {
+      "translate": "advancement.takemtitans.founder.desc"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true
+  },
+  "criteria": {
+    "blades": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "takemtitans:founder_blades"
+          }
+        ]
+      }
+    }
+  },
+  "parent": "takemtitans:godspeed"
+}

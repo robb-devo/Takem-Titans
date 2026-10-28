@@ -143,78 +143,31 @@
   },
   "titan.groan": {
     "sounds": [
-      {
-        "name": "minecraft:entity.zombie.ambient",
-        "type": "event",
-        "pitch": 0.62,
-        "volume": 0.85,
-        "weight": 2
-      },
-      {
-        "name": "minecraft:entity.ravager.ambient",
-        "type": "event",
-        "pitch": 0.75,
-        "volume": 0.8,
-        "weight": 2
-      },
-      {
-        "name": "minecraft:entity.polar_bear.ambient",
-        "type": "event",
-        "pitch": 0.55,
-        "volume": 0.8
-      }
+      "takemtitans:titan/groan1",
+      "takemtitans:titan/groan2",
+      "takemtitans:titan/groan3"
     ],
     "subtitle": "subtitles.takemtitans.titan.groan"
   },
   "titan.roar": {
     "sounds": [
-      {
-        "name": "minecraft:entity.ravager.roar",
-        "type": "event",
-        "pitch": 0.72,
-        "weight": 3
-      },
-      {
-        "name": "minecraft:entity.polar_bear.warning",
-        "type": "event",
-        "pitch": 0.55,
-        "volume": 0.9
-      }
+      "takemtitans:titan/roar1",
+      "takemtitans:titan/roar2",
+      "takemtitans:titan/roar3"
     ],
     "subtitle": "subtitles.takemtitans.titan.roar"
   },
   "titan.hurt": {
     "sounds": [
-      {
-        "name": "minecraft:entity.ravager.hurt",
-        "type": "event",
-        "pitch": 0.72,
-        "volume": 0.85,
-        "weight": 2
-      },
-      {
-        "name": "minecraft:entity.zombie.hurt",
-        "type": "event",
-        "pitch": 0.55,
-        "volume": 0.8
-      }
+      "takemtitans:titan/hurt1",
+      "takemtitans:titan/hurt2"
     ],
     "subtitle": "subtitles.takemtitans.titan.hurt"
   },
   "titan.death": {
     "sounds": [
-      {
-        "name": "minecraft:entity.ravager.death",
-        "type": "event",
-        "pitch": 0.62,
-        "weight": 2
-      },
-      {
-        "name": "minecraft:entity.zombie.death",
-        "type": "event",
-        "pitch": 0.5,
-        "volume": 0.9
-      }
+      "takemtitans:titan/death1",
+      "takemtitans:titan/death2"
     ],
     "subtitle": "subtitles.takemtitans.titan.death"
   },
@@ -270,19 +223,8 @@
   },
   "titan.abnormal_screech": {
     "sounds": [
-      {
-        "name": "minecraft:entity.ravager.celebrate",
-        "type": "event",
-        "pitch": 0.85,
-        "volume": 0.85,
-        "weight": 2
-      },
-      {
-        "name": "minecraft:entity.zoglin.angry",
-        "type": "event",
-        "pitch": 0.7,
-        "volume": 0.8
-      }
+      "takemtitans:titan/screech1",
+      "takemtitans:titan/screech2"
     ],
     "subtitle": "subtitles.takemtitans.titan.abnormal_screech"
   },
@@ -562,15 +504,12 @@
   "titan.beast_roar": {
     "sounds": [
       {
-        "name": "minecraft:entity.polar_bear.warning",
-        "type": "event",
-        "pitch": 0.5,
-        "weight": 2
+        "name": "takemtitans:titan/roar2",
+        "pitch": 0.82
       },
       {
-        "name": "minecraft:entity.ravager.roar",
-        "type": "event",
-        "pitch": 0.55
+        "name": "takemtitans:titan/roar1",
+        "pitch": 0.82
       }
     ],
     "subtitle": "subtitles.takemtitans.titan.beast_roar"
@@ -791,5 +730,18 @@
       }
     ],
     "subtitle": "subtitles.takemtitans.cannon.reload"
+  },
+  "titan.female_scream": {
+    "sounds": [
+      "takemtitans:titan/female_scream1"
+    ],
+    "subtitle": "subtitles.takemtitans.titan.female_scream"
+  },
+  "titan.ghoul_shriek": {
+    "sounds": [
+      "takemtitans:titan/ghoul_shriek1",
+      "takemtitans:titan/ghoul_shriek2"
+    ],
+    "subtitle": "subtitles.takemtitans.titan.ghoul_shriek"
   }
 }

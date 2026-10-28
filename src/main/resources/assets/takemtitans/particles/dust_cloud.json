@@ -1,8 +1,12 @@
 {
   "textures": [
-    "takemtitans:steam_0",
-    "takemtitans:steam_1",
-    "takemtitans:steam_2",
-    "takemtitans:steam_3"
+    "takemtitans:dust_0",
+    "takemtitans:dust_1",
+    "takemtitans:dust_2",
+    "takemtitans:dust_3",
+    "takemtitans:dust_4",
+    "takemtitans:dust_5",
+    "takemtitans:dust_6",
+    "takemtitans:dust_7"
   ]
 }

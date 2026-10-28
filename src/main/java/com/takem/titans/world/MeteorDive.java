@@ -126,14 +126,17 @@ public final class MeteorDive {
         int shockRank = Skills.rank(player, Skill.SHOCKWAVE);
         double demo = Skills.demolition(player);
         double R = radius(e, extinction);
-        double craterR = Math.min(Math.max(2.5, R * 0.5 * demo), extinction ? 64.0 : 48.0);
+        // no ceiling: past 48 blocks the crater keeps growing with the height of the fall, only a little slower, so a dive
+        // from a thousand blocks leaves a far bigger hole than one from three hundred and five thousand a bigger one still
+        double natural = Math.max(2.5, R * 0.5 * demo);
+        double craterR = natural <= 48.0 ? natural : 48.0 + Math.pow(natural - 48.0, 0.8);
         double ringMax = R * (1.45 + 0.35 * (double)shockRank);
         float k = (float)Math.min(6.0, e / 35.0);
         Vec3 c = at;
         boolean red = OdmServer.isRed(player, d);
         d.immuneTicks = Math.max(d.immuneTicks, 70 + (int)Math.min(80.0, e));
         d.diveGrace = Math.max(d.diveGrace, 40);
-        Fx.send(level, 25, c.x, c.y + 0.1, c.z, (float)Math.min(R, 160.0), k, red ? 1.0F : 0.0F, 0.0F, 400.0 + R * 3.0);
+        Fx.send(level, 25, c.x, c.y + 0.1, c.z, (float)Math.min(R, 420.0), k, red ? 1.0F : 0.0F, 0.0F, 400.0 + R * 3.0);
         if (e >= 40.0) {
             Fx.send(level, 26, c.x, c.y + 0.1, c.z, (float)R, (float)e, extinction ? 1.0F : 0.0F, red ? 1.0F : 0.0F, 600.0 + R * 4.0);
         }
@@ -162,7 +165,7 @@ public final class MeteorDive {
         }
 
         if (e > 60.0) {
-            for (int i = 0; i < Math.min(24, (int)(e / 20.0)); i++) {
+            for (int i = 0; i < Math.min(48, (int)(e / 20.0)); i++) {
                 LightningBolt bolt = EntityType.LIGHTNING_BOLT.create(level);
                 if (bolt != null) {
                     double a = rnd.nextDouble() * 3.141592653589793 * 2.0;
@@ -318,8 +321,9 @@ public final class MeteorDive {
         boolean step() {
             this.age++;
             if (this.blocks && this.carved < this.craterR) {
-                double height = 1.5 + this.craterR * 0.87 + Math.min(30.0, this.e * 0.15);
-                double step = Mth.clamp(16000.0 / (6.283185307179586 * Math.max(4.0, this.carved + 2.0) * height), 1.0, 4.0);
+                double height = 1.5 + Math.min(this.craterR * 0.32, 30.0) + Math.min(80.0, this.craterR * 0.55 + Math.min(30.0, this.e * 0.15));
+                // a big crater opens over seconds, ring by ring, so the server keeps up and you watch it grow
+                double step = Mth.clamp(16000.0 / (6.283185307179586 * Math.max(4.0, this.carved + 2.0) * height), 0.25, 4.0);
                 double next = Math.min(this.craterR, this.carved + step);
                 this.carve(this.carved, next);
                 this.carved = next;
@@ -455,8 +459,8 @@ public final class MeteorDive {
         private void carve(double r0, double r1) {
             RandomSource rnd = this.level.random;
             float rubble = TakemConfig.RUBBLE_CHANCE.get().floatValue();
-            double depth = 1.5 + this.craterR * 0.32;
-            double dome = this.craterR * 0.55 + Math.min(30.0, this.e * 0.15);
+            double depth = 1.5 + Math.min(this.craterR * 0.32, 30.0);
+            double dome = Math.min(80.0, this.craterR * 0.55 + Math.min(30.0, this.e * 0.15));
             boolean molten = this.e >= 70.0;
             int r = (int)Math.ceil(r1);
             int cx = Mth.floor(this.c.x);
@@ -521,7 +525,7 @@ public final class MeteorDive {
                             if (molten && rnd.nextFloat() < 0.12F && TakemConfig.DESTRUCTION_FIRES.get()) {
                                 m.move(0, 1, 0);
                                 if (this.level.getBlockState(m).isAir()) {
-                                    this.level.setBlock(m, BaseFireBlock.getState(this.level, m), 3);
+                                    Destruction.flame(this.level, m);
                                     Rebuild.mark(this.level, m);
                                 }
                             }

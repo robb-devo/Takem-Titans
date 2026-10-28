@@ -134,7 +134,7 @@ public final class RemoteHooks {
             case FLYING:
                 h.pos = h.pos.add(h.vel);
                 h.traveled = h.traveled + h.vel.length();
-                if (h.traveled > OdmGear.hookRange() + 4.0) {
+                if (h.traveled > OdmGear.hookRange() * 1.25 + 4.0) {
                     h.phase = HookState.Phase.RETRACTING;
                 }
                 break;

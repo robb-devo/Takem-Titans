@@ -490,7 +490,7 @@ public final class EpicFx {
         WorldFx.add(new WorldFx.Fireball(at.add(0.0, (double)R * 0.4, 0.0), R * 0.85F, 8, (int)Math.min(260.0F, 120.0F + e * 0.2F)));
         WorldFx.add(new WorldFx.Pillar(at, 2.0F + k * 2.0F, 40.0F + R * 3.5F, 22 + (int)(k * 4.0F)));
         if (extinction || k > 1.2F) {
-            ColossalFx.handle(level, new FxPayload(10, at.x, at.y, at.z, Math.min(R * 0.55F, 90.0F), 0.0F, 0.0F, 0.0F), at);
+            ColossalFx.handle(level, new FxPayload(10, at.x, at.y, at.z, Math.min(R * 0.55F, 220.0F), 0.0F, 0.0F, 0.0F), at);
         }
 
         if (k > 2.5F) {
@@ -562,51 +562,12 @@ public final class EpicFx {
     }
 
     private static void dustSurge(ClientLevel level, Vec3 at, float R, float h, RandomSource rnd) {
-        WorldFx.add(new WorldFx.ShockRing(at.add(0.0, 0.5, 0.0), R, 60, 3.0F, h, 12103068, 0.35F));
-        int n = Mth.clamp((int)(R * 2.0F), 24, 80);
-
-        for (int i = 0; i < n; i++) {
-            double a = rnd.nextDouble() * 6.2831854820251465;
-            double sp = (double)R / 70.0 * (0.6 + rnd.nextDouble() * 0.6);
-            Particle p = ClientFx.spawn(
-                level,
-                ModParticles.DUST_CLOUD.get(),
-                at.x + Math.cos(a) * 3.0,
-                at.y + rnd.nextDouble() * (double)h * 0.6,
-                at.z + Math.sin(a) * 3.0,
-                Math.cos(a) * sp,
-                0.01,
-                Math.sin(a) * sp,
-                3.0F + rnd.nextFloat() * 2.5F
-            );
-            if (p != null) {
-                p.setLifetime(40 + rnd.nextInt(40));
-            }
-        }
+        // a rolling wall of dust along the ground, not a glowing ring
+        DebrisFx.dustSurge(level, at, R, h);
     }
 
     private static void glass(ClientLevel level, Vec3 at, float R, RandomSource rnd) {
-        BlockParticleOption shards = new BlockParticleOption(ParticleTypes.BLOCK, Blocks.GLASS.defaultBlockState());
-
-        for (int i = 0; i < 24; i++) {
-            Vec3 d = ClientFx.randomDir(rnd);
-            level.addAlwaysVisibleParticle(
-                shards, at.x + d.x * (double)R * 0.5, at.y + d.y * (double)R * 0.5, at.z + d.z * (double)R * 0.5, d.x * 0.6, d.y * 0.4 + 0.1, d.z * 0.6
-            );
-        }
-
-        for (int i = 0; i < 10; i++) {
-            Vec3 d = ClientFx.randomDir(rnd);
-            level.addAlwaysVisibleParticle(
-                ParticleTypes.END_ROD,
-                at.x + d.x * (double)R * 0.5,
-                at.y + d.y * (double)R * 0.5,
-                at.z + d.z * (double)R * 0.5,
-                d.x * 0.1,
-                d.y * 0.1,
-                d.z * 0.1
-            );
-        }
+        DebrisFx.glass(level, at, R);
     }
 
     static final class Implode extends WorldFx.Effect {

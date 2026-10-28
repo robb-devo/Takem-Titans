@@ -16,6 +16,10 @@ public final class ModDataComponents {
     public static final DeferredHolder<DataComponentType<?>, DataComponentType<Integer>> SPARE_BLADES = COMPONENTS.registerComponentType(
         "spare_blades", b -> b.persistent(Codec.INT).networkSynchronized(ByteBufCodecs.VAR_INT)
     );
+    /** Gear mods fitted to an ODM rig, one bit per {@link com.takem.titans.item.GearMod}. */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<Integer>> GEAR_MODS = COMPONENTS.registerComponentType(
+        "gear_mods", b -> b.persistent(Codec.INT).networkSynchronized(ByteBufCodecs.VAR_INT)
+    );
     public static final DeferredHolder<DataComponentType<?>, DataComponentType<Integer>> FLARE_COLOR = COMPONENTS.registerComponentType(
         "flare_color", b -> b.persistent(Codec.INT).networkSynchronized(ByteBufCodecs.VAR_INT)
     );

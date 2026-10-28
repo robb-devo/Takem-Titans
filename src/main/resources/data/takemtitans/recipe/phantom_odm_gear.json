@@ -1,0 +1,26 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    "PEP",
+    "SAS"
+  ],
+  "key": {
+    "P": {
+      "item": "minecraft:phantom_membrane"
+    },
+    "E": {
+      "item": "minecraft:ender_eye"
+    },
+    "S": {
+      "item": "takemtitans:ultrahard_steel_ingot"
+    },
+    "A": {
+      "item": "takemtitans:advanced_odm_gear"
+    }
+  },
+  "result": {
+    "id": "takemtitans:phantom_odm_gear",
+    "count": 1
+  }
+}

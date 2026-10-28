@@ -776,7 +776,26 @@ public final class TunnelDungeon {
         return built(level) && !(p.y > 64.0) && !(Math.hypot(p.x - 304.0, p.z - -1103.0) > 260.0) ? layout(level).inside(p, 2.0) : false;
     }
 
+    private static final java.util.Set<java.util.UUID> BELOW = new java.util.HashSet<>();
+
     public static void tickPlayer(ServerLevel level, ServerPlayer player, boolean story) {
+        if (player.tickCount % 20 == 3) {
+            // the air turns thick and rust-dark once you are down in the tunnels
+            boolean below = inTunnels(level, player.position());
+            if (below != BELOW.contains(player.getUUID())) {
+                if (below) {
+                    BELOW.add(player.getUUID());
+                } else {
+                    BELOW.remove(player.getUUID());
+                }
+
+                net.minecraft.nbt.CompoundTag tag = new net.minecraft.nbt.CompoundTag();
+                tag.putString("t", "tunnelfog");
+                tag.putBoolean("on", below);
+                net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(player, new com.takem.titans.network.StoryPayload(tag));
+            }
+        }
+
         if (level.getGameTime() % 170L == (long)player.getId() % 170L && inTunnels(level, player.position())) {
             player.playNotifySound(ModSounds.TUNNEL_AMBIENCE.get(), SoundSource.AMBIENT, 0.7F, 0.9F + level.random.nextFloat() * 0.2F);
         }
@@ -806,9 +825,10 @@ public final class TunnelDungeon {
     @Nullable
     static AbstractTitan spawnIn(ServerLevel level, TunnelDungeon.Room room, RandomSource r) {
         boolean big = room.h >= 16.0 && r.nextInt(3) != 0;
+        // the small rooms are where the ghouls nest
         EntityType<? extends AbstractTitan> type = big
             ? (r.nextInt(3) == 0 ? ModEntities.ABNORMAL_TITAN.get() : ModEntities.PURE_TITAN.get())
-            : ModEntities.CRAWLER_TITAN.get();
+            : (r.nextBoolean() ? ModEntities.GHOUL_TITAN.get() : ModEntities.CRAWLER_TITAN.get());
         double a = r.nextDouble() * 3.141592653589793 * 2.0;
         double d = r.nextDouble() * room.r * 0.4;
         int x = Mth.floor(room.x + Math.cos(a) * d);
@@ -819,6 +839,8 @@ public final class TunnelDungeon {
         } else {
             AbstractTitan t = TitanSpawner.spawnAt(level, type, (double)x + 0.5, (double)fy.intValue(), (double)z + 0.5, r.nextFloat() * 360.0F);
             if (t != null) {
+                // there is no night down here to sleep through
+                t.addTag(NightMission.AWAKE);
                 if (big) {
                     t.setTitanHeight((float)Math.min((double)t.getTitanHeight(), Math.max(7.0, room.h * 0.62)));
                 }

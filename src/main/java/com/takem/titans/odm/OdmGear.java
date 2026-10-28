@@ -43,6 +43,48 @@ public final class OdmGear {
         }
     }
 
+    public static int mods(ItemStack gear) {
+        Integer m = gear.get(ModDataComponents.GEAR_MODS.get());
+        return m == null ? 0 : m;
+    }
+
+    public static boolean hasMod(ItemStack gear, com.takem.titans.item.GearMod mod) {
+        return (mods(gear) & mod.bit()) != 0;
+    }
+
+    public static boolean hasMod(Player player, com.takem.titans.item.GearMod mod) {
+        return hasMod(getGear(player), mod);
+    }
+
+    /** Fits a mod; with every slot full the lowest one comes out and is returned. */
+    @javax.annotation.Nullable
+    public static com.takem.titans.item.GearMod fitMod(ItemStack gear, com.takem.titans.item.GearMod mod) {
+        int m = mods(gear);
+        com.takem.titans.item.GearMod removed = null;
+        if (Integer.bitCount(m) >= com.takem.titans.item.GearMod.slots(tier(gear))) {
+            for (com.takem.titans.item.GearMod g : com.takem.titans.item.GearMod.values()) {
+                if ((m & g.bit()) != 0) {
+                    removed = g;
+                    m &= ~g.bit();
+                    break;
+                }
+            }
+        }
+
+        gear.set(ModDataComponents.GEAR_MODS.get(), m | mod.bit());
+        return removed;
+    }
+
+    /** Gas cost after the gas recycler, if one is fitted. */
+    public static double gasCost(ItemStack gear, double base) {
+        return hasMod(gear, com.takem.titans.item.GearMod.RECYCLER) ? base * 0.7 : base;
+    }
+
+    /** How far this player's hooks reach: the configured range, a quarter more with long cables. */
+    public static double hookRange(Player player) {
+        return hookRange() * (hasMod(player, com.takem.titans.item.GearMod.LONG_HOOKS) ? 1.25 : 1.0);
+    }
+
     public static double hookRange() {
         try {
             return TakemConfig.HOOK_RANGE.get();

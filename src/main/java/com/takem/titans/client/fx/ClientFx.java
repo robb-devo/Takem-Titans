@@ -4,6 +4,7 @@ import com.takem.titans.entity.FallingSectionEntity;
 import com.takem.titans.network.FxPayload;
 import com.takem.titans.network.SectionDetachPayload;
 import com.takem.titans.registry.ModParticles;
+import javax.annotation.Nullable;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -13,6 +14,7 @@ import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
@@ -32,26 +34,69 @@ public final class ClientFx {
             Vec3 at = new Vec3(msg.x(), msg.y(), msg.z());
             switch (msg.kind()) {
                 case 0:
-                    dustPlume(level, at, msg.a(), msg.b());
+                    dustPlume(level, at, msg.a(), msg.b(), DebrisFx.stateOf(msg.c()));
                     break;
                 case 1:
-                    float size = msg.a();
-                    dustPlume(level, at, size * 0.9F + 3.0F, 2.2F);
-                    WorldFx.add(new WorldFx.ShockRing(at.add(0.0, 0.3, 0.0), size * 1.6F + 6.0F, 18, 1.2F, 0.0F, 12103068, 0.35F));
-
-                    for (int i = 0; (float)i < Math.min(40.0F, 8.0F + size * 2.0F); i++) {
-                        spawn(
-                            level,
-                            ModParticles.DUST_CLOUD.get(),
-                            at.x + (rnd.nextDouble() - 0.5) * (double)size,
-                            at.y + rnd.nextDouble() * (double)size * 0.5,
-                            at.z + (rnd.nextDouble() - 0.5) * (double)size,
-                            (rnd.nextDouble() - 0.5) * 0.1,
-                            0.05 + rnd.nextDouble() * 0.15,
-                            (rnd.nextDouble() - 0.5) * 0.1,
-                            1.0F + rnd.nextFloat() * 1.5F
-                        );
-                    }
+                    DebrisFx.collapse(level, at, msg.a(), msg.b(), null, (int)(msg.a() * 12.0F));
+                    break;
+                case 30:
+                    // a falling piece of building lands: a = diameter, b = impact speed, c = material, d = blocks
+                    DebrisFx.collapse(level, at, msg.a(), msg.b(), DebrisFx.stateOf(msg.c()), (int)msg.d());
+                    break;
+                case 31:
+                    // a = fragments, b = burst speed (0 = trickle), c = material, d = source width
+                    DebrisFx.crumble(level, at, DebrisFx.stateOf(msg.c()), (int)msg.a(), msg.b(), msg.d());
+                    break;
+                case 32:
+                    HyperFx.phase(level, at, (int)msg.a(), (int)msg.b());
+                    break;
+                case 33:
+                    HyperFx.jump(level, at, new Vec3((double)msg.a(), (double)msg.b(), (double)msg.c()), (int)msg.d());
+                    break;
+                case 35:
+                    TravelFx.charge(level, at, (int)msg.a(), (int)msg.b());
+                    break;
+                case 36:
+                    TravelFx.out(level, at, (int)msg.d());
+                    break;
+                case 37:
+                    TravelFx.arrive(level, at, (int)msg.a());
+                    break;
+                case 38:
+                    TravelFx.wake(level, at);
+                    break;
+                case 39:
+                    BossFx.scream(level, at, msg.a());
+                    break;
+                case 42:
+                    BossFx.crystal(level, at, msg.a());
+                    break;
+                case 43:
+                    BossFx.harden(level, at, msg.a() > 0.5F);
+                    break;
+                case 44:
+                    BossFx.muzzle(level, at, new Vec3((double)msg.a(), (double)msg.b(), (double)msg.c()));
+                    break;
+                case 45:
+                    BossFx.forge(level, at);
+                    break;
+                case 46:
+                    RendFx.rend(level, at, new Vec3((double)msg.a(), (double)msg.b(), (double)msg.c()), msg.d());
+                    break;
+                case 47:
+                    RendFx.thread(level, at, new Vec3((double)msg.a(), (double)msg.b(), (double)msg.c()));
+                    break;
+                case 48:
+                    RendFx.snap(level, at);
+                    break;
+                case 49:
+                    GoreFx.sinew(level, (int)msg.a(), (int)msg.b(), (int)msg.c(), msg.d());
+                    break;
+                case 50:
+                    BuildFx.placed(level, at, (int)msg.a());
+                    break;
+                case 34:
+                    SeverFx.nova(level, at, (int)msg.a());
                     break;
                 case 2:
                     int life = Math.max(6, (int)(msg.a() / Math.max(0.5F, msg.b())));
@@ -263,15 +308,20 @@ public final class ClientFx {
     }
 
     public static void dustPlume(ClientLevel level, Vec3 at, float radius, float thickness) {
+        dustPlume(level, at, radius, thickness, null);
+    }
+
+    /** A burst of dust, tinted by what it came from ({@code mat} null: plain mortar dust). */
+    public static void dustPlume(ClientLevel level, Vec3 at, float radius, float thickness, @Nullable BlockState mat) {
         RandomSource rnd = level.random;
-        int n = Mth.clamp((int)(6.0F + radius * 3.0F * thickness), 6, 110);
+        float[] rgb = DebrisFx.dustColour(mat);
+        int n = Mth.clamp((int)(4.0F + radius * 1.8F * thickness), 4, 66);
 
         for (int i = 0; i < n; i++) {
             double ang = rnd.nextDouble() * 6.2831854820251465;
             double d = Math.sqrt(rnd.nextDouble()) * (double)radius * 0.6;
             double sp = 0.04 + rnd.nextDouble() * 0.1 * (0.5 + (double)radius / 8.0);
-            spawn(
-                level,
+            DebrisFx.dust(
                 ModParticles.DUST_CLOUD.get(),
                 at.x + Math.cos(ang) * d,
                 at.y + rnd.nextDouble() * (double)radius * 0.25,
@@ -279,7 +329,8 @@ public final class ClientFx {
                 Math.cos(ang) * sp,
                 0.01 + rnd.nextDouble() * 0.04,
                 Math.sin(ang) * sp,
-                Mth.clamp(radius / 5.0F, 0.6F, 2.2F) * (0.7F + rnd.nextFloat() * 0.6F)
+                Mth.clamp(radius / 5.0F, 0.6F, 2.2F) * (0.7F + rnd.nextFloat() * 0.6F),
+                rgb
             );
         }
     }
@@ -373,7 +424,7 @@ public final class ClientFx {
         }
     }
 
-    static Vec3 randomDir(RandomSource rnd) {
+    public static Vec3 randomDir(RandomSource rnd) {
         double u = rnd.nextDouble() * 2.0 - 1.0;
         double a = rnd.nextDouble() * 6.2831854820251465;
         double s = Math.sqrt(1.0 - u * u);

@@ -21,9 +21,13 @@ import com.takem.titans.entity.npc.TownsfolkEntity;
 import com.takem.titans.entity.titan.AbnormalTitan;
 import com.takem.titans.entity.titan.AbstractTitan;
 import com.takem.titans.entity.titan.ArmoredTitan;
+import com.takem.titans.entity.titan.CartTitan;
+import com.takem.titans.entity.titan.FemaleTitan;
+import com.takem.titans.entity.titan.WarHammerTitan;
 import com.takem.titans.entity.titan.BeastTitan;
 import com.takem.titans.entity.titan.ColossalTitan;
 import com.takem.titans.entity.titan.CrawlerTitan;
+import com.takem.titans.entity.titan.GhoulTitan;
 import com.takem.titans.entity.titan.JawTitan;
 import com.takem.titans.entity.titan.PureTitan;
 import com.takem.titans.entity.titan.RavagerTitan;
@@ -56,6 +60,15 @@ public final class ModEntities {
                 .clientTrackingRange(16)
                 .updateInterval(2)
                 .build("abnormal_titan")
+    );
+    public static final DeferredHolder<EntityType<?>, EntityType<GhoulTitan>> GHOUL_TITAN = ENTITIES.register(
+        "ghoul_titan",
+        () -> Builder.of(GhoulTitan::new, MobCategory.MONSTER)
+                .sized(2.4F, 2.0F)
+                .eyeHeight(1.6F)
+                .clientTrackingRange(16)
+                .updateInterval(1)
+                .build("ghoul_titan")
     );
     public static final DeferredHolder<EntityType<?>, EntityType<CrawlerTitan>> CRAWLER_TITAN = ENTITIES.register(
         "crawler_titan",
@@ -95,6 +108,36 @@ public final class ModEntities {
                 .clientTrackingRange(20)
                 .updateInterval(2)
                 .build("armored_titan")
+    );
+    public static final DeferredHolder<EntityType<?>, EntityType<FemaleTitan>> FEMALE_TITAN = ENTITIES.register(
+        "female_titan",
+        () -> Builder.of(FemaleTitan::new, MobCategory.MONSTER)
+                .sized(2.0F, 8.0F)
+                .eyeHeight(7.2F)
+                .fireImmune()
+                .clientTrackingRange(20)
+                .updateInterval(2)
+                .build("female_titan")
+    );
+    public static final DeferredHolder<EntityType<?>, EntityType<WarHammerTitan>> WAR_HAMMER_TITAN = ENTITIES.register(
+        "war_hammer_titan",
+        () -> Builder.of(WarHammerTitan::new, MobCategory.MONSTER)
+                .sized(2.0F, 8.0F)
+                .eyeHeight(7.2F)
+                .fireImmune()
+                .clientTrackingRange(20)
+                .updateInterval(2)
+                .build("war_hammer_titan")
+    );
+    public static final DeferredHolder<EntityType<?>, EntityType<CartTitan>> CART_TITAN = ENTITIES.register(
+        "cart_titan",
+        () -> Builder.of(CartTitan::new, MobCategory.MONSTER)
+                .sized(2.0F, 8.0F)
+                .eyeHeight(7.2F)
+                .fireImmune()
+                .clientTrackingRange(20)
+                .updateInterval(2)
+                .build("cart_titan")
     );
     public static final DeferredHolder<EntityType<?>, EntityType<BeastTitan>> BEAST_TITAN = ENTITIES.register(
         "beast_titan",
@@ -283,6 +326,10 @@ public final class ModEntities {
         event.put(COLOSSAL_TITAN.get(), ColossalTitan.createColossalAttributes().build());
         event.put(RUMBLING_TITAN.get(), ColossalTitan.createColossalAttributes().build());
         event.put(ARMORED_TITAN.get(), AbstractTitan.createTitanAttributes().build());
+        event.put(GHOUL_TITAN.get(), AbstractTitan.createTitanAttributes().build());
+        event.put(FEMALE_TITAN.get(), AbstractTitan.createTitanAttributes().build());
+        event.put(WAR_HAMMER_TITAN.get(), AbstractTitan.createTitanAttributes().build());
+        event.put(CART_TITAN.get(), AbstractTitan.createTitanAttributes().build());
         event.put(BEAST_TITAN.get(), AbstractTitan.createTitanAttributes().build());
         event.put(TOWNSFOLK.get(), TownsfolkEntity.createAttributes().build());
         event.put(RAVAGER_TITAN.get(), AbstractTitan.createTitanAttributes().build());

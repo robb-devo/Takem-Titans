@@ -1,11 +1,13 @@
 #version 150
 
 // In-game screen effects. Fx.x Ackerman Overdrive, Fx.y Meteor Dive heat, Fx.z tunnel gloom, Fx.w low health.
+// Warp.x hyperspace jump, Warp.y phase dash.
 
 uniform float Time;
 uniform float Aspect;
 uniform vec4 Fx;
 uniform vec2 Blood;
+uniform vec2 Warp;
 
 in vec2 texCoord;
 out vec4 fragColor;
@@ -78,6 +80,29 @@ void main() {
             cover = max(cover, drip);
         }
         over(vec3(0.42, 0.0, 0.02) * (0.7 + 0.3 * noise(uv * 40.0)), cover * 0.88 * Blood.x);
+    }
+
+    if (Warp.y > 0.001) {
+        // phase dash: a cold shimmer creeping in from the edge of the view
+        float sh = noise(uv * vec2(Aspect, 1.0) * 14.0 + vec2(Time * 3.0, -Time * 2.0));
+        over(vec3(0.6, 0.92, 1.0), smoothstep(0.45, 1.1, r + (sh - 0.5) * 0.18) * 0.55 * Warp.y);
+    }
+
+    if (Warp.x > 0.001) {
+        // hyperspace: star streaks racing out from the centre on their own lanes, the rim burning violet
+        float a = atan(p.y, p.x) / 6.2831853 + 0.5;
+        float lanes = 110.0;
+        float lane = floor(a * lanes);
+        float h = hash(vec2(lane, 7.0));
+        float within = abs(fract(a * lanes) - 0.5) * 2.0;
+        float head = fract(h * 5.3 + Time * (0.9 + 1.8 * h));
+        float len = 0.12 + 0.3 * h;
+        float rr = r * 1.35;
+        float along = smoothstep(head - len, head, rr) * (1.0 - step(head, rr));
+        float line = (1.0 - smoothstep(0.05, 0.45, within)) * along * step(0.45, h);
+        over(mix(vec3(0.72, 0.45, 1.0), vec3(1.0), h), line * Warp.x * smoothstep(0.05, 0.3, r));
+        over(vec3(0.3, 0.04, 0.5), smoothstep(0.3, 1.1, r) * 0.7 * Warp.x);
+        over(vec3(1.0, 0.92, 1.0), (1.0 - smoothstep(0.0, 0.22, r)) * 0.35 * Warp.x * Warp.x);
     }
 
     fragColor = acc.a > 0.0001 ? vec4(acc.rgb, acc.a) : vec4(0.0);

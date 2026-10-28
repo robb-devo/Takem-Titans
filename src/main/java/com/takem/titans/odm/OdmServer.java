@@ -95,7 +95,7 @@ public final class OdmServer {
                     }
 
                     if (!freeGas(player, var10)) {
-                        OdmGear.setGas(gear, OdmGear.getGas(gear) - 6);
+                        OdmGear.setGas(gear, OdmGear.getGas(gear) - (int)Math.round(OdmGear.gasCost(gear, 6.0)));
                     }
 
                     h.reset();
@@ -126,7 +126,7 @@ public final class OdmServer {
                         player.stopRiding();
                     }
 
-                    double range = OdmGear.hookRange() + 12.0;
+                    double range = OdmGear.hookRange(player) + 12.0;
                     if (msg.pos().distanceToSqr(player.getEyePosition()) > range * range) {
                         return;
                     }
@@ -143,6 +143,17 @@ public final class OdmServer {
                     Entity target = h.entityId >= 0 ? player.level().getEntity(h.entityId) : null;
                     if (target != null && Grapple.grabbable(target)) {
                         Grapple.onAttach(player, h, target);
+                    }
+
+                    if (target instanceof AbstractTitan titan && OdmGear.hasMod(gear, com.takem.titans.item.GearMod.BARBS) && player.level() instanceof ServerLevel sl) {
+                        // barbed heads bite in and tear: a little damage and a titan that drags its feet
+                        TitanPart[] parts = titan.getTitanParts();
+                        if (h.partIndex >= 0 && h.partIndex < parts.length) {
+                            parts[h.partIndex].hurt(sl.damageSources().playerAttack(player), 8.0F);
+                        }
+
+                        titan.addEffect(new net.minecraft.world.effect.MobEffectInstance(net.minecraft.world.effect.MobEffects.MOVEMENT_SLOWDOWN, 80, 1));
+                        sl.sendParticles(ModParticles.BLOOD.get(), msg.pos().x, msg.pos().y, msg.pos().z, 10, 0.2, 0.2, 0.2, 0.15);
                     }
 
                     Training.on(player, Training.HOOK);
@@ -219,10 +230,13 @@ public final class OdmServer {
                     }
 
                     if (!freeGas(player, var10)) {
-                        OdmGear.setGas(gear, OdmGear.getGas(gear) - (int)Math.round(50.0 * Skills.gasMul(player)));
+                        OdmGear.setGas(gear, OdmGear.getGas(gear) - (int)Math.round(OdmGear.gasCost(gear, 50.0 * Skills.gasMul(player))));
                     }
 
                     var10.dashCooldown = Skills.dashCooldown(player, var10.overdrive() ? 8 : 16) - 2;
+                    if (OdmGear.hasMod(gear, com.takem.titans.item.GearMod.TWIN_CHAMBER)) {
+                        var10.dashCooldown = Math.max(1, var10.dashCooldown * 2 / 3);
+                    }
                     var10.ticksSinceOdmUse = 0;
                     if (Skills.has(player, Skill.STORM_DASH)) {
                         Boom.Spec storm = new Boom.Spec().radius(5.0).damage(8.0F, 25.0F).fx(-1, 0.0F, 0.0F).owner(player, player);
@@ -386,6 +400,23 @@ public final class OdmServer {
                 case 20:
                     if (player.getVehicle() instanceof CannonEntity cannon) {
                         cannon.tryFire(player);
+                    }
+                    break;
+                case 21:
+                    Hyperspace.phase(player, var10);
+                    break;
+                case 22:
+                    Hyperspace.jump(player, var10);
+                    break;
+                case 23:
+                    com.takem.titans.item.FounderEdge.sever(player, var10);
+                    break;
+                case 24:
+                    com.takem.titans.world.Waystones.travel(player, var10, msg.value());
+                    break;
+                case 25:
+                    if (player.getVehicle() instanceof com.takem.titans.entity.ScoutHorseEntity horse) {
+                        horse.sidestep(player, Integer.signum(msg.value()));
                     }
             }
         }
@@ -686,6 +717,14 @@ public final class OdmServer {
                 var10.boomCooldown--;
             }
 
+            if (var10.warpCooldown > 0) {
+                var10.warpCooldown--;
+            }
+
+            if (var10.severCooldown > 0) {
+                var10.severCooldown--;
+            }
+
             if (var10.diveGrace > 0) {
                 var10.diveGrace--;
             }
@@ -745,7 +784,7 @@ public final class OdmServer {
                 }
 
                 if (use > 0.0 && !freeGas(player, var10)) {
-                    var10.pendingGas = var10.pendingGas + use * Skills.gasMul(player);
+                    var10.pendingGas = var10.pendingGas + OdmGear.gasCost(gear, use * Skills.gasMul(player));
                     int whole = (int)var10.pendingGas;
                     if (whole > 0) {
                         var10.pendingGas -= (double)whole;

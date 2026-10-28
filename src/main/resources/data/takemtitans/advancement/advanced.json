@@ -1,0 +1,29 @@
+{
+  "display": {
+    "icon": {
+      "id": "takemtitans:advanced_odm_gear"
+    },
+    "title": {
+      "translate": "advancement.takemtitans.advanced"
+    },
+    "description": {
+      "translate": "advancement.takemtitans.advanced.desc"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": false
+  },
+  "criteria": {
+    "gear": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "takemtitans:advanced_odm_gear"
+          }
+        ]
+      }
+    }
+  },
+  "parent": "takemtitans:root"
+}

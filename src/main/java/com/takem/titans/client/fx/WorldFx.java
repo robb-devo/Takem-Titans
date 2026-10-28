@@ -50,7 +50,16 @@ public final class WorldFx {
     private WorldFx() {
     }
 
+    /** Effects added while the list is being ticked (an effect spawning more as it goes) wait here until it is done. */
+    private static final List<WorldFx.Effect> PENDING = new ArrayList<>();
+    private static boolean ticking;
+
     public static void add(WorldFx.Effect e) {
+        if (ticking) {
+            PENDING.add(e);
+            return;
+        }
+
         if (EFFECTS.size() >= 400) {
             EFFECTS.remove(0);
         }
@@ -63,12 +72,23 @@ public final class WorldFx {
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null) {
             EFFECTS.clear();
+            PENDING.clear();
         } else if (!mc.isPaused()) {
             EFFECTS.removeIf(ex -> ++ex.age >= ex.life);
-
-            for (WorldFx.Effect e : EFFECTS) {
-                e.tick();
+            ticking = true;
+            try {
+                for (WorldFx.Effect e : EFFECTS) {
+                    e.tick();
+                }
+            } finally {
+                ticking = false;
             }
+
+            for (WorldFx.Effect e : PENDING) {
+                add(e);
+            }
+
+            PENDING.clear();
         }
     }
 

@@ -1,0 +1,29 @@
+{
+  "display": {
+    "icon": {
+      "id": "takemtitans:event_horizon_odm_gear"
+    },
+    "title": {
+      "translate": "advancement.takemtitans.event_horizon"
+    },
+    "description": {
+      "translate": "advancement.takemtitans.event_horizon.desc"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true
+  },
+  "criteria": {
+    "gear": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "takemtitans:event_horizon_odm_gear"
+          }
+        ]
+      }
+    }
+  },
+  "parent": "takemtitans:godspeed"
+}

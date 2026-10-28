@@ -103,6 +103,8 @@ public class JaegerEntity extends PathfinderMob {
     private int jaegerLevel = 1;
     private int spearCooldown = 200;
     private int dodgeCooldown;
+    private int stuckTicks;
+    private double closest = Double.MAX_VALUE;
 
     public JaegerEntity(EntityType<? extends JaegerEntity> type, Level level) {
         super(type, level);
@@ -245,7 +247,8 @@ public class JaegerEntity extends PathfinderMob {
             Vec3 v = this.getDeltaMovement();
             this.move(MoverType.SELF, v);
             if (this.horizontalCollision) {
-                this.setDeltaMovement(v.multiply(0.3, 1.0, 0.3).add(0.0, 0.15, 0.0));
+                // gas up and over whatever is in the way instead of grinding along it
+                this.setDeltaMovement(v.multiply(0.3, 1.0, 0.3).add(0.0, 0.32, 0.0));
             }
 
             this.calculateEntityAnimation(false);
@@ -297,8 +300,11 @@ public class JaegerEntity extends PathfinderMob {
                 }
 
                 ServerPlayer leader = this.leader();
-                if (leader != null && this.distanceToSqr(leader) > 9216.0) {
+                if (leader != null && (this.distanceToSqr(leader) > 9216.0 || this.stuck(leader))) {
                     Squad.arrive(level, this, leader);
+                    this.unhook();
+                    this.stuckTicks = 0;
+                    this.closest = Double.MAX_VALUE;
                 } else {
                     AbstractTitan titan = this.targetId >= 0 && level.getEntity(this.targetId) instanceof AbstractTitan t && t.isAlive() && !t.isDeadOrDying()
                         ? t
@@ -324,6 +330,29 @@ public class JaegerEntity extends PathfinderMob {
                     }
                 }
             }
+        }
+    }
+
+    /**
+     * Following and getting nowhere - wedged against the Wall, its path cut off, or simply out-flown. After a few
+     * seconds of that (sooner with the leader out of sight) the Jaeger stops trying and catches up the way they always
+     * do: a burst of gas from somewhere just behind you.
+     */
+    private boolean stuck(ServerPlayer leader) {
+        double d = this.distanceTo(leader);
+        if (this.targetId >= 0 || JaegerEntity.OdmHold.holding(leader) || d < 16.0) {
+            this.stuckTicks = 0;
+            this.closest = d;
+            return false;
+        } else {
+            if (d < this.closest - 2.0) {
+                this.closest = d;
+                this.stuckTicks = 0;
+            } else {
+                this.stuckTicks++;
+            }
+
+            return this.stuckTicks > (this.hasLineOfSight(leader) ? 100 : 50);
         }
     }
 
@@ -673,6 +702,13 @@ public class JaegerEntity extends PathfinderMob {
     @Override
     public boolean removeWhenFarAway(double distSq) {
         return this.owner == null;
+    }
+
+    @Override
+    public boolean shouldBeSaved() {
+        // Squad members live in their leader's record and are called back to them on login. A copy saved into some
+        // chunk lost its owner on reload and turned up later as a stranger with the same name.
+        return this.owner == null && super.shouldBeSaved();
     }
 
     @Override

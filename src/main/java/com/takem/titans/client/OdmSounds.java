@@ -1,6 +1,5 @@
 package com.takem.titans.client;
 
-import com.takem.titans.item.GearTier;
 import com.takem.titans.odm.OdmGear;
 import com.takem.titans.registry.ModSounds;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
@@ -98,7 +97,7 @@ public final class OdmSounds {
                 play(reel);
             }
 
-            if (odm.boosting && OdmGear.tier(p) == GearTier.GODSPEED && (afterburner == null || afterburner.isStopped())) {
+            if (odm.boosting && OdmGear.tier(p).supersonic() && (afterburner == null || afterburner.isStopped())) {
                 afterburner = new OdmSounds.Loop(
                     ModSounds.AFTERBURNER.get(),
                     null,

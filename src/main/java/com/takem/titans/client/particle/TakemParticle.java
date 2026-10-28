@@ -20,6 +20,8 @@ public class TakemParticle extends TextureSheetParticle {
     private final float baseAlpha;
     private final float growth;
     private boolean splat;
+    private boolean flat;
+    private int run;
     private final Quaternionf splatRot = new Quaternionf();
     private float glow;
 
@@ -113,17 +115,6 @@ public class TakemParticle extends TextureSheetParticle {
                 this.setColor(1.0F, 1.0F, 1.0F);
                 alpha = 0.5F;
                 break;
-            case DUST_CLOUD: {
-                this.lifetime = 70 + this.random.nextInt(70);
-                size = 1.3F + this.random.nextFloat() * 1.7F;
-                grow = 1.006F;
-                this.friction = 0.955F;
-                this.gravity = -0.0025F;
-                float c = 0.62F + this.random.nextFloat() * 0.14F;
-                this.setColor(c, c * 0.95F, c * 0.88F);
-                alpha = 0.45F;
-                break;
-            }
             case FIREBALL:
                 this.lifetime = 22 + this.random.nextInt(26);
                 size = 1.2F + this.random.nextFloat() * 2.2F;
@@ -184,6 +175,17 @@ public class TakemParticle extends TextureSheetParticle {
                         this.zd *= 0.5;
                     }
 
+                    if (this.splat) {
+                        // it clots: slowly darker, a pool spreading a little, a splash on a wall running down it
+                        this.rCol = Math.max(0.3F, this.rCol * 0.9985F);
+                        if (this.run > 0) {
+                            this.run--;
+                            this.setPos(this.x, this.y - 0.012, this.z);
+                        } else if (this.flat && this.quadSize < this.baseSize * 4.5F) {
+                            this.quadSize *= 1.0015F;
+                        }
+                    }
+
                     if (this.age == this.lifetime - 1 && this.random.nextInt(3) == 0) {
                         this.level.addParticle(ModParticles.STEAM.get(), this.x, this.y, this.z, 0.0, 0.03, 0.0);
                     }
@@ -197,9 +199,6 @@ public class TakemParticle extends TextureSheetParticle {
                     break;
                 case FLARE_SMOKE:
                     this.alpha = this.baseAlpha * (life < 0.7F ? 1.0F : 1.0F - (life - 0.7F) / 0.3F);
-                    break;
-                case DUST_CLOUD:
-                    this.alpha = this.baseAlpha * Math.min(1.0F, (float)this.age / 8.0F) * (life < 0.55F ? 1.0F : 1.0F - (life - 0.55F) / 0.45F);
                     break;
                 case FIREBALL:
                     if (life < 0.35F) {
@@ -228,7 +227,6 @@ public class TakemParticle extends TextureSheetParticle {
             if (this.style == TakemParticle.Style.STEAM
                 || this.style == TakemParticle.Style.BIG_STEAM
                 || this.style == TakemParticle.Style.FLARE_SMOKE
-                || this.style == TakemParticle.Style.DUST_CLOUD
                 || this.style == TakemParticle.Style.MUSHROOM) {
                 this.roll += 0.006F;
             }
@@ -282,7 +280,9 @@ public class TakemParticle extends TextureSheetParticle {
 
         this.splatRot.rotateZ(this.random.nextFloat() * 6.2831855F);
         this.quadSize = this.baseSize * (2.2F + this.random.nextFloat() * 1.6F);
-        this.lifetime = this.age + 140 + this.random.nextInt(120);
+        this.lifetime = this.age + 500 + this.random.nextInt(500);
+        this.flat = axis == Axis.Y;
+        this.run = axis == Axis.Y ? 0 : 20 + this.random.nextInt(50);
         this.setColor(this.rCol * 0.8F, this.gCol, this.bCol);
     }
 
@@ -310,7 +310,7 @@ public class TakemParticle extends TextureSheetParticle {
      * Smoke, steam and dust: blended like any translucent particle but never written to the depth buffer, so a faint
      * cloud in front of a slash wave or a titan no longer cuts a hole in it.
      */
-    private static final ParticleRenderType SOFT = new ParticleRenderType() {
+    static final ParticleRenderType SOFT = new ParticleRenderType() {
         @Override
         public com.mojang.blaze3d.vertex.BufferBuilder begin(com.mojang.blaze3d.vertex.Tesselator tesselator, net.minecraft.client.renderer.texture.TextureManager textures) {
             com.mojang.blaze3d.systems.RenderSystem.depthMask(false);
@@ -329,7 +329,7 @@ public class TakemParticle extends TextureSheetParticle {
     @Override
     public ParticleRenderType getRenderType() {
         return switch (this.style) {
-            case DUST_CLOUD, STEAM, BIG_STEAM, FLARE_SMOKE, MUSHROOM -> SOFT;
+            case STEAM, BIG_STEAM, FLARE_SMOKE, MUSHROOM -> SOFT;
             default -> ParticleRenderType.PARTICLE_SHEET_TRANSLUCENT;
         };
     }
@@ -350,7 +350,6 @@ public class TakemParticle extends TextureSheetParticle {
         SPARK,
         FLARE_SMOKE,
         WIND_STREAK,
-        DUST_CLOUD,
         FIREBALL,
         EMBER,
         MUSHROOM;

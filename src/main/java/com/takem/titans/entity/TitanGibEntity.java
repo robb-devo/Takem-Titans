@@ -162,6 +162,20 @@ public class TitanGibEntity extends Entity {
                 this.impact(sl, speed);
             }
 
+            // the nerves are not done with it yet: it jerks, flops over, and pumps from the torn end
+            if (this.onGround() && this.tickCount < 320 && this.random.nextInt(this.tickCount < 120 ? 14 : 30) == 0) {
+                float s = this.scale();
+                double h = 0.12 + this.random.nextDouble() * 0.16 * Math.min(1.5, s * 0.3);
+                this.setDeltaMovement((this.random.nextDouble() - 0.5) * 0.18, h, (this.random.nextDouble() - 0.5) * 0.18);
+                this.hasImpulse = true;
+                Vec3 c = this.position().add(0.0, s * 0.2, 0.0);
+                sl.playSound(null, c.x, c.y, c.z, SoundEvents.SLIME_SQUISH, SoundSource.HOSTILE, Math.min(2.5F, 0.8F + s * 0.25F), 0.45F + this.random.nextFloat() * 0.2F);
+                for (int i = 0; i < 6 + (int)(s * 2.0F); i++) {
+                    double a = this.random.nextDouble() * Math.PI * 2.0;
+                    sl.sendParticles(ModParticles.BLOOD.get(), c.x, c.y, c.z, 0, Math.cos(a) * 0.25, 0.3 + this.random.nextDouble() * 0.3, Math.sin(a) * 0.25, 1.0);
+                }
+            }
+
             if (this.tickCount > 900) {
                 this.discard();
             }

@@ -22,6 +22,8 @@ public final class ClientEffects {
     private static int shakeDuration = 1;
     private static float roll;
     private static float prevRoll;
+    private static float rollVel;
+    private static double lateral;
     private static float kick;
     private static float prevKick;
     private static float fovBoost;
@@ -102,6 +104,19 @@ public final class ClientEffects {
         flash(16777215, 0.25F);
     }
 
+    /** Coming out of a hyperspace jump: the view snaps wide and back, washed violet. */
+    public static void warp() {
+        shake(0.6F, 12);
+        fovPunch = 0.45F;
+        flash(11560703, 0.55F);
+    }
+
+    /** A phase dash: the world flickers wide for a moment. */
+    public static void phase() {
+        fovPunch = Math.max(fovPunch, 0.12F);
+        flash(9238015, 0.25F);
+    }
+
     public static boolean rushing() {
         return rushTicks > 0;
     }
@@ -156,11 +171,16 @@ public final class ClientEffects {
                 Vec3 acc = odm.velocity.subtract(odm.prevVelocity);
                 float yaw = p.getYRot() * 0.017453292F;
                 Vec3 rightV = new Vec3((double)(-Mth.cos(yaw)), 0.0, (double)(-Mth.sin(yaw)));
-                double lateral = acc.dot(rightV);
+                // one tick's cable correction or a scrape along a wall shouldn't jolt the horizon: bank on the trend
+                lateral = lateral + (acc.dot(rightV) - lateral) * 0.3;
                 target = (float)Mth.clamp(lateral * 110.0, -20.0, 20.0) * TakemConfig.CAMERA_ROLL_STRENGTH.get().floatValue();
+            } else {
+                lateral *= 0.7;
             }
 
-            roll = roll + (target - roll) * 0.14F;
+            // a critically damped spring: the horizon eases into a bank and out of it instead of snapping into motion
+            rollVel = rollVel + (target - roll) * 0.08F - rollVel * 0.566F;
+            roll = roll + rollVel;
             float fovTarget = 0.0F;
             if (odm.inFlight() && TakemConfig.SPEED_FOV.get()) {
                 fovTarget = (float)Mth.clamp((odm.speed - 0.55) * 0.11, 0.0, 0.3);

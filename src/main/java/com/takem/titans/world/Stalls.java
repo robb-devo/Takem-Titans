@@ -45,7 +45,7 @@ public final class Stalls {
             stalls.add(new Stalls.Stall("trost", -15, -402, Direction.EAST, true));
 
             for (ShiganshinaLayout.Bulge b : ShiganshinaLayout.BULGES) {
-                if (b.ring() >= 6) {
+                if (b.ring() >= 6 && b.ring() != ShiganshinaLayout.ARENA_RING) {
                     double len = Math.sqrt(b.cx() * b.cx() + (b.cz() + 1100.0) * (b.cz() + 1100.0));
                     double tx = b.cx() + b.cx() / len * b.r() * 0.45;
                     double tz = b.cz() + (b.cz() + 1100.0) / len * b.r() * 0.45;

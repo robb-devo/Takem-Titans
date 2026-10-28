@@ -136,12 +136,8 @@ public final class Destruction {
             return false;
         } else if (s.getCollisionShape(level, pos).isEmpty()) {
             return false;
-        } else if (s.getBlock() instanceof net.minecraft.world.level.block.LanternBlock
-            || s.getBlock() instanceof net.minecraft.world.level.block.ChainBlock
-            || s.getBlock() instanceof net.minecraft.world.level.block.FlowerPotBlock
-            || s.getBlock() instanceof net.minecraft.world.level.block.BellBlock
-            || s.is(ModBlocks.GATE_CONTROL.get())) {
-            // lamps, chains and pots hang off a house; they used to rain down from intact eaves on every check
+        } else if (isSoftFixture(s) || s.is(ModBlocks.GATE_CONTROL.get())) {
+            // lamps, chains and pots hang off a house; they must not count as foundations
             return false;
         } else {
             // the giant trees come down as whole trees (TreeFall), not piece by piece
@@ -149,8 +145,92 @@ public final class Destruction {
         }
     }
 
+    /**
+     * Interior / eave décor that rides with a house but never holds it up. When the wall or floor goes,
+     * these come down too — they used to be skipped by the collapse scan and left floating.
+     */
+    public static boolean isSoftFixture(BlockState s) {
+        // shutters, doors, gates, ladders, panes and bars hang in or on a wall: they never carry it, and when it goes
+        // they go with it instead of being left standing in the air where the wall was
+        return s.is(BlockTags.TRAPDOORS)
+            || s.is(BlockTags.DOORS)
+            || s.is(BlockTags.FENCE_GATES)
+            || s.is(BlockTags.ALL_SIGNS)
+            || s.is(BlockTags.BANNERS)
+            || s.is(net.minecraft.world.level.block.Blocks.LADDER)
+            || s.getBlock() instanceof net.minecraft.world.level.block.IronBarsBlock
+            || s.getBlock() instanceof net.minecraft.world.level.block.LanternBlock
+            || s.getBlock() instanceof net.minecraft.world.level.block.ChainBlock
+            || s.getBlock() instanceof net.minecraft.world.level.block.FlowerPotBlock
+            || s.getBlock() instanceof net.minecraft.world.level.block.BellBlock
+            || s.is(BlockTags.CANDLES)
+            || s.is(BlockTags.FLOWERS)
+            || s.is(net.minecraft.world.level.block.Blocks.TORCH)
+            || s.is(net.minecraft.world.level.block.Blocks.WALL_TORCH)
+            || s.is(net.minecraft.world.level.block.Blocks.SOUL_TORCH)
+            || s.is(net.minecraft.world.level.block.Blocks.SOUL_WALL_TORCH);
+    }
+
+    /**
+     * Stone or soil that is part of a building rather than the ground under it: the andesite plinth of a house, a
+     * stone band laid on a timber wall, a planter on a roof. Natural ground has open sky or more ground above it.
+     */
+    public static boolean isMasonryAnchor(Level level, BlockPos pos, BlockState s) {
+        if (!isAnchor(s)) {
+            return false;
+        } else {
+            float h = s.getDestroySpeed(level, pos);
+            if (h < 0.0F || h > 3.0F) {
+                return false;
+            } else {
+                MutableBlockPos m = new MutableBlockPos();
+                // resting on the house
+                if (isBuilt(level, m.setWithOffset(pos, Direction.DOWN))) {
+                    return true;
+                }
+
+                // a storey of it with the house going on above; a wall face open to the street may be two storeys of
+                // solid stone (the stone towers), while ground buried in a hillside only counts with the house right on it
+                boolean faced = false;
+                for (Direction d : Direction.Plane.HORIZONTAL) {
+                    faced |= level.getBlockState(m.setWithOffset(pos, d)).isAir();
+                }
+
+                int reach = faced ? 8 : 4;
+                for (int k = 1; k <= reach; k++) {
+                    BlockState a = level.getBlockState(m.setWithOffset(pos, 0, k, 0));
+                    if (a.isAir() || !isAnchor(a)) {
+                        if (isBuilt(level, m)) {
+                            return true;
+                        }
+                        break;
+                    }
+                }
+
+                // in line with timber, glass, doors or a floor beside it
+                for (Direction d : Direction.Plane.HORIZONTAL) {
+                    if (isBuilt(level, m.setWithOffset(pos, d)) || isBuilt(level, m.move(Direction.DOWN))) {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+        }
+    }
+
+    private static boolean isBuilt(Level level, BlockPos pos) {
+        BlockState s = level.getBlockState(pos);
+        return !s.isAir() && !isAnchor(s) && isStructural(level, pos, s);
+    }
+
+    /** Anything a falling section or a titan's body can break through: building blocks and the masonry they stand on. */
+    public static boolean isBreakable(Level level, BlockPos pos, BlockState s) {
+        return isStructural(level, pos, s) || isMasonryAnchor(level, pos, s);
+    }
+
     public static boolean canSmash(Level level, BlockPos pos, BlockState s, float maxHardness) {
-        if (isStructural(level, pos, s)) {
+        if (isBreakable(level, pos, s)) {
             return s.getDestroySpeed(level, pos) <= maxHardness && !Rebuild.resists(level, pos);
         } else {
             // a giant trunk shrugs off a titan walking into it, but a blast or a falling house still bites
@@ -301,25 +381,40 @@ public final class Destruction {
      * used to leave torches, lanterns, flowers, doors and carpets hanging in mid-air. Knock those off by hand.
      */
     public static void dropUnsupported(ServerLevel level, BlockPos pos) {
+        dropUnsupported(level, pos, 0);
+    }
+
+    private static void dropUnsupported(ServerLevel level, BlockPos pos, int depth) {
         MutableBlockPos m = new MutableBlockPos();
         for (Direction dir : Direction.values()) {
             m.setWithOffset(pos, dir);
             BlockState s = level.getBlockState(m);
-            if (!s.isAir() && s.getFluidState().isEmpty() && !s.canSurvive(level, m)) {
+            // soft fixtures always ride the house down; everything else only if it can't stand alone
+            if (!s.isAir() && s.getFluidState().isEmpty() && (isSoftFixture(s) || !s.canSurvive(level, m))) {
                 level.setBlock(m, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(), 50);
                 Rebuild.mark(level, m);
-                if (s.getCollisionShape(level, m).isEmpty()) {
+                if (s.getCollisionShape(EmptyBlockGetter.INSTANCE, BlockPos.ZERO).isEmpty()) {
                     sprinkle(level, m, s);
                 } else {
                     throwBlock(level, m.immutable(), s, new Vec3(0.0, -0.05, 0.0), 0.0F, 0);
                 }
 
+                // and whatever hangs off it in turn (a pot on a shutter, a lantern on a chain)
+                if (depth < 4) {
+                    dropUnsupported(level, m.immutable(), depth + 1);
+                }
+
                 // the top half of a door or tall plant goes with its bottom half
                 BlockPos up = m.above();
                 BlockState above = level.getBlockState(up);
-                if (!above.isAir() && above.getFluidState().isEmpty() && !above.canSurvive(level, up)) {
+                if (!above.isAir()
+                    && above.getFluidState().isEmpty()
+                    && (isSoftFixture(above) || !above.canSurvive(level, up))) {
                     level.setBlock(up, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(), 50);
                     Rebuild.mark(level, up);
+                    if (isSoftFixture(above) && !above.getCollisionShape(EmptyBlockGetter.INSTANCE, BlockPos.ZERO).isEmpty()) {
+                        throwBlock(level, up, above, new Vec3(0.0, -0.05, 0.0), 0.0F, 0);
+                    }
                 }
             }
         }
@@ -329,8 +424,50 @@ public final class Destruction {
         refresh(level);
         if (dust < 300) {
             dust += 2;
-            level.sendParticles(new BlockParticleOption(ParticleTypes.BLOCK, s), p.getX() + 0.5, p.getY() + 0.4, p.getZ() + 0.5, 2, 0.2, 0.2, 0.2, 0.05);
+            if (s.is(BlockTags.LEAVES)) {
+                level.sendParticles(new BlockParticleOption(ParticleTypes.BLOCK, s), p.getX() + 0.5, p.getY() + 0.4, p.getZ() + 0.5, 2, 0.2, 0.2, 0.2, 0.05);
+            } else {
+                Fx.send(level, Fx.CRUMBLE, p.getX() + 0.5, p.getY() + 0.4, p.getZ() + 0.5, 3.0F, 0.1F, (float)Block.getId(s), 0.7F, 96.0);
+            }
         }
+    }
+
+    /**
+     * Chips and grit coming off {@code s} at {@code at}: {@code speed} 0 lets them trickle down, more flings them out.
+     * One small packet; the fragments and the dust are made on the client from the block's own texture and colour.
+     */
+    public static void crumble(ServerLevel level, Vec3 at, BlockState s, int count, float speed, float spread) {
+        refresh(level);
+        if (dust < 300 && !s.isAir()) {
+            dust += 2;
+            Fx.send(level, Fx.CRUMBLE, at.x, at.y, at.z, (float)count, speed, (float)Block.getId(s), spread, 112.0);
+        }
+    }
+
+    /**
+     * Severance: a block in the cut plane is simply gone - no debris, just a glint of its fragments now and then.
+     * The Walls, bedrock and the like are spared; what stood on the cut is left to the collapse engine.
+     */
+    public static void slice(ServerLevel level, BlockPos pos) {
+        BlockState s = level.getBlockState(pos);
+        if (!s.isAir() && s.getFluidState().isEmpty() && !isWallStone(s)) {
+            float h = s.getDestroySpeed(level, pos);
+            if (h >= 0.0F && h <= 50.0F) {
+                BlockPos at = pos.immutable();
+                level.setBlock(at, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(), 50);
+                Rebuild.mark(level, at);
+                dropUnsupported(level, at);
+                TreeFall.notify(level, at, s);
+                if (level.random.nextInt(7) == 0) {
+                    crumble(level, Vec3.atCenterOf(at), s, 2, 0.08F, 0.6F);
+                }
+            }
+        }
+    }
+
+    /** A cloud of the material's own dust where something gave way. */
+    public static void dustCloud(ServerLevel level, Vec3 at, BlockState s, float radius, float thickness) {
+        Fx.send(level, Fx.DUST_PLUME, at.x, at.y, at.z, radius, thickness, (float)Block.getId(s), 0.0F, 160.0);
     }
 
     public static void throwBlock(ServerLevel level, BlockPos pos, BlockState state, Vec3 velocity, float rubbleChance) {
@@ -342,21 +479,8 @@ public final class Destruction {
         if (state.is(BlockTags.LEAVES)) {
             sprinkle(level, pos, state);
         } else if (isGlass(state)) {
-            if (dust < 300) {
-                dust += 6;
-                level.sendParticles(
-                    new BlockParticleOption(ParticleTypes.BLOCK, state),
-                    (double)pos.getX() + 0.5,
-                    (double)pos.getY() + 0.5,
-                    (double)pos.getZ() + 0.5,
-                    6,
-                    0.3,
-                    0.3,
-                    0.3,
-                    0.15
-                );
-            }
-
+            // a pane bursts into shards that fly on with whatever hit it
+            crumble(level, Vec3.atCenterOf(pos), state, 7, (float)Math.min(0.5, 0.12 + velocity.length() * 0.4), 0.9F);
             if (soundBudget(level)) {
                 level.playSound(null, pos, SoundEvents.GLASS_BREAK, SoundSource.BLOCKS, 1.0F, 0.8F + level.random.nextFloat() * 0.4F);
             }
@@ -365,19 +489,9 @@ public final class Destruction {
             if (debrisBudget(level)) {
                 newDebris++;
                 level.addFreshEntity(DebrisEntity.create(level, pos, state, velocity, rubbleChance).withBreaks(breaks));
-            } else if (dust < 300) {
-                dust += 3;
-                level.sendParticles(
-                    new BlockParticleOption(ParticleTypes.BLOCK, state),
-                    (double)pos.getX() + 0.5,
-                    (double)pos.getY() + 0.5,
-                    (double)pos.getZ() + 0.5,
-                    3,
-                    0.3,
-                    0.3,
-                    0.3,
-                    0.1
-                );
+            } else {
+                // too much already flying: this one bursts into fragments on the spot
+                crumble(level, Vec3.atCenterOf(pos), state, 6, (float)Math.min(0.4, velocity.length() * 0.6), 1.0F);
             }
         }
     }
@@ -396,8 +510,7 @@ public final class Destruction {
 
                 for (int k = 0; k < 6; k++) {
                     if (level.getBlockState(m).isAir() && BaseFireBlock.canBePlacedAt(level, m, Direction.UP)) {
-                        level.setBlock(m, BaseFireBlock.getState(level, m), 3);
-                        Rebuild.mark(level, m);
+                        flame(level, m);
                         level.sendParticles(ParticleTypes.LAVA, (double)m.getX() + 0.5, (double)m.getY() + 0.5, (double)m.getZ() + 0.5, 6, 0.4, 0.3, 0.4, 0.0);
                         return;
                     }
@@ -416,11 +529,7 @@ public final class Destruction {
                 level.sendParticles(new BlockParticleOption(ParticleTypes.BLOCK, state), p.x, p.y, p.z, 2, 0.3, 0.3, 0.3, 0.05);
             }
         } else if (isGlass(state)) {
-            if (dust < 300) {
-                dust += 4;
-                level.sendParticles(new BlockParticleOption(ParticleTypes.BLOCK, state), p.x, p.y, p.z, 4, 0.3, 0.3, 0.3, 0.15);
-            }
-
+            crumble(level, p, state, 6, (float)Math.min(0.45, 0.1 + velocity.length() * 0.4), 0.9F);
             if (soundBudget(level)) {
                 level.playSound(null, p.x, p.y, p.z, SoundEvents.GLASS_BREAK, SoundSource.BLOCKS, 1.0F, 0.9F);
             }
@@ -445,10 +554,7 @@ public final class Destruction {
                 }
             }
 
-            if (dust < 300) {
-                dust += 3;
-                level.sendParticles(new BlockParticleOption(ParticleTypes.BLOCK, state), p.x, p.y, p.z, 3, 0.3, 0.3, 0.3, 0.1);
-            }
+            crumble(level, p, state, 5, (float)Math.min(0.35, velocity.length() * 0.5), 1.0F);
         }
     }
 
@@ -459,6 +565,7 @@ public final class Destruction {
             BlockPos center = BlockPos.containing(c);
             MutableBlockPos m = new MutableBlockPos();
             int broken = 0;
+            BlockState first = null;
 
             for (int dy = -r; dy <= r; dy++) {
                 for (int dx = -r; dx <= r; dx++) {
@@ -470,8 +577,14 @@ public final class Destruction {
                             BlockState s = level.getBlockState(m);
                             Vec3 dir = d < 0.01 ? new Vec3(0.0, 1.0, 0.0) : p.subtract(c).scale(1.0 / d);
                             double power = 0.5 + 1.25 * (1.0 - d / radius);
-                            Vec3 v = dir.scale(power * (0.75 + rnd.nextDouble() * 0.5)).add(0.0, 0.18 + rnd.nextDouble() * 0.25, 0.0);
+                            // the same blast moves a beam further than a block of stone; the fine fragments fly furthest of all
+                            double heft = Math.min(1.0, 1.2 / Math.sqrt((double)density(s) + 0.5));
+                            Vec3 v = dir.scale(power * (0.75 + rnd.nextDouble() * 0.5) * heft).add(0.0, (0.12 + rnd.nextDouble() * 0.2) * heft, 0.0);
                             if (canSmash(level, m, s, 6.0F)) {
+                                if (first == null) {
+                                    first = s;
+                                }
+
                                 smash(level, m.immutable(), s, v, 0.12F, power > 1.2 ? 1 : 0);
                                 broken++;
                             } else if (blastOther(level, m.immutable(), s, d / radius, 6.0F, v)) {
@@ -483,7 +596,11 @@ public final class Destruction {
             }
 
             if (broken > 0) {
-                far(level, ParticleTypes.CAMPFIRE_COSY_SMOKE, c.x, c.y, c.z, 6, radius * 0.5, radius * 0.4, radius * 0.5, 0.03, 160.0);
+                if (first != null) {
+                    crumble(level, c, first, Math.min(40, 8 + broken / 2), (float)(0.45 + radius * 0.05), (float)radius);
+                    dustCloud(level, c, first, (float)radius * 1.4F, 1.6F);
+                }
+
                 requestCollapse(level, center, 16, 64, 12);
             }
         }
@@ -504,6 +621,7 @@ public final class Destruction {
             int maxY = Mth.floor(feet.y + (sweep ? Math.max(flat, length) : flat));
             MutableBlockPos m = new MutableBlockPos();
             int broken = 0;
+            BlockState first = null;
 
             for (int y = minY; y <= maxY; y++) {
                 for (int x = minX; x <= maxX; x++) {
@@ -528,7 +646,12 @@ public final class Destruction {
                                             .add(ax.scale(0.35 + rnd.nextDouble() * 0.3))
                                             .add(0.0, -0.15 - rnd.nextDouble() * 0.25, 0.0);
                                     } else {
-                                        v = out.scale(0.35 + rnd.nextDouble() * 0.5).add(ax.scale(0.2)).add(0.0, 0.25 + rnd.nextDouble() * 0.45, 0.0);
+                                        // a shove from the side throws the wall along the swing, low: it doesn't leap into the sky
+                                        v = out.scale(0.3 + rnd.nextDouble() * 0.4).add(ax.scale(0.22)).add(0.0, 0.08 + rnd.nextDouble() * 0.22, 0.0);
+                                    }
+
+                                    if (first == null) {
+                                        first = s;
                                     }
 
                                     smash(level, m.immutable(), s, v, 0.25F);
@@ -543,6 +666,12 @@ public final class Destruction {
             if (broken > 0) {
                 Vec3 mid = feet.add(to).scale(0.5);
                 crunch(level, mid, 2.5F);
+                if (first != null) {
+                    Vec3 burst = mid.add(0.0, Math.min(flat, 3.0), 0.0);
+                    crumble(level, burst, first, Math.min(36, 6 + broken / 3), 0.35F, (float)radius * 1.5F);
+                    dustCloud(level, burst, first, (float)Math.min(10.0, 2.0 + radius), 1.2F);
+                }
+
                 requestCollapse(level, BlockPos.containing(mid.x, feet.y + 1.0, mid.z), Mth.clamp((int)(length * 0.5) + 8, 10, 20), 64, 4);
             }
         }
@@ -581,6 +710,42 @@ public final class Destruction {
         }
     }
 
+    /**
+     * Fire in the wreckage: it burns where it was set and goes out by itself after ten to twenty-five seconds. Fire never
+     * spreads in this world (see {@link #onServerStarted}), so a lantern knocked over does not burn a district down and
+     * strand shutters and flower pots in the air where the house burned away.
+     */
+    public static void flame(ServerLevel level, BlockPos p) {
+        level.setBlock(p, net.minecraft.world.level.block.BaseFireBlock.getState(level, p), 3);
+        Rebuild.mark(level, p);
+        if (FLAMES.size() < 4000) {
+            FLAMES.add(new long[]{p.asLong(), level.getGameTime() + 200L + level.random.nextInt(300)});
+        }
+    }
+
+    private static final java.util.ArrayDeque<long[]> FLAMES = new java.util.ArrayDeque<>();
+
+    @SubscribeEvent
+    public static void onServerStarted(net.neoforged.neoforge.event.server.ServerStartedEvent event) {
+        event.getServer().getGameRules().getRule(GameRules.RULE_DOFIRETICK).set(false, event.getServer());
+        FLAMES.clear();
+    }
+
+    private static void tickFlames(ServerLevel level) {
+        long now = level.getGameTime();
+        MutableBlockPos m = new MutableBlockPos();
+        for (int i = 0; i < 64 && !FLAMES.isEmpty() && FLAMES.peekFirst()[1] <= now; i++) {
+            long[] f = FLAMES.pollFirst();
+            m.set(f[0]);
+            if (level.isLoaded(m) && level.getBlockState(m).is(BlockTags.FIRE)) {
+                level.setBlock(m, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(), 3);
+                if (level.random.nextInt(3) == 0) {
+                    level.sendParticles(ParticleTypes.LARGE_SMOKE, m.getX() + 0.5, m.getY() + 0.3, m.getZ() + 0.5, 2, 0.2, 0.1, 0.2, 0.01);
+                }
+            }
+        }
+    }
+
     public static void crunch(ServerLevel level, Vec3 at, float volume) {
         level.playSound(null, at.x, at.y, at.z, SoundEvents.ZOMBIE_BREAK_WOODEN_DOOR, SoundSource.BLOCKS, volume, 0.5F + level.random.nextFloat() * 0.2F);
         level.playSound(
@@ -594,16 +759,25 @@ public final class Destruction {
 
     /** {@code drops}: the collapse was set off by a player taking a block out, so felled timber drops as logs. */
     public static void requestCollapse(ServerLevel level, BlockPos center, int r, int up, int down, boolean drops) {
+        requestCollapse(level, center, r, up, down, drops, 2);
+    }
+
+    /**
+     * Looks at the building around {@code center} in {@code delay} ticks. A follow-up look a few ticks after a piece
+     * came away is what makes a ruin give way bit by bit: the part that was leaning on the fallen piece hangs a moment,
+     * then goes too.
+     */
+    public static void requestCollapse(ServerLevel level, BlockPos center, int r, int up, int down, boolean drops, int delay) {
         if (TakemConfig.BUILDING_COLLAPSE.get()) {
             Destruction.LevelState st = STATES.computeIfAbsent(level.dimension(), k -> new Destruction.LevelState());
-            long due = level.getGameTime() + 2L;
+            long due = level.getGameTime() + (long)Math.max(1, delay);
 
             for (Destruction.Request q : st.requests) {
                 if (q.center.distManhattan(center) <= 5) {
                     q.r = Math.max(q.r, r);
                     q.up = Math.max(q.up, up);
                     q.down = Math.max(q.down, down);
-                    q.due = due;
+                    q.due = Math.max(q.due, due);
                     q.drops |= drops;
                     return;
                 }
@@ -611,6 +785,7 @@ public final class Destruction {
 
             if (st.requests.size() < 96) {
                 double scale = TakemConfig.COLLAPSE_SCALE.get();
+                // (a survey that finds its piece running on above it extends itself, up to MAX_UP)
                 st.requests
                     .add(
                         new Destruction.Request(
@@ -721,6 +896,10 @@ public final class Destruction {
     @SubscribeEvent
     public static void onLevelTick(Post event) {
         if (event.getLevel() instanceof ServerLevel level) {
+            if (level.dimension() == net.minecraft.world.level.Level.OVERWORLD) {
+                tickFlames(level);
+            }
+
             Destruction.LevelState st = STATES.get(level.dimension());
             if (st != null) {
                 long now = level.getGameTime();
@@ -780,10 +959,12 @@ public final class Destruction {
             int n = sx * sy * sz;
             byte[] kind = new byte[n];
             java.util.BitSet wallCell = new java.util.BitSet(n);
+            java.util.BitSet anchorCell = new java.util.BitSet(n);
             BlockState[] states = new BlockState[n];
             MutableBlockPos m = new MutableBlockPos();
             int structural = 0;
             int leaves = 0;
+            int anchors = 0;
 
             for (int z = 0; z < sz; z++) {
                 for (int x = 0; x < sx; x++) {
@@ -813,11 +994,22 @@ public final class Destruction {
                                     if (isWallStone(s)) {
                                         wallCell.set(i);
                                     }
+
+                                    float h = s.getDestroySpeed(level, m);
+                                    if (isAnchor(s) && h >= 0.0F && h <= 3.0F) {
+                                        anchorCell.set(i);
+                                        states[i] = s;
+                                        anchors++;
+                                    }
                                 }
                             }
                         }
                     }
                 }
+            }
+
+            if (anchors > 0) {
+                structural += settleAnchors(kind, anchorCell, sx, sy, sz);
             }
 
             if (structural == 0) {
@@ -916,6 +1108,22 @@ public final class Destruction {
                     }
                 }
 
+                if (q.up < MAX_UP && maxY < level.getMaxBuildHeight() - 1) {
+                    int top = (sy - 1) * sx * sz;
+                    for (int c = 0; c < sx * sz; c++) {
+                        int i = top + c;
+                        if (kind[i] == 2 && dist[i] > 24) {
+                            m.set(minX + c % sx, maxY + 1, minZ + c / sx);
+                            if (isStructural(level, m, level.getBlockState(m))) {
+                                // the unsupported part carries on above the survey: look again, taller, before
+                                // letting any of it go
+                                lst.requests.add(new Destruction.Request(q.center, q.r, Math.min(MAX_UP, q.up + 48), q.down, level.getGameTime(), q.drops));
+                                return null;
+                            }
+                        }
+                    }
+                }
+
                 crushOverloaded(level, q, kind, dist, states, sx, sy, sz, minX, minY, minZ);
                 int count = 0;
 
@@ -993,8 +1201,21 @@ public final class Destruction {
 
                     for (int id = 1; id < groups.size(); id++) {
                         IntArrayList members = groups.get(id);
-                        if (!makeSection(level, lst, members, kind, dist, comp, id, states, sx, sy, sz, minX, minY, minZ, now, q.drops)) {
-                            loose.addAll(members);
+                        if (members.size() <= SPLIT) {
+                            if (!makeSection(level, lst, members, kind, dist, comp, id, states, sx, sy, sz, minX, minY, minZ, now, q.drops)) {
+                                loose.addAll(members);
+                            }
+                        } else {
+                            // cell indices run storey by storey, so sorted runs of them are horizontal bands
+                            members.sort(null);
+                            int bands = (members.size() + SPLIT - 1) / SPLIT;
+                            int per = (members.size() + bands - 1) / bands;
+                            for (int s = 0; s < members.size(); s += per) {
+                                IntArrayList band = new IntArrayList(members.subList(s, Math.min(members.size(), s + per)));
+                                if (!makeSection(level, lst, band, kind, dist, comp, id, states, sx, sy, sz, minX, minY, minZ, now, q.drops)) {
+                                    loose.addAll(band);
+                                }
+                            }
                         }
                     }
 
@@ -1034,6 +1255,91 @@ public final class Destruction {
                 }
             }
         }
+    }
+
+    /**
+     * Stone and soil only count as ground while they stand on ground. A band of andesite laid on a timber wall, a
+     * planter on a roof or the stone cap of a chimney is part of the house: it has to be carried, and it comes down
+     * with it instead of hanging in the sky. Ground over open air (a cave roof, an overhang, the lintel over a smashed
+     * doorway) stays ground as long as it is joined sideways to ground on its own level - or runs off the edge of the
+     * survey, which says nothing about what holds it. Only a thin layer counts as carried: three blocks of stone on a
+     * beam are a parapet, a whole hillside on a pit prop is still a hillside.
+     *
+     * @return how many cells turned into building
+     */
+    private static int settleAnchors(byte[] kind, java.util.BitSet anchor, int sx, int sy, int sz) {
+        final byte hanging = 9;
+        int sxz = sx * sz;
+        int converted = 0;
+        Destruction.IntQueue queue = new Destruction.IntQueue();
+        // how many carried anchors are stacked up to here, per column, for the level below and this one
+        byte[] below = new byte[sxz];
+        byte[] here = new byte[sxz];
+
+        for (int y = 1; y < sy; y++) {
+            int base = y * sxz;
+            boolean anyHanging = false;
+            Arrays.fill(here, (byte)0);
+
+            for (int c = 0; c < sxz; c++) {
+                int i = base + c;
+                if (kind[i] == 1 && anchor.get(i)) {
+                    byte under = kind[i - sxz];
+                    if ((under == 2 || under == 3) && below[c] < 3) {
+                        kind[i] = 2;
+                        here[c] = (byte)(below[c] + 1);
+                        converted++;
+                    } else if (under == 0) {
+                        kind[i] = hanging;
+                        anyHanging = true;
+                    }
+                }
+            }
+
+            if (anyHanging) {
+                queue.head = queue.tail = 0;
+
+                for (int c = 0; c < sxz; c++) {
+                    int x = c % sx;
+                    int z = c / sx;
+                    if (kind[base + c] == 1) {
+                        queue.add(c);
+                    } else if (kind[base + c] == hanging && (x == 0 || z == 0 || x == sx - 1 || z == sz - 1)) {
+                        kind[base + c] = 1;
+                        queue.add(c);
+                    }
+                }
+
+                while (!queue.isEmpty()) {
+                    int c = queue.poll();
+                    int x = c % sx;
+                    int z = c / sx;
+
+                    for (int k = 0; k < 4; k++) {
+                        int nx = x + (k == 0 ? 1 : (k == 1 ? -1 : 0));
+                        int nz = z + (k == 2 ? 1 : (k == 3 ? -1 : 0));
+                        if (nx >= 0 && nz >= 0 && nx < sx && nz < sz && kind[base + nz * sx + nx] == hanging) {
+                            kind[base + nz * sx + nx] = 1;
+                            queue.add(nz * sx + nx);
+                        }
+                    }
+                }
+
+                for (int c = 0; c < sxz; c++) {
+                    if (kind[base + c] == hanging) {
+                        kind[base + c] = 2;
+                        here[c] = 1;
+                        converted++;
+                    }
+                }
+            }
+
+            byte[] t = below;
+            below = here;
+            here = t;
+        }
+
+        return converted;
     }
 
     /**
@@ -1113,6 +1419,30 @@ public final class Destruction {
     ) {
         int sxz = sx * sz;
         float[] carried = new float[kind.length];
+        // how tall a run of slender cells each one belongs to: a doorway's jamb is slender for three or four blocks
+        // under its lintel, a pier left standing in a ruin for many more
+        byte[] slim = new byte[kind.length];
+        byte[] slimDown = new byte[kind.length];
+        for (int y = 0; y < sy; y++) {
+            for (int c = 0; c < sxz; c++) {
+                int i = y * sxz + c;
+                if (kind[i] == 2 && slender(kind, c, y * sxz, sx, sz)) {
+                    slimDown[i] = (byte)Math.min(100, (y > 0 ? slimDown[i - sxz] : 0) + 1);
+                }
+            }
+        }
+
+        for (int y = sy - 1; y >= 0; y--) {
+            for (int c = 0; c < sxz; c++) {
+                int i = y * sxz + c;
+                if (slimDown[i] > 0) {
+                    int above = y < sy - 1 && slimDown[i + sxz] > 0 ? slim[i + sxz] : 0;
+                    // the whole run gets the height of the run
+                    slim[i] = (byte)Math.min(100, Math.max(above, slimDown[i]));
+                }
+            }
+        }
+
         byte[] role = new byte[sxz];
         int[] owner = new int[sxz];
         byte[] steps = new byte[sxz];
@@ -1201,6 +1531,10 @@ public final class Destruction {
                         if (lone(kind, c, base, sx, sz)) {
                             // a single free-standing pillar buckles long before a wall of the same stuff would
                             str *= states[i].is(BlockTags.LOGS) || states[i].is(BlockTags.PLANKS) ? 0.2F : 0.1F;
+                        } else if (slim[i] >= 6) {
+                            // nor can a pier a block or two wide, or the torn end of a wall, carry what a whole wall
+                            // could: the big upper floors of a ruin no longer balance on a stub
+                            str *= 0.4F;
                         }
 
                         // houses are built with a good margin: only a clear overload gives way, never a column that's merely busy
@@ -1277,18 +1611,49 @@ public final class Destruction {
                 }
 
                 crunch(level, Vec3.atCenterOf(first), 2.0F + Math.min(3.0F, crushed * 0.2F));
-                far(level, ParticleTypes.CAMPFIRE_COSY_SMOKE, first.getX() + 0.5, first.getY() + 0.5, first.getZ() + 0.5, 2 + crushed / 3, 1.0, 0.6, 1.0, 0.02, 128.0);
+                // a post buckling under the load bursts sideways into chips and its own dust
+                BlockState burst = states[over.iterator().nextInt()];
+                crumble(level, Vec3.atCenterOf(first), burst, Math.min(30, 6 + crushed * 2), 0.22F, 1.5F);
+                dustCloud(level, Vec3.atCenterOf(first), burst, Math.min(6.0F, 1.5F + (float)crushed * 0.3F), 1.2F);
                 requestCollapse(level, first, Math.max(16, q.r), Math.max(48, q.up), Math.max(6, q.down), q.drops);
             }
         }
     }
 
+    /** Tallest a survey grows to when it finds its falling piece running on above it. */
+    private static final int MAX_UP = 144;
+    /** Biggest component that comes down as one piece; bigger ones break into storey bands. */
+    private static final int SPLIT = 4000;
     private static final byte ROLE_NONE = 0;
     private static final byte ROLE_POST = 1;
     private static final byte ROLE_SLOPE = 2;
     private static final byte ROLE_GROUND = 3;
     private static final byte ROLE_EDGE = 4;
     private static final byte ROLE_SPAN = 5;
+
+    /** At most one structural neighbour on its own level: a pier one or two blocks across, or the very end of a wall. */
+    private static boolean slender(byte[] kind, int c, int base, int sx, int sz) {
+        int x = c % sx;
+        int z = c / sx;
+        int n = 0;
+        if (x > 0 && kind[base + c - 1] == 2) {
+            n++;
+        }
+
+        if (x < sx - 1 && kind[base + c + 1] == 2) {
+            n++;
+        }
+
+        if (z > 0 && kind[base + c - sx] == 2) {
+            n++;
+        }
+
+        if (z < sz - 1 && kind[base + c + sx] == 2) {
+            n++;
+        }
+
+        return n <= 1;
+    }
 
     /** Nothing structural beside it on its own level: a lone post or pier rather than part of a wall. */
     private static boolean lone(byte[] kind, int c, int base, int sx, int sz) {
@@ -1356,8 +1721,9 @@ public final class Destruction {
             int contacts = 0;
             int touchMinY = 2147483647;
             long hingeBlock = -9223372036854775808L;
-            long[] contactSample = new long[8];
+            long[] contactSample = new long[12];
             int samples = 0;
+            RandomSource rnd = level.random;
             boolean wood = false;
 
             for (int k = 0; k < size; k++) {
@@ -1391,8 +1757,14 @@ public final class Destruction {
                                 kx += (double)nx;
                                 kz += (double)nz;
                                 long wp = BlockPos.asLong(minX + nx, minY + ny, minZ + nz);
+                                // an even sample along the whole break, not just the first corner the scan came across
                                 if (samples < contactSample.length) {
                                     contactSample[samples++] = wp;
+                                } else {
+                                    int slot = rnd.nextInt(contacts);
+                                    if (slot < contactSample.length) {
+                                        contactSample[slot] = wp;
+                                    }
                                 }
 
                                 if (y < touchMinY) {
@@ -1419,7 +1791,10 @@ public final class Destruction {
                     double dz = cz - hz;
                     double dl = Math.sqrt(dx * dx + dz * dz);
                     double half = (double)Math.max(bx1 - bx0, bz1 - bz0) / 2.0 + 0.5;
-                    if (dl > 0.3 * half + 0.4) {
+                    // a tall slender piece (a tower, a chimney) settles down onto its own ruin instead of toppling
+                    // across the street like a felled tree into the next building, and the next
+                    boolean tall = by1 - by0 > 30 && by1 - by0 > 2 * Math.max(bx1 - bx0, bz1 - bz0);
+                    if (dl > 0.3 * half + 0.4 && !tall) {
                         tip = new Vec3(dx / dl, 0.0, dz / dl);
                         hinge = new Vec3((double)minX + hx + tip.x * 0.5, (double)(minY + touchMinY), (double)minZ + hz + tip.z * 0.5);
                         hb = BlockPos.of(hingeBlock);
@@ -1509,24 +1884,14 @@ public final class Destruction {
                 );
             }
 
+            // the joints it hangs from crack open: grit and chips trickle out of them, more the closer it is to going
+            float strain = Math.min(1.0F, (float)p.age / Math.max(1.0F, (float)(p.due - (level.getGameTime() - p.age))));
             for (long c : p.contacts) {
-                if (rnd.nextInt(3) == 0) {
+                if (rnd.nextFloat() < 0.18F + strain * 0.3F) {
                     BlockPos b = BlockPos.of(c);
                     BlockState s = level.getBlockState(b);
                     if (!s.isAir()) {
-                        far(
-                            level,
-                            new BlockParticleOption(ParticleTypes.BLOCK, s),
-                            (double)b.getX() + 0.5,
-                            (double)b.getY() + 0.5,
-                            (double)b.getZ() + 0.5,
-                            4,
-                            0.4,
-                            0.4,
-                            0.4,
-                            0.05,
-                            64.0
-                        );
+                        crumble(level, Vec3.atCenterOf(b).add(0.0, -0.3, 0.0), s, 1 + rnd.nextInt(2 + (int)(strain * 3.0F)), 0.0F, 0.9F);
                     }
                 }
             }
@@ -1596,6 +1961,14 @@ public final class Destruction {
                 }
 
                 cleanupAround(level, Arrays.copyOf(pos, valid));
+                // the joints snap: a burst of chips where it tore away from what still stands
+                for (int k = 0; k < p.contacts.length; k += 2) {
+                    BlockPos b = BlockPos.of(p.contacts[k]);
+                    BlockState s = level.getBlockState(b);
+                    crumble(level, Vec3.atCenterOf(b), s.isAir() ? p.states[0] : s, 5, 0.12F, 1.0F);
+                }
+
+                rescanAfter(level, pos, valid, p.contacts, p.drops);
             } else {
                 Destruction.Job job = new Destruction.Job(Arrays.copyOf(pos, valid), Arrays.copyOf(st, valid), Vec3.atCenterOf(BlockPos.of(pos[0])));
                 job.wood = p.wood;
@@ -1603,6 +1976,41 @@ public final class Destruction {
                 lst.jobs.add(job);
                 // what was buried inside the piece crumbles along with it
                 lst.requests.add(new Destruction.Request(BlockPos.of(pos[0]), 16, 64, 8, level.getGameTime() + 2L, p.drops));
+            }
+        }
+    }
+
+    /**
+     * Once a piece has come away, what it was joined to is looked at again a moment later. The first survey assumed
+     * anything running off its edge was held up out there; with the piece gone that may no longer be true, and without
+     * a second look the rest of a roof would stay hanging in the air beside the hole.
+     */
+    private static void rescanAfter(ServerLevel level, long[] positions, int count, long[] contacts, boolean drops) {
+        if (count > 0) {
+            int x0 = Integer.MAX_VALUE;
+            int y0 = Integer.MAX_VALUE;
+            int z0 = Integer.MAX_VALUE;
+            int x1 = Integer.MIN_VALUE;
+            int y1 = Integer.MIN_VALUE;
+            int z1 = Integer.MIN_VALUE;
+
+            for (int i = 0; i < count; i++) {
+                long p = positions[i];
+                x0 = Math.min(x0, BlockPos.getX(p));
+                y0 = Math.min(y0, BlockPos.getY(p));
+                z0 = Math.min(z0, BlockPos.getZ(p));
+                x1 = Math.max(x1, BlockPos.getX(p));
+                y1 = Math.max(y1, BlockPos.getY(p));
+                z1 = Math.max(z1, BlockPos.getZ(p));
+            }
+
+            RandomSource rnd = level.random;
+            int half = Math.max(x1 - x0, z1 - z0) / 2;
+            BlockPos mid = new BlockPos((x0 + x1) / 2, y0, (z0 + z1) / 2);
+            requestCollapse(level, mid, Mth.clamp(half + 8, 10, 28), Math.max(24, y1 - y0 + 16), 6, drops, 6 + rnd.nextInt(8));
+
+            for (int k = 0; k < contacts.length; k += 3) {
+                requestCollapse(level, BlockPos.of(contacts[k]), 14, 40, 6, drops, 8 + rnd.nextInt(12));
             }
         }
     }
@@ -1623,6 +2031,7 @@ public final class Destruction {
         double sumY = 0.0;
         double sumZ = 0.0;
         int lowestY = 2147483647;
+        BlockState first = null;
 
         while (done < budget && job.index < job.positions.length) {
             long p = job.positions[job.index];
@@ -1643,6 +2052,10 @@ public final class Destruction {
                 out = ol > 0.01 ? out.scale(0.035 / ol) : Vec3.ZERO;
                 Vec3 v = new Vec3((rnd.nextDouble() - 0.5) * 0.07 + out.x, -0.02 - rnd.nextDouble() * 0.05, (rnd.nextDouble() - 0.5) * 0.07 + out.z);
                 smash(level, m.immutable(), expected, v, rubble);
+                if (first == null) {
+                    first = expected;
+                }
+
                 sumX += (double)m.getX();
                 sumY += (double)m.getY();
                 sumZ += (double)m.getZ();
@@ -1650,11 +2063,13 @@ public final class Destruction {
             }
         }
 
-        if (done > 0 && lowestY != 2147483647) {
+        if (done > 0 && lowestY != 2147483647 && first != null) {
             double cx = sumX / (double)done + 0.5;
             double cz = sumZ / (double)done + 0.5;
-            far(level, ParticleTypes.CAMPFIRE_COSY_SMOKE, cx, (double)lowestY + 0.5, cz, Math.min(5, 1 + done / 80), 3.0, 1.0, 3.0, 0.02, 160.0);
-            far(level, ParticleTypes.POOF, cx, sumY / (double)done, cz, Math.min(30, 4 + done / 12), 3.0, 3.0, 3.0, 0.05, 96.0);
+            Vec3 at = new Vec3(cx, sumY / (double)done, cz);
+            // the masonry comes apart in its own dust, and grit rains from where it hung
+            dustCloud(level, at, first, Math.min(9.0F, 2.0F + (float)done / 40.0F), Math.min(2.2F, 0.8F + (float)done / 150.0F));
+            crumble(level, at, first, Math.min(24, 4 + done / 10), 0.0F, Math.min(8.0F, 2.0F + (float)done / 30.0F));
             if (soundBudget(level)) {
                 level.playSound(
                     null,
@@ -1674,20 +2089,29 @@ public final class Destruction {
 
     private static void finish(ServerLevel level, Destruction.Job job) {
         cleanupAround(level, job.positions);
+        rescanAfter(level, job.positions, job.positions.length, new long[0], job.drops);
         AbstractTitan.shakeNearby(level, job.center, 48.0, Math.min(0.9F, 0.2F + (float)job.positions.length / 1500.0F), 20);
     }
 
     private static void cleanupAround(ServerLevel level, long[] positions) {
         MutableBlockPos m = new MutableBlockPos();
         int removed = 0;
+        // a fixture taken away is looked round in turn: the pot standing on a shutter goes with the shutter
+        it.unimi.dsi.fastutil.longs.LongArrayList todo = new it.unimi.dsi.fastutil.longs.LongArrayList(positions);
 
-        for (long p : positions) {
+        for (int k = 0; k < todo.size(); k++) {
+            long p = todo.getLong(k);
             for (Direction dir : Direction.values()) {
                 m.set(p).move(dir);
                 BlockState s = level.getBlockState(m);
-                if (!s.isAir() && s.getFluidState().isEmpty() && !s.canSurvive(level, m)) {
+                // pots / lanterns / chains must fall with the room even when canSurvive is sticky
+                if (!s.isAir() && s.getFluidState().isEmpty() && (isSoftFixture(s) || !s.canSurvive(level, m))) {
                     level.setBlock(m, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(), 50);
                     Rebuild.mark(level, m);
+                    if (isSoftFixture(s) && !s.getCollisionShape(EmptyBlockGetter.INSTANCE, BlockPos.ZERO).isEmpty()) {
+                        throwBlock(level, m.immutable(), s, new Vec3(0.0, -0.04, 0.0), 0.0F, 0);
+                    }
+                    todo.add(m.asLong());
                     if (++removed > 2000) {
                         return;
                     }

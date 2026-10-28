@@ -362,7 +362,7 @@ public final class Rebuild {
                     Rebuild.Zone zz = d.zones.computeIfAbsent(zone, k -> new Rebuild.Zone());
                     zz.add(pos.asLong());
                     zz.lastDamage = sl.getGameTime();
-                    if (!zz.fallen && !zone.contains("wall") && zz.pending % 64 == 0 && zz.pending >= baseline(sl, zone)) {
+                    if (!zz.fallen && !zone.contains("wall") && !zone.startsWith("arena") && zz.pending % 64 == 0 && zz.pending >= baseline(sl, zone)) {
                         fall(sl, zone, zz);
                     }
 
@@ -373,6 +373,19 @@ public final class Rebuild {
                     d.setDirty();
                 }
             }
+        }
+    }
+
+    /** Sets a zone's repair going now, to be done within {@code ticks} (Valgard, once a wave run is over). */
+    public static void hurry(ServerLevel level, String zone, int ticks) {
+        Rebuild.Data d = Rebuild.Data.get(level);
+        Rebuild.Zone z = d.zones.get(zone);
+        if (z != null && z.pending > 0) {
+            long now = level.getGameTime();
+            z.lastDamage = now - 1200L;
+            z.repairStart = now;
+            z.repairEnd = now + (long)ticks;
+            d.setDirty();
         }
     }
 
@@ -493,6 +506,7 @@ public final class Rebuild {
             return false;
         } else {
             int sounds = 0;
+            int fx = 0;
             boolean any = false;
             long chunk = z.builderChunk;
             if (chunk == -9223372036854775808L || !z.byChunk.containsKey(chunk) || !level.hasChunk(ChunkPos.getX(chunk), ChunkPos.getZ(chunk))) {
@@ -540,6 +554,13 @@ public final class Rebuild {
                                 BlockState have = level.getBlockState(m);
                                 if (have != want && !have.is(Blocks.BEDROCK)) {
                                     level.setBlock(m, want, 3);
+                                    if (!want.isAir() && fx < 10
+                                        && level.getNearestPlayer((double)m.getX(), (double)m.getY(), (double)m.getZ(), 56.0, false) != null) {
+                                        fx++;
+                                        com.takem.titans.fx.Fx.send(level, com.takem.titans.fx.Fx.REBUILD, m.getX() + 0.5, m.getY() + 0.5, m.getZ() + 0.5,
+                                            (float)Block.getId(want), 0.0F, 0.0F, 0.0F, 64.0);
+                                    }
+
                                     if (!want.isAir()
                                         && sounds < 3
                                         && level.getNearestPlayer((double)m.getX(), (double)m.getY(), (double)m.getZ(), 40.0, false) != null

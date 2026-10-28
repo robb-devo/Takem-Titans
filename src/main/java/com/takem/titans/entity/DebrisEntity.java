@@ -2,6 +2,7 @@ package com.takem.titans.entity;
 
 import com.takem.titans.entity.titan.AbstractTitan;
 import com.takem.titans.entity.titan.TitanPart;
+import com.takem.titans.fx.LocalFx;
 import com.takem.titans.odm.Grapple;
 import com.takem.titans.odm.Tether;
 import com.takem.titans.registry.ModEntities;
@@ -12,8 +13,6 @@ import java.util.Iterator;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Direction.Plane;
-import net.minecraft.core.particles.BlockParticleOption;
-import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtUtils;
@@ -24,7 +23,6 @@ import net.minecraft.network.syncher.SynchedEntityData.Builder;
 import net.minecraft.server.level.ServerEntity;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundSource;
-import net.minecraft.util.Mth;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
@@ -55,6 +53,10 @@ public class DebrisEntity extends Entity {
     public float axisY;
     public float axisZ;
     public final Tether tether = new Tether();
+    private double corrX;
+    private double corrY;
+    private double corrZ;
+    private int corrTicks;
 
     public DebrisEntity(EntityType<? extends DebrisEntity> type, Level level) {
         super(type, level);
@@ -168,6 +170,12 @@ public class DebrisEntity extends Entity {
             // The velocity has to be stored before moving: move() only zeroes the axes that collide, so reading it
             // back afterwards gives the post-collision velocity. Without this, gravity never accumulated and debris
             // drifted down at a constant crawl instead of falling.
+            if (this.level().isClientSide && this.corrTicks > 0) {
+                // ease towards where the server says we are instead of jumping there
+                this.corrTicks--;
+                this.setPos(this.getX() + this.corrX, this.getY() + this.corrY, this.getZ() + this.corrZ);
+            }
+
             this.setDeltaMovement(v);
             this.move(MoverType.SELF, v);
             Vec3 after = this.getDeltaMovement();
@@ -178,10 +186,22 @@ public class DebrisEntity extends Entity {
                 float r1 = this.hash(1);
                 float r2 = this.hash(2);
                 double kick = -v.y;
-                hy = kick * (0.18 + 0.12 * (double)r1);
-                hx = v.x * 0.55 + ((double)r1 - 0.5) * kick * 0.45;
-                hz = v.z * 0.55 + ((double)r2 - 0.5) * kick * 0.45;
-                if (!this.level().isClientSide && kick > 0.6) {
+                // A block landing on the street gives back only a little of its fall as a hop (timber more than
+                // stone) and friction eats its skid in proportion to how hard it hit. The ground knocks it just
+                // slightly off line - it used to be kicked sideways at up to half its fall speed, which sent beams
+                // leaping across the street.
+                double e = restitution(this.state) * (0.7 + 0.6 * (double)r1);
+                hy = kick * e;
+                double skid = Math.sqrt(v.x * v.x + v.z * v.z);
+                double keep = skid < 1.0E-4 ? 0.0 : Math.max(0.0, 1.0 - 0.5 * (1.0 + e) * kick / skid);
+                hx = v.x * keep + ((double)r1 - 0.5) * kick * 0.06;
+                hz = v.z * keep + ((double)r2 - 0.5) * kick * 0.06;
+                if (this.level().isClientSide) {
+                    this.spinRate *= 0.45F;
+                    if (kick > 0.3) {
+                        LocalFx.debrisImpact(this.level(), this.position(), this.state, kick, v);
+                    }
+                } else if (kick > 0.6) {
                     this.impactEffects(kick);
                 }
             } else if (this.onGround()) {
@@ -232,45 +252,68 @@ public class DebrisEntity extends Entity {
         return (float)(h & 65535) / 65535.0F;
     }
 
+    /** How much of a hard landing comes back as a hop: timber springs a little, masonry thuds, wool doesn't at all. */
+    private static double restitution(BlockState s) {
+        float d = Destruction.density(s);
+        if (d < 0.5F) {
+            return 0.05;
+        } else if (d < 1.0F) {
+            return 0.3;
+        } else {
+            return d >= 3.0F ? 0.2 : 0.14;
+        }
+    }
+
+    /**
+     * Vanilla jumps a plain entity straight to each position the server sends. This block flies on its own copy of the
+     * physics in between, so the two only drift a little apart: close the gap over three ticks instead.
+     */
+    @Override
+    public void lerpTo(double x, double y, double z, float yRot, float xRot, int steps) {
+        double dx = x - this.getX();
+        double dy = y - this.getY();
+        double dz = z - this.getZ();
+        if (dx * dx + dy * dy + dz * dz > 4.0 || this.life < 2) {
+            this.setPos(x, y, z);
+            this.corrTicks = 0;
+        } else {
+            this.corrX = dx / 3.0;
+            this.corrY = dy / 3.0;
+            this.corrZ = dz / 3.0;
+            this.corrTicks = 3;
+        }
+    }
+
     private void clientTick() {
         if (this.spinRate == 0.0F && this.life == 1) {
-            float r = this.hash(7) * 6.283F;
-            float u = this.hash(9) * 2.0F - 1.0F;
-            float s = Mth.sqrt(1.0F - u * u);
-            this.axisX = s * Mth.cos(r);
-            this.axisY = u;
-            this.axisZ = s * Mth.sin(r);
-            this.spinRate = (float)(6.0 + 22.0 * (double)this.hash(11)) * (float)Math.min(1.0, this.getDeltaMovement().length() * 1.6 + 0.25);
+            // tumble end over end about the level axis across the flight, so it can come down flat on a face
+            Vec3 dm = this.getDeltaMovement();
+            boolean alongX = Math.abs(dm.x) > 1.0E-3 || Math.abs(dm.z) > 1.0E-3 ? Math.abs(dm.x) >= Math.abs(dm.z) : this.hash(9) < 0.5F;
+            float sign = (alongX ? dm.x : dm.z) >= 0.0 ? 1.0F : -1.0F;
+            this.axisX = alongX ? 0.0F : sign;
+            this.axisY = 0.0F;
+            this.axisZ = alongX ? -sign : 0.0F;
+            this.spinRate = (float)(5.0 + 16.0 * (double)this.hash(11)) * (float)Math.min(1.0, dm.length() * 1.6 + 0.2);
         }
 
         this.spinO = this.spin;
         if (this.onGround()) {
-            float target = this.spin > 180.0F ? 360.0F : 0.0F;
-            this.spin = this.spin + (target - this.spin) * 0.35F;
-            this.spinO = this.spin;
+            // settle onto the nearest face
+            float target = (float)Math.round(this.spin / 90.0F) * 90.0F;
+            this.spin = this.spin + (target - this.spin) * 0.4F;
             this.spinRate *= 0.5F;
         } else {
             this.spin = this.spin + this.spinRate;
-            if (this.spin >= 360.0F) {
-                this.spin -= 360.0F;
-                this.spinO -= 360.0F;
-            }
+        }
+
+        if (this.spin >= 360.0F) {
+            this.spin -= 360.0F;
+            this.spinO -= 360.0F;
         }
     }
 
     private void impactEffects(double kick) {
         ServerLevel sl = (ServerLevel)this.level();
-        sl.sendParticles(
-            new BlockParticleOption(ParticleTypes.BLOCK, this.state),
-            this.getX(),
-            this.getY() + 0.2,
-            this.getZ(),
-            (int)Math.min(10.0, 3.0 + kick * 6.0),
-            0.35,
-            0.15,
-            0.35,
-            0.12
-        );
         if (Destruction.soundBudget(sl)) {
             sl.playSound(
                 null,
@@ -332,7 +375,8 @@ public class DebrisEntity extends Entity {
         }
 
         if (!placed) {
-            sl.sendParticles(new BlockParticleOption(ParticleTypes.BLOCK, this.state), this.getX(), this.getY() + 0.4, this.getZ(), 8, 0.3, 0.3, 0.3, 0.05);
+            // it breaks up where it lies: a scatter of its own chips and a little of its dust
+            Destruction.crumble(sl, this.position().add(0.0, 0.4, 0.0), this.state, 6, 0.08F, 0.8F);
             if (Destruction.soundBudget(sl) && this.random.nextInt(3) == 0) {
                 sl.playSound(null, this.getX(), this.getY(), this.getZ(), this.state.getSoundType().getBreakSound(), SoundSource.BLOCKS, 0.7F, 0.8F);
             }

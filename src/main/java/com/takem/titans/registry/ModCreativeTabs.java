@@ -16,9 +16,19 @@ public final class ModCreativeTabs {
                 .title(Component.translatable("itemGroup.takemtitans"))
                 .icon(() -> new ItemStack(ModItems.ODM_BLADES.get()))
                 .displayItems((params, out) -> {
+                    out.accept(ModItems.FIELD_MANUAL.get());
+                    out.accept(ModItems.WAYSTONE.get());
+                    out.accept(ModItems.MOD_RECYCLER.get());
+                    out.accept(ModItems.MOD_WINCH.get());
+                    out.accept(ModItems.MOD_FRAME.get());
+                    out.accept(ModItems.MOD_LONG_HOOKS.get());
+                    out.accept(ModItems.MOD_BARBS.get());
+                    out.accept(ModItems.MOD_TWIN_CHAMBER.get());
                     out.accept(OdmGear.createFullGear());
                     out.accept(OdmGear.createFullGear(ModItems.ADVANCED_ODM_GEAR.get()));
+                    out.accept(OdmGear.createFullGear(ModItems.PHANTOM_ODM_GEAR.get()));
                     out.accept(OdmGear.createFullGear(ModItems.GODSPEED_ODM_GEAR.get()));
+                    out.accept(OdmGear.createFullGear(ModItems.EVENT_HORIZON_ODM_GEAR.get()));
                     out.accept(ModItems.ODM_BLADES.get());
                     out.accept(ModItems.VETERAN_BLADES.get());
                     out.accept(ModItems.SERRATED_BLADES.get());
@@ -68,8 +78,12 @@ public final class ModCreativeTabs {
                     out.accept(ModItems.PURE_TITAN_SPAWN_EGG.get());
                     out.accept(ModItems.ABNORMAL_TITAN_SPAWN_EGG.get());
                     out.accept(ModItems.CRAWLER_TITAN_SPAWN_EGG.get());
+                    out.accept(ModItems.GHOUL_TITAN_SPAWN_EGG.get());
                     out.accept(ModItems.COLOSSAL_TITAN_SPAWN_EGG.get());
                     out.accept(ModItems.ARMORED_TITAN_SPAWN_EGG.get());
+                    out.accept(ModItems.FEMALE_TITAN_SPAWN_EGG.get());
+                    out.accept(ModItems.WAR_HAMMER_TITAN_SPAWN_EGG.get());
+                    out.accept(ModItems.CART_TITAN_SPAWN_EGG.get());
                     out.accept(ModItems.BEAST_TITAN_SPAWN_EGG.get());
                     out.accept(ModItems.RAVAGER_TITAN_SPAWN_EGG.get());
                     out.accept(ModItems.JAEGER_SPAWN_EGG.get());

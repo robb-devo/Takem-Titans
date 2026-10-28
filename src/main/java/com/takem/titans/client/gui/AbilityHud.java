@@ -2,6 +2,7 @@ package com.takem.titans.client.gui;
 
 import com.takem.titans.TakemTitans;
 import com.takem.titans.client.ClientOdm;
+import com.takem.titans.item.GearTier;
 import com.takem.titans.odm.OdmGear;
 import com.takem.titans.registry.ModItems;
 import com.takem.titans.skill.ClientSkills;
@@ -17,6 +18,7 @@ public final class AbilityHud {
     public static final ResourceLocation LAYER = TakemTitans.id("abilities");
     private static ItemStack meteor;
     private static ItemStack nova;
+    private static ItemStack warp;
 
     private AbilityHud() {
     }
@@ -33,8 +35,18 @@ public final class AbilityHud {
             int x = g.guiWidth() / 2 + 98;
             int y = g.guiHeight() - 22;
             slot(g, mc, x, y, meteor, o.cd[0], o.cdMax[0]);
+            int next = x + 23;
             if (ClientSkills.rank(Skill.GAS_NOVA) > 0) {
-                slot(g, mc, x + 23, y, nova, o.cd[1], o.cdMax[1]);
+                slot(g, mc, next, y, nova, o.cd[1], o.cdMax[1]);
+                next += 23;
+            }
+
+            if (OdmGear.tier(mc.player) == GearTier.EVENT_HORIZON) {
+                if (warp == null) {
+                    warp = new ItemStack(ModItems.EVENT_HORIZON_ODM_GEAR.get());
+                }
+
+                slot(g, mc, next, y, warp, o.cd[2], o.cdMax[2]);
             }
         }
     }

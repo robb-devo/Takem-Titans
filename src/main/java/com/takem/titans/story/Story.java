@@ -401,6 +401,16 @@ public final class Story {
     }
 
     static void complete(ServerPlayer player) {
+        // in a party the leader's story is the one that moves on
+        ServerPlayer lead = Party.lead(player);
+        if (lead != player) {
+            if (lead != null) {
+                complete(lead);
+            }
+
+            return;
+        }
+
         OdmPlayerData d = OdmServer.data(player);
         Story.Stage s = stage(d);
         if (s.obj != Story.Obj.CONTRACTS) {
@@ -411,6 +421,19 @@ public final class Story {
 
             for (ItemStack st : items) {
                 give(player, st.copy());
+            }
+
+            // the whole party is paid for it
+            for (ServerPlayer m : Party.members(player)) {
+                for (ItemStack st : items) {
+                    give(m, st.copy());
+                }
+
+                if (s.xp > 0) {
+                    addXp(m, s.xp);
+                }
+
+                banner(m, "stage", Component.translatable("story.takemtitans.objective_complete"), rewardLine(s));
             }
 
             if (s.obj == Story.Obj.KILL_AREA) {
@@ -563,6 +586,19 @@ public final class Story {
     }
 
     private static void progress(ServerPlayer player, OdmPlayerData d, Story.Stage s) {
+        ServerPlayer lead = Party.lead(player);
+        if (lead != player) {
+            if (lead != null) {
+                OdmPlayerData ld = OdmServer.data(lead);
+                Story.Stage ls = stage(ld);
+                if (ls.obj == s.obj) {
+                    progress(lead, ld, ls);
+                }
+            }
+
+            return;
+        }
+
         d.stageCount++;
         if (d.stageCount >= s.need) {
             complete(player);

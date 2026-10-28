@@ -55,6 +55,9 @@ public class ScoutHorseEntity extends Horse {
     private int callTicks;
     private int gallop;
     private int gallopStep = -1;
+    private int sidestepCooldown;
+    private int cutCooldown;
+    private static final net.minecraft.resources.ResourceLocation LEAP_ID = com.takem.titans.TakemTitans.id("horse_leap");
 
     public ScoutHorseEntity(EntityType<? extends Horse> type, Level level) {
         super(type, level);
@@ -209,6 +212,19 @@ public class ScoutHorseEntity extends Horse {
                 }
             }
 
+            // at a gallop the horse also clears what it would otherwise have to stop for
+            net.minecraft.world.entity.ai.attributes.AttributeInstance jump = this.getAttribute(Attributes.JUMP_STRENGTH);
+            if (jump != null) {
+                jump.removeModifier(LEAP_ID);
+                if (step > 1) {
+                    jump.addTransientModifier(
+                        new net.minecraft.world.entity.ai.attributes.AttributeModifier(
+                            LEAP_ID, 0.06 * (double)step, net.minecraft.world.entity.ai.attributes.AttributeModifier.Operation.ADD_VALUE
+                        )
+                    );
+                }
+            }
+
             if (step == 5 && rider != null) {
                 this.playSound(SoundEvents.HORSE_GALLOP, 1.4F, 0.8F);
                 rider.displayClientMessage(Component.translatable("message.takemtitans.horse_charge").withStyle(ChatFormatting.GOLD), true);
@@ -217,6 +233,19 @@ public class ScoutHorseEntity extends Horse {
 
         if (step >= 3 && this.tickCount % 2 == 0) {
             level.sendParticles(ParticleTypes.CAMPFIRE_COSY_SMOKE, this.getX(), this.getY() + 0.1, this.getZ(), 1, 0.4, 0.05, 0.4, 0.005);
+        }
+
+        if (this.sidestepCooldown > 0) {
+            this.sidestepCooldown--;
+        }
+
+        if (this.cutCooldown > 0) {
+            this.cutCooldown--;
+        }
+
+        if (rider != null && step >= 2) {
+            this.rideBy(level, rider, step);
+            this.trample(level, rider, step);
         }
 
         if (rider != null && this.tickCount % 40 == 0) {
@@ -232,6 +261,71 @@ public class ScoutHorseEntity extends Horse {
                 this.playSound(SoundEvents.HORSE_ANGRY, 1.2F, 1.1F);
                 rider.displayClientMessage(Component.translatable("message.takemtitans.horse_senses").withStyle(ChatFormatting.RED), true);
             }
+        }
+    }
+
+    /**
+     * The old cavalry trick: ride past a titan with your blades out and cut it behind the knee. At a gallop any leg
+     * within reach of the rider's blades is slashed, harder the faster the horse runs - a titan with both tendons cut
+     * goes down for the nape.
+     */
+    private void rideBy(ServerLevel level, ServerPlayer rider, int step) {
+        if (this.cutCooldown <= 0 && rider.getMainHandItem().getItem() instanceof com.takem.titans.item.BladeItem
+            && !com.takem.titans.item.BladeItem.isBroken(rider.getMainHandItem())) {
+            net.minecraft.world.phys.AABB reach = rider.getBoundingBox().inflate(3.2, 1.5, 3.2);
+            for (com.takem.titans.entity.titan.TitanPart part : level.getEntitiesOfClass(
+                com.takem.titans.entity.titan.TitanPart.class, reach, p -> p.active && p.kind == 4
+            )) {
+                float dmg = 8.0F + 5.0F * (float)step;
+                if (part.hurt(level.damageSources().playerAttack(rider), dmg)) {
+                    Vec3 at = part.getBoundingBox().getCenter();
+                    com.takem.titans.fx.Fx.send(level, 3, at, rider.getYRot(), 0.0F, (this.random.nextFloat() - 0.5F) * 60.0F, 2.2F, 96.0);
+                    level.playSound(null, at.x, at.y, at.z, com.takem.titans.registry.ModSounds.BLADE_HIT.get(), net.minecraft.sounds.SoundSource.PLAYERS, 1.4F, 0.8F);
+                    rider.swing(net.minecraft.world.InteractionHand.MAIN_HAND, true);
+                    this.cutCooldown = 10;
+                    break;
+                }
+            }
+        }
+    }
+
+    /** A horse at a gallop does not stop for a wolf, a zombie or a crawling titan's hand: it bowls them over. */
+    private void trample(ServerLevel level, ServerPlayer rider, int step) {
+        if (step >= 4 && this.tickCount % 4 == 0) {
+            Vec3 fwd = this.getDeltaMovement().multiply(1.0, 0.0, 1.0);
+            if (fwd.lengthSqr() > 1.0E-4) {
+                fwd = fwd.normalize();
+                for (net.minecraft.world.entity.LivingEntity e : level.getEntitiesOfClass(
+                    net.minecraft.world.entity.LivingEntity.class,
+                    this.getBoundingBox().move(fwd.scale(0.8)).inflate(0.3),
+                    e -> e != this && e != rider && e.isAlive() && !(e instanceof net.minecraft.world.entity.player.Player)
+                        && !(e instanceof com.takem.titans.entity.titan.AbstractTitan) && !(e instanceof com.takem.titans.entity.npc.TownsfolkEntity)
+                        && !(e instanceof com.takem.titans.entity.npc.JaegerEntity)
+                )) {
+                    e.hurt(level.damageSources().mobAttack(this), 6.0F);
+                    e.push(fwd.x * 1.2, 0.4, fwd.z * 1.2);
+                    e.hurtMarked = true;
+                }
+            }
+        }
+    }
+
+    /** Dash in the saddle: the horse throws itself sideways out of a grab, a stomp or a falling wall. */
+    public void sidestep(ServerPlayer rider, int dir) {
+        if (this.sidestepCooldown <= 0 && this.onGround()) {
+            this.sidestepCooldown = 50;
+            float yaw = this.getYRot() * 0.017453292F;
+            Vec3 left = new Vec3(Math.cos((double)yaw), 0.0, Math.sin((double)yaw));
+            Vec3 fwd = new Vec3(-Math.sin((double)yaw), 0.0, Math.cos((double)yaw));
+            int side = dir == 0 ? (this.random.nextBoolean() ? 1 : -1) : dir;
+            this.setDeltaMovement(left.scale(1.15 * (double)side).add(fwd.scale(0.35)).add(0.0, 0.42, 0.0));
+            this.hurtMarked = true;
+            this.playSound(SoundEvents.HORSE_JUMP, 1.2F, 0.9F);
+            this.playSound(SoundEvents.HORSE_BREATHE, 1.0F, 1.2F);
+            if (this.level() instanceof ServerLevel sl) {
+                com.takem.titans.world.Destruction.dustCloud(sl, this.position(), net.minecraft.world.level.block.Blocks.DIRT.defaultBlockState(), 2.5F, 0.8F);
+            }
+            com.takem.titans.odm.OdmServer.data(rider).immuneTicks = Math.max(com.takem.titans.odm.OdmServer.data(rider).immuneTicks, 6);
         }
     }
 

@@ -33,7 +33,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Vector3f;
 
-public class WallTitan extends ColossalTitan {
+public class WallTitan extends ColossalTitan implements CoreHost {
     public static final int CORES = 4;
     private static final float CORE_HP = 260.0F;
     private int coresLeft = 4;

@@ -229,8 +229,7 @@ public final class Boom {
                 if (!level.getBlockState(m).isAir()) {
                     m.move(0, 1, 0);
                     if (level.getBlockState(m).isAir() && BaseFireBlock.canBePlacedAt(level, m, Direction.UP)) {
-                        level.setBlock(m, BaseFireBlock.getState(level, m), 3);
-                        Rebuild.mark(level, m);
+                        Destruction.flame(level, m);
                         count--;
                     }
                     break;

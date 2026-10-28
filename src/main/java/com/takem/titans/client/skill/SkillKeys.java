@@ -24,5 +24,11 @@ public final class SkillKeys {
                 mc.setScreen(new SkillScreen());
             }
         }
+
+        while (OdmKeys.MANUAL.consumeClick()) {
+            if (mc.player != null && mc.screen == null) {
+                mc.setScreen(new com.takem.titans.client.gui.FieldManualScreen());
+            }
+        }
     }
 }

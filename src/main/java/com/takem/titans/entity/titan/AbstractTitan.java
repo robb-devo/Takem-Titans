@@ -86,7 +86,7 @@ public abstract class AbstractTitan extends Monster {
     public static final int FLAG_RIGHT_LEG_CUT = 64;
     public static final int FLAG_LEFT_LEG_CUT = 128;
     protected final int[] legRegen = new int[2];
-    protected final int[] spurt = new int[5];
+    protected final int[] spurt = new int[6];
     private final int[] woundPart = new int[10];
     private final Vec3[] woundAt = new Vec3[10];
     private final int[] woundTtl = new int[10];
@@ -386,30 +386,42 @@ public abstract class AbstractTitan extends Monster {
             }
         }
 
-        boolean beat = this.tickCount % 8 < 3;
+        // the heart still beats: a hard pump, a weaker one, then a pause
+        int phase = this.tickCount % 14;
+        boolean beat = phase < 2 || phase >= 5 && phase < 6;
 
-        for (int ix = 0; ix < 5; ix++) {
+        for (int ix = 0; ix < this.spurt.length; ix++) {
             if (this.spurt[ix] > 0) {
                 this.spurt[ix]--;
+                int joint = switch (ix) {
+                    case 0 -> 5;
+                    case 1 -> 8;
+                    case 2 -> 11;
+                    case 3 -> 13;
+                    case 5 -> 3;
+                    default -> 2;
+                };
+                Vector3f end = switch (ix) {
+                    case 0, 1 -> new Vector3f(0.0F, 14.0F, 0.0F);
+                    case 2, 3 -> new Vector3f(0.0F, 10.0F, 0.0F);
+                    case 5 -> new Vector3f(TitanSkeleton.NAPE);
+                    default -> new Vector3f(0.0F, -26.0F, 0.0F);
+                };
+                Vec3 at = this.skeletonPoint(joint, end);
                 if (beat) {
-                    int joint = switch (ix) {
-                        case 0 -> 5;
-                        case 1 -> 8;
-                        case 2 -> 11;
-                        case 3 -> 13;
-                        default -> 2;
-                    };
+                    Vec3 base = this.skeletonPoint(joint, ix == 5 ? new Vector3f(0.0F, -6.0F, 0.0F) : new Vector3f(0.0F, ix == 4 ? -14.0F : 4.0F, 0.0F));
+                    Vec3 dir = at.subtract(base).normalize().add(0.0, ix >= 4 ? 0.7 : 0.35, 0.0);
+                    float k = Math.min(1.0F, (float)this.spurt[ix] / 80.0F);
+                    float pump = phase < 2 ? 1.0F : 0.55F;
+                    Gore.spurt(level, at, dir, (int)((8 + 22.0F * k) * pump), (0.5 + 0.7 * (double)k * (double)this.getTitanScale() * 0.3) * pump);
+                    if (phase == 0 && this.random.nextInt(3) == 0) {
+                        level.playSound(null, at.x, at.y, at.z, SoundEvents.HONEY_BLOCK_SLIDE, SoundSource.HOSTILE, 1.6F, 0.4F + this.random.nextFloat() * 0.15F);
+                    }
+                }
 
-                    Vector3f end = switch (ix) {
-                        case 0, 1 -> new Vector3f(0.0F, 14.0F, 0.0F);
-                        case 2, 3 -> new Vector3f(0.0F, 10.0F, 0.0F);
-                        default -> new Vector3f(0.0F, -26.0F, 0.0F);
-                    };
-                    Vec3 at = this.skeletonPoint(joint, end);
-                    Vec3 base = this.skeletonPoint(joint, new Vector3f(0.0F, ix == 4 ? -14.0F : 4.0F, 0.0F));
-                    Vec3 dir = at.subtract(base).normalize().add(0.0, 0.35, 0.0);
-                    float k = Math.min(1.0F, (float)this.spurt[ix] / 60.0F);
-                    Gore.spurt(level, at, dir, 4 + (int)(10.0F * k), 0.4 + 0.5 * (double)k * (double)this.getTitanScale() * 0.3);
+                // the raw end sizzles as it starts to knit
+                if (this.spurt[ix] % 5 == 0) {
+                    level.sendParticles(ModParticles.STEAM.get(), at.x, at.y, at.z, 2, 0.3, 0.3, 0.3, 0.03);
                 }
             }
         }
@@ -419,7 +431,7 @@ public abstract class AbstractTitan extends Monster {
         int i = side < 0 ? 0 : 1;
         this.setFlag(side < 0 ? 64 : 128, true);
         this.legRegen[i] = 700 + this.random.nextInt(200);
-        this.spurt[2 + i] = 120;
+        this.spurt[2 + i] = 260;
         this.addTrauma(350.0F);
         Vec3 out = this.getLookAngle().multiply(1.0, 0.0, 1.0).scale(-0.3).add(0.0, 0.25, 0.0);
         Gore.gib(level, this, side < 0 ? 12 : 14, out);
@@ -990,7 +1002,7 @@ public abstract class AbstractTitan extends Monster {
     }
 
     protected boolean isSluggish(ServerLevel level) {
-        return TakemConfig.TITANS_SLEEP_AT_NIGHT.get() && !level.isDay();
+        return TakemConfig.TITANS_SLEEP_AT_NIGHT.get() && !level.isDay() && !this.getTags().contains(com.takem.titans.world.NightMission.AWAKE);
     }
 
     @Nullable
@@ -1840,7 +1852,7 @@ public abstract class AbstractTitan extends Monster {
         int i = side < 0 ? 0 : 1;
         this.setFlag(side < 0 ? 1 : 2, true);
         this.armRegen[i] = 400 + this.random.nextInt(200);
-        this.spurt[i] = 100;
+        this.spurt[i] = 220;
         this.addTrauma(350.0F);
         Vec3 sideways = new Vec3(
             Math.cos(Math.toRadians((double)this.getYRot())) * (double)side, 0.0, Math.sin(Math.toRadians((double)this.getYRot())) * (double)side
@@ -1895,7 +1907,7 @@ public abstract class AbstractTitan extends Monster {
         boolean behead = !big && !burst && ((float)damage > napeMax * 1.2F || this.random.nextFloat() < 0.5F);
         if (behead) {
             this.setFlag(32, true);
-            this.spurt[4] = 200;
+            this.spurt[4] = 320;
             Vec3 back = this.getLookAngle().multiply(1.0, 0.0, 1.0).scale(-0.5).add(0.0, 0.9, 0.0);
             Gore.gib(level, this, 3, back);
         }
@@ -1915,6 +1927,11 @@ public abstract class AbstractTitan extends Monster {
         }
 
         Vec3 nape = this.skeletonPoint(3, TitanSkeleton.NAPE);
+        if (!behead && !burst) {
+            // the cut nape keeps fountaining while the body goes down
+            this.spurt[5] = 220;
+        }
+
         level.sendParticles(ModParticles.BLOOD.get(), nape.x, nape.y, nape.z, 120, 0.6, 0.6, 0.6, 0.35);
         Vec3 up = this.skeletonPoint(3, TitanSkeleton.NAPE)
             .subtract(this.skeletonPoint(3, new Vector3f(0.0F, 0.0F, 0.0F)))
