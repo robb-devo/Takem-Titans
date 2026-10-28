@@ -278,7 +278,7 @@ def box_call(c):
 def write_java():
     src = open(MODEL_JAVA, encoding='utf-8').read()
     start = src.index('// BEGIN GENERATED (tools/titan_art.py)')
-    end = src.index('// END GENERATED')
+    end = src.index('// END GENERATED\n', start)
     head = src[:start]
     body = '// BEGIN GENERATED (tools/titan_art.py)\n' + java_layer() + '\n        '
     styles = ', '.join('"%s"' % s for s in STYLES)
