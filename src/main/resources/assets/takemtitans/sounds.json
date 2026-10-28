@@ -120,24 +120,10 @@
   },
   "titan.step": {
     "sounds": [
-      {
-        "name": "takemtitans:titan/step1",
-        "volume": 0.5
-      },
-      {
-        "name": "takemtitans:titan/step2",
-        "volume": 0.5
-      },
-      {
-        "name": "takemtitans:titan/step3",
-        "volume": 0.5
-      },
-      {
-        "name": "minecraft:entity.iron_golem.step",
-        "type": "event",
-        "pitch": 0.55,
-        "volume": 0.9
-      }
+      "takemtitans:titan/step1",
+      "takemtitans:titan/step2",
+      "takemtitans:titan/step3",
+      "takemtitans:titan/step4"
     ],
     "subtitle": "subtitles.takemtitans.titan.step"
   },
@@ -743,5 +729,29 @@
       "takemtitans:titan/ghoul_shriek2"
     ],
     "subtitle": "subtitles.takemtitans.titan.ghoul_shriek"
+  },
+  "music.explore": {
+    "sounds": [
+      {
+        "name": "takemtitans:music/explore",
+        "stream": true
+      }
+    ]
+  },
+  "music.danger": {
+    "sounds": [
+      {
+        "name": "takemtitans:music/danger",
+        "stream": true
+      }
+    ]
+  },
+  "music.battle": {
+    "sounds": [
+      {
+        "name": "takemtitans:music/battle",
+        "stream": true
+      }
+    ]
   }
 }

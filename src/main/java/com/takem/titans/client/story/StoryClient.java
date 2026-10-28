@@ -89,7 +89,6 @@ public final class StoryClient {
     private static int bannerAge;
     private static final List<StoryClient.Pop> POPS = new ArrayList<>();
     @Nullable
-    private static StoryClient.BossMusic music;
 
     private StoryClient() {
     }
@@ -253,7 +252,6 @@ public final class StoryClient {
                     }
                 }
 
-                tickMusic(mc);
             }
         } else {
             has = false;
@@ -522,15 +520,6 @@ public final class StoryClient {
         }
     }
 
-    private static void tickMusic(Minecraft mc) {
-        boolean boss = bossNear(mc, 120.0);
-        if (boss && (music == null || music.isStopped()) && !mc.getSoundManager().isActive(music)) {
-            music = new StoryClient.BossMusic();
-            mc.getMusicManager().stopPlaying();
-            mc.getSoundManager().play(music);
-        }
-    }
-
     static boolean bossNear(Minecraft mc, double r) {
         if (mc.player != null && mc.level != null) {
             for (AbstractTitan t : mc.level.getEntitiesOfClass(AbstractTitan.class, mc.player.getBoundingBox().inflate(r))) {
@@ -546,34 +535,6 @@ public final class StoryClient {
     }
 
     private static record Banner(String kind, Component title, Component sub) {
-    }
-
-    private static final class BossMusic extends AbstractTickableSoundInstance {
-        private float fade;
-        private boolean out;
-
-        BossMusic() {
-            super(ModSounds.BOSS_MUSIC.get(), SoundSource.MUSIC, SoundInstance.createUnseededRandom());
-            this.looping = true;
-            this.delay = 0;
-            this.volume = 0.01F;
-            this.relative = true;
-            this.attenuation = Attenuation.NONE;
-        }
-
-        @Override
-        public void tick() {
-            Minecraft mc = Minecraft.getInstance();
-            if (!this.out && !StoryClient.bossNear(mc, 150.0)) {
-                this.out = true;
-            }
-
-            this.fade = Mth.clamp(this.fade + (this.out ? -0.01F : 0.02F), 0.0F, 1.0F);
-            this.volume = Math.max(0.001F, this.fade * 0.9F);
-            if (this.out && this.fade <= 0.0F) {
-                this.stop();
-            }
-        }
     }
 
     private static final class Pop {

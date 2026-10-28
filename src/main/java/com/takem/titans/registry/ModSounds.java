@@ -85,6 +85,9 @@ public final class ModSounds {
     public static final DeferredHolder<SoundEvent, SoundEvent> QUEST_COMPLETE = reg("story.quest_complete");
     public static final DeferredHolder<SoundEvent, SoundEvent> CUTSCENE_STING = reg("story.cutscene_sting");
     public static final DeferredHolder<SoundEvent, SoundEvent> BOSS_MUSIC = reg("story.boss_music");
+    public static final DeferredHolder<SoundEvent, SoundEvent> MUSIC_EXPLORE = reg("music.explore");
+    public static final DeferredHolder<SoundEvent, SoundEvent> MUSIC_DANGER = reg("music.danger");
+    public static final DeferredHolder<SoundEvent, SoundEvent> MUSIC_BATTLE = reg("music.battle");
     public static final DeferredHolder<SoundEvent, SoundEvent> DIALOGUE_BLIP = reg("story.dialogue_blip");
     public static final DeferredHolder<SoundEvent, SoundEvent> FLARE_SHOOT = reg("item.flare_shoot");
     public static final DeferredHolder<SoundEvent, SoundEvent> FLARE_BURN = reg("item.flare_burn");

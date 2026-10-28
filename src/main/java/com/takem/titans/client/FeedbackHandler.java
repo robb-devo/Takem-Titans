@@ -24,16 +24,19 @@ public final class FeedbackHandler {
             case 0:
                 OdmHud.addHit(msg.a(), msg.b(), msg.c());
                 ClientEffects.onHit(msg.a(), msg.b() == 1);
+                MusicDirector.combat();
                 break;
             case 1:
                 OdmHud.addKill(msg.a(), msg.b(), msg.c());
                 ClientEffects.onKill();
+                MusicDirector.combat();
                 break;
             case 2:
                 ClientEffects.shake((float)msg.a() / 100.0F, msg.b());
                 break;
             case 3:
                 ClientTitanState.setGrabbed(msg.a());
+                MusicDirector.combat();
                 break;
             case 4:
                 Waypoints.add(new BlockPos(msg.a(), msg.b(), msg.c()));
