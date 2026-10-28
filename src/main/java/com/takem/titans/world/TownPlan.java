@@ -42,7 +42,7 @@ public final class TownPlan {
     static final TownPlan.Palette[] PALETTES = new TownPlan.Palette[]{
         new TownPlan.Palette(
             Blocks.WHITE_TERRACOTTA.defaultBlockState(),
-            Blocks.DARK_OAK_LOG,
+            Blocks.STRIPPED_DARK_OAK_LOG,
             Blocks.STONE_BRICKS.defaultBlockState(),
             Blocks.BRICKS.defaultBlockState(),
             Blocks.BRICK_STAIRS.defaultBlockState(),
@@ -51,7 +51,7 @@ public final class TownPlan {
         ),
         new TownPlan.Palette(
             Blocks.SMOOTH_SANDSTONE.defaultBlockState(),
-            Blocks.SPRUCE_LOG,
+            Blocks.STRIPPED_SPRUCE_LOG,
             Blocks.COBBLESTONE.defaultBlockState(),
             Blocks.DEEPSLATE_TILES.defaultBlockState(),
             Blocks.DEEPSLATE_TILE_STAIRS.defaultBlockState(),
@@ -60,7 +60,7 @@ public final class TownPlan {
         ),
         new TownPlan.Palette(
             Blocks.CALCITE.defaultBlockState(),
-            Blocks.OAK_LOG,
+            Blocks.STRIPPED_OAK_LOG,
             Blocks.ANDESITE.defaultBlockState(),
             Blocks.BRICKS.defaultBlockState(),
             Blocks.BRICK_STAIRS.defaultBlockState(),
@@ -69,7 +69,7 @@ public final class TownPlan {
         ),
         new TownPlan.Palette(
             Blocks.LIGHT_GRAY_TERRACOTTA.defaultBlockState(),
-            Blocks.DARK_OAK_LOG,
+            Blocks.STRIPPED_DARK_OAK_LOG,
             Blocks.STONE_BRICKS.defaultBlockState(),
             Blocks.NETHER_BRICKS.defaultBlockState(),
             Blocks.NETHER_BRICK_STAIRS.defaultBlockState(),
@@ -78,7 +78,7 @@ public final class TownPlan {
         ),
         new TownPlan.Palette(
             Blocks.BIRCH_PLANKS.defaultBlockState(),
-            Blocks.DARK_OAK_LOG,
+            Blocks.STRIPPED_DARK_OAK_LOG,
             Blocks.MOSSY_COBBLESTONE.defaultBlockState(),
             Blocks.MUD_BRICKS.defaultBlockState(),
             Blocks.MUD_BRICK_STAIRS.defaultBlockState(),
@@ -87,7 +87,7 @@ public final class TownPlan {
         ),
         new TownPlan.Palette(
             Blocks.WHITE_TERRACOTTA.defaultBlockState(),
-            Blocks.SPRUCE_LOG,
+            Blocks.STRIPPED_SPRUCE_LOG,
             Blocks.POLISHED_ANDESITE.defaultBlockState(),
             Blocks.DEEPSLATE_TILES.defaultBlockState(),
             Blocks.DEEPSLATE_TILE_STAIRS.defaultBlockState(),
@@ -96,7 +96,7 @@ public final class TownPlan {
         ),
         new TownPlan.Palette(
             Blocks.TERRACOTTA.defaultBlockState(),
-            Blocks.DARK_OAK_LOG,
+            Blocks.STRIPPED_DARK_OAK_LOG,
             Blocks.STONE_BRICKS.defaultBlockState(),
             Blocks.BRICKS.defaultBlockState(),
             Blocks.BRICK_STAIRS.defaultBlockState(),
@@ -107,7 +107,7 @@ public final class TownPlan {
     static final TownPlan.Palette[] TROST_PALETTES = new TownPlan.Palette[]{
         new TownPlan.Palette(
             Blocks.SMOOTH_SANDSTONE.defaultBlockState(),
-            Blocks.OAK_LOG,
+            Blocks.STRIPPED_OAK_LOG,
             Blocks.CUT_SANDSTONE.defaultBlockState(),
             Blocks.POLISHED_GRANITE.defaultBlockState(),
             Blocks.POLISHED_GRANITE_STAIRS.defaultBlockState(),
@@ -116,7 +116,7 @@ public final class TownPlan {
         ),
         new TownPlan.Palette(
             Blocks.YELLOW_TERRACOTTA.defaultBlockState(),
-            Blocks.DARK_OAK_LOG,
+            Blocks.STRIPPED_DARK_OAK_LOG,
             Blocks.COBBLESTONE.defaultBlockState(),
             Blocks.BRICKS.defaultBlockState(),
             Blocks.BRICK_STAIRS.defaultBlockState(),
@@ -125,7 +125,7 @@ public final class TownPlan {
         ),
         new TownPlan.Palette(
             Blocks.WHITE_TERRACOTTA.defaultBlockState(),
-            Blocks.MANGROVE_LOG,
+            Blocks.STRIPPED_MANGROVE_LOG,
             Blocks.STONE_BRICKS.defaultBlockState(),
             Blocks.MUD_BRICKS.defaultBlockState(),
             Blocks.MUD_BRICK_STAIRS.defaultBlockState(),
@@ -134,7 +134,7 @@ public final class TownPlan {
         ),
         new TownPlan.Palette(
             Blocks.SMOOTH_SANDSTONE.defaultBlockState(),
-            Blocks.SPRUCE_LOG,
+            Blocks.STRIPPED_SPRUCE_LOG,
             Blocks.GRANITE.defaultBlockState(),
             Blocks.DEEPSLATE_TILES.defaultBlockState(),
             Blocks.DEEPSLATE_TILE_STAIRS.defaultBlockState(),
@@ -143,7 +143,7 @@ public final class TownPlan {
         ),
         new TownPlan.Palette(
             Blocks.ORANGE_TERRACOTTA.defaultBlockState(),
-            Blocks.DARK_OAK_LOG,
+            Blocks.STRIPPED_DARK_OAK_LOG,
             Blocks.STONE_BRICKS.defaultBlockState(),
             Blocks.POLISHED_GRANITE.defaultBlockState(),
             Blocks.POLISHED_GRANITE_STAIRS.defaultBlockState(),
@@ -511,8 +511,15 @@ public final class TownPlan {
             int lz = z - lot.z0;
             switch (lot.kind) {
                 case PLAZA:
+                    if (!lot.local && StreetLife.inCentralPlaza(x, z)) {
+                        StreetLife.centralPlaza(col);
+                    } else {
+                        plaza(col, lot);
+                    }
+                    return;
                 case GATE_SQUARE:
                     plaza(col, lot);
+                    StreetLife.market(col, lx, lz, lot.x0 >= 0 ? 1 : -1);
                     return;
                 case TRAINING:
                     TrainingGround.column(col, lx, lz);
@@ -559,7 +566,7 @@ public final class TownPlan {
             }
 
             if (ring != null) {
-                exterior(col, ring, x - ring.x0, z - ring.z0);
+                exterior(col, ring, x - ring.x0, z - ring.z0, edge);
             }
 
             TownPlan.Bridge over = bridgeAt(x, z, lot);
@@ -705,7 +712,7 @@ public final class TownPlan {
      * What hangs off a house on the outside, in the one-block ring around its walls: roof eaves and gable verges,
      * shutters beside the upper windows, window boxes with flowers under them, and a small roof over the front door.
      */
-    private static void exterior(ColumnBuffer col, TownPlan.Building b, int bx, int bz) {
+    private static void exterior(ColumnBuffer col, TownPlan.Building b, int bx, int bz, boolean street) {
         boolean outX = bx < 0 || bx >= b.w;
         boolean outZ = bz < 0 || bz >= b.d;
         int top = b.wallTop();
@@ -719,6 +726,37 @@ public final class TownPlan {
         int along = outZ ? bx : bz;
         int len = outZ ? b.w : b.d;
         int door = Math.min(b.doorAlong, len - 2);
+        int look = WorldNoise.hash(b.x0, b.floors, b.z0, 2121);
+        boolean inner = along > 0 && along < len - 1;
+        if (street && inner && !b.solidWalls) {
+            if (side == b.doorSide && b.floors >= 2 && Math.floorMod(look, 3) == 0) {
+                // a shop: a striped awning along the ground floor and its wares out on the pavement
+                Block stripe = AWNING_STRIPES[Math.floorMod(look >> 3, AWNING_STRIPES.length)];
+                setIfAir(col, 70, (along & 1) == 0 ? Blocks.WHITE_WOOL.defaultBlockState() : stripe.defaultBlockState());
+                if (Math.abs(along - door) == 3 || Math.abs(along - door) == 4 && Math.floorMod(look >> 5, 2) == 0) {
+                    setIfAir(col, 67, Math.floorMod(along + look, 3) == 0 ? Blocks.HAY_BLOCK.defaultBlockState() : Blocks.BARREL.defaultBlockState());
+                    setIfAir(col, 68, POTS[Math.floorMod(along * 7 + look, POTS.length)].defaultBlockState());
+                }
+            } else if (Math.abs(along - door) >= 2 && WorldNoise.rand(col.x, 9, col.z, 4343) < 0.05) {
+                // a barrel or two left by the wall
+                setIfAir(col, 67, Blocks.BARREL.defaultBlockState());
+            }
+
+            if (b.floors >= 4 && Math.floorMod(look >> 7, 3) != 0) {
+                // a narrow balcony in front of the middle window of one upper floor
+                int k = 2 + Math.floorMod(look >> 9, b.floors - 3);
+                int mid = middleWindow(len);
+                if (mid > 0 && Math.abs(along - mid) <= 1) {
+                    int floor = 66 + 4 * k;
+                    boolean alongX = side.getAxis() == Axis.Z;
+                    setIfAir(col, floor, slabOf(pal.timber).setValue(SlabBlock.TYPE, SlabType.TOP));
+                    setIfAir(col, floor + 1, railing(pal.timber, alongX));
+                    if (along == mid) {
+                        setIfAir(col, floor - 1, Blocks.LANTERN.defaultBlockState().setValue(LanternBlock.HANGING, true));
+                    }
+                }
+            }
+        }
         if (side == b.doorSide && Math.abs(along - door) <= 1) {
             setIfAir(col, 69, pal.roofStairs.setValue(StairBlock.FACING, side.getOpposite()));
             if (along == door + 1) {
@@ -729,16 +767,24 @@ public final class TownPlan {
         if (!b.solidWalls && len > 4) {
             BlockState trapdoor = shutterFor(pal.timber).defaultBlockState().setValue(TrapDoorBlock.FACING, side);
 
+            // each house keeps to one style, so a street reads as a row of different houses rather than one busy wall:
+            // shutters on every window, only under the roof, or none; flower boxes or bare sills
+            int shutters = Math.floorMod(look >> 11, 5);
+            boolean boxes = Math.floorMod(look >> 14, 5) < 2;
+
             for (int k = 1; k < b.floors; k++) {
                 int floor = 66 + 4 * k;
+                boolean shut = shutters >= 3 || shutters == 2 && k == b.floors - 1;
                 if (windowSlot(along - 1, len) || windowSlot(along + 1, len)) {
-                    BlockState shutter = trapdoor.setValue(TrapDoorBlock.OPEN, true).setValue(TrapDoorBlock.HALF, Half.BOTTOM);
-                    setIfAir(col, floor + 2, shutter);
-                    setIfAir(col, floor + 3, shutter);
+                    if (shut) {
+                        BlockState shutter = trapdoor.setValue(TrapDoorBlock.OPEN, true).setValue(TrapDoorBlock.HALF, Half.BOTTOM);
+                        setIfAir(col, floor + 2, shutter);
+                        setIfAir(col, floor + 3, shutter);
+                    }
                 } else if (windowSlot(along, len)) {
                     setIfAir(col, floor + 1, trapdoor.setValue(TrapDoorBlock.HALF, Half.TOP));
                     double r = WorldNoise.rand(col.x, floor, col.z, 77);
-                    if (r < 0.6) {
+                    if (boxes && r < 0.75) {
                         setIfAir(col, floor + 2, POTS[Math.floorMod((int)(r * 1000.0), POTS.length)].defaultBlockState());
                     }
                 }
@@ -782,6 +828,35 @@ public final class TownPlan {
         return along > 0 && along < len - 1 && along % 3 == 1 && len > 4;
     }
 
+    /** The window slot nearest the middle of a wall, or -1. */
+    private static int middleWindow(int len) {
+        int best = -1;
+        for (int a = 1; a < len - 1; a++) {
+            if (windowSlot(a, len) && (best < 0 || Math.abs(2 * a - (len - 1)) < Math.abs(2 * best - (len - 1)))) {
+                best = a;
+            }
+        }
+
+        return best;
+    }
+
+    private static final Block[] AWNING_STRIPES = new Block[]{
+        Blocks.RED_WOOL, Blocks.GREEN_WOOL, Blocks.BLUE_WOOL, Blocks.BROWN_WOOL, Blocks.ORANGE_WOOL, Blocks.CYAN_WOOL
+    };
+
+    private static BlockState slabOf(Block timber) {
+        String name = net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(timber).getPath();
+        if (name.contains("dark_oak")) {
+            return Blocks.DARK_OAK_SLAB.defaultBlockState();
+        } else if (name.contains("mangrove")) {
+            return Blocks.MANGROVE_SLAB.defaultBlockState();
+        } else if (name.contains("birch")) {
+            return Blocks.BIRCH_SLAB.defaultBlockState();
+        } else {
+            return name.contains("quartz") ? Blocks.QUARTZ_SLAB.defaultBlockState() : Blocks.SPRUCE_SLAB.defaultBlockState();
+        }
+    }
+
     private static void setIfAir(ColumnBuffer col, int y, BlockState state) {
         if (col.isAir(y)) {
             col.set(y, state);
@@ -802,6 +877,11 @@ public final class TownPlan {
     private static void street(ColumnBuffer col) {
         int x = col.x;
         int z = col.z;
+        if (StreetLife.inCentralPlaza(x, z)) {
+            StreetLife.centralPlaza(col);
+            return;
+        }
+
         double r = WorldNoise.rand(x, 1, z, 5);
         BlockState s;
         if (Math.abs(x) < 8) {
@@ -825,10 +905,16 @@ public final class TownPlan {
         if (ShiganshinaLayout.distToWall((double)x + 0.5, (double)z + 0.5) < 7.0 && Math.abs(x) >= 8) {
             s = r < 0.7 ? Blocks.DIRT_PATH.defaultBlockState() : Blocks.COARSE_DIRT.defaultBlockState();
             col.set(66, s);
+        } else if (StreetLife.gateMarket(col) || StreetLife.wallCamp(col)) {
+            // built there
         } else {
             col.set(66, s);
             if (Math.abs(x) == 7 && Math.floorMod(z, 16) == 0) {
                 lamp(col);
+            }
+
+            if (Math.abs(x) < 8) {
+                StreetLife.avenue(col);
             }
         }
     }
@@ -841,26 +927,6 @@ public final class TownPlan {
         double d = Math.sqrt(dx * dx + dz * dz);
         boolean ring = (int)d % 6 == 0;
         col.set(66, ring ? Blocks.STONE_BRICKS.defaultBlockState() : Blocks.POLISHED_ANDESITE.defaultBlockState());
-        if (lot.kind == TownPlan.LotKind.PLAZA && !lot.local && ShiganshinaLayout.districtOffset((double)z) == -1100 && d < 10.0) {
-            // Mitras: the royal fountain, a wide basin round a gilded obelisk
-            if (d >= 9.0) {
-                col.set(67, Blocks.POLISHED_DIORITE.defaultBlockState());
-            } else if (d < 1.6) {
-                col.fill(67, 88, Blocks.QUARTZ_PILLAR.defaultBlockState());
-                col.set(89, Blocks.GOLD_BLOCK.defaultBlockState());
-                if (d < 0.8) {
-                    col.fill(90, 92, Blocks.GOLD_BLOCK.defaultBlockState());
-                }
-            } else if (d < 2.6) {
-                col.fill(67, 69, Blocks.CHISELED_QUARTZ_BLOCK.defaultBlockState());
-            } else {
-                col.set(66, Blocks.WATER.defaultBlockState());
-                col.set(65, Blocks.QUARTZ_BRICKS.defaultBlockState());
-            }
-
-            return;
-        }
-
         if (lot.kind == TownPlan.LotKind.PLAZA && d < 5.5) {
             if (d >= 4.5) {
                 col.set(67, Blocks.STONE_BRICK_WALL.defaultBlockState());
@@ -1233,6 +1299,7 @@ public final class TownPlan {
             }
         }
 
+        dormer(col, b, bx, bz, top);
         if (col.x == b.chimneyX && col.z == b.chimneyZ) {
             col.fill(top + 1, surface + 2, Blocks.BRICKS.defaultBlockState());
             col.set(surface + 3, Blocks.BRICK_SLAB.defaultBlockState());
@@ -1240,6 +1307,56 @@ public final class TownPlan {
             if (WorldNoise.rand(b.chimneyX, 5, b.chimneyZ, 31) < 0.35) {
                 col.set(surface + 2, Blocks.CAMPFIRE.defaultBlockState());
             }
+        }
+    }
+
+    /**
+     * Dormer windows along the slopes of plain pitched roofs: a little gable three wide, its face flush with the wall
+     * below and its own ridge running back into the main roof, every four blocks along the eaves.
+     */
+    private static void dormer(ColumnBuffer col, TownPlan.Building b, int bx, int bz, int top) {
+        if (b.solidWalls || b.pitch != 1.0F || Math.floorMod(WorldNoise.hash(b.x0, 3, b.z0, 8181), 5) >= 3) {
+            return;
+        }
+
+        // a hipped roof only takes them on its two long sides, well clear of the hips
+        boolean ridgeX = b.roof == TownPlan.Roof.GABLE_X || b.roof == TownPlan.Roof.HIP && b.w >= b.d;
+        int along = ridgeX ? bx : bz;
+        int len = ridgeX ? b.w : b.d;
+        int across = ridgeX ? bz : bx;
+        int depth = ridgeX ? b.d : b.w;
+        int e = Math.min(across, depth - 1 - across);
+        int maxE = (depth - 1) / 2;
+        int margin = b.roof == TownPlan.Roof.HIP ? 4 : 2;
+        if (maxE < 3 || e > 2 || len < 2 * margin + 3) {
+            return;
+        }
+
+        int c = margin + Math.round((along - margin) / 4.0F) * 4;
+        int rel = along - c;
+        if (Math.abs(rel) > 1 || c > len - 1 - margin || e == 2 && rel != 0) {
+            return;
+        }
+
+        Direction toCentre = ridgeX ? (rel < 0 ? Direction.EAST : Direction.WEST) : (rel < 0 ? Direction.SOUTH : Direction.NORTH);
+        TownPlan.Palette pal = b.pal;
+        if (rel != 0) {
+            if (e == 0) {
+                col.set(top + 1, log(pal.timber, Axis.Y));
+                col.set(top + 2, log(pal.timber, Axis.Y));
+            }
+
+            col.set(top + 3, pal.roofStairs.setValue(StairBlock.FACING, toCentre));
+        } else {
+            if (e == 0) {
+                col.set(top + 1, pane(ridgeX));
+                col.set(top + 2, pane(ridgeX));
+                col.set(top + 3, pal.plaster);
+            } else if (e == 1) {
+                col.fill(top + 2, top + 3, pal.plaster);
+            }
+
+            col.set(top + 4, pal.roof);
         }
     }
 

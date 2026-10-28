@@ -11,7 +11,14 @@ java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 neoForge {
     version = project.neo_version
     runs {
-        client { client() }
+        client {
+            client()
+            // dev only: gradlew runClient -Ptour=path/to/script [-PtourWorld=folder] plays a PhotoTour script
+            if (project.hasProperty('tour')) {
+                programArguments.addAll('--quickPlaySingleplayer', project.findProperty('tourWorld') ?: 'tour', '--width', '1600', '--height', '900')
+                systemProperty 'takemtitans.tour', file(project.property('tour')).absolutePath
+            }
+        }
         server { server() }
     }
     mods {
