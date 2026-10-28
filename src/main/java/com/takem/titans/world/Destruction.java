@@ -768,13 +768,24 @@ public final class Destruction {
      * then goes too.
      */
     public static void requestCollapse(ServerLevel level, BlockPos center, int r, int up, int down, boolean drops, int delay) {
-        if (TakemConfig.BUILDING_COLLAPSE.get()) {
+        // callers pad the survey by ~8 blocks of context around what they actually hit
+        requestCollapse(level, center, r, up, down, drops, delay, Math.max(4, r - 8));
+    }
+
+    /**
+     * {@code focus}: how far (sideways) from {@code center} a piece may start for this look to bring it down. The survey
+     * around it is only context; what stood there before stands now, unless it touched what just changed.
+     */
+    public static void requestCollapse(ServerLevel level, BlockPos center, int r, int up, int down, boolean drops, int delay, int focus) {
+        if (TakemConfig.BUILDING_COLLAPSE.get() && chainGen <= CHAIN_LIMIT) {
             Destruction.LevelState st = STATES.computeIfAbsent(level.dimension(), k -> new Destruction.LevelState());
             long due = level.getGameTime() + (long)Math.max(1, delay);
 
             for (Destruction.Request q : st.requests) {
                 if (q.center.distManhattan(center) <= 5) {
-                    q.r = Math.max(q.r, r);
+                    q.r = Math.max(q.r, Math.min((int)Math.round((double)r * TakemConfig.COLLAPSE_SCALE.get()), q.r + 4));
+                    q.focus = Math.min(q.r, Math.max(q.focus, focus));
+                    q.gen = Math.min(q.gen, chainGen);
                     q.up = Math.max(q.up, up);
                     q.down = Math.max(q.down, down);
                     q.due = Math.max(q.due, due);
@@ -783,7 +794,7 @@ public final class Destruction {
                 }
             }
 
-            if (st.requests.size() < 96) {
+            if (st.requests.size() < 48) {
                 double scale = TakemConfig.COLLAPSE_SCALE.get();
                 // (a survey that finds its piece running on above it extends itself, up to MAX_UP)
                 st.requests
@@ -794,7 +805,8 @@ public final class Destruction {
                             Math.min(up, 96),
                             Math.min(down, 16),
                             due,
-                            drops
+                            drops,
+                            focus
                         )
                     );
             }
@@ -910,7 +922,9 @@ public final class Destruction {
                     if (q.due <= now) {
                         st.requests.remove(i--);
                         analysed++;
+                        chainGen = q.gen;
                         Destruction.Job job = analyse(level, q, st);
+                        chainGen = 0;
                         if (job != null) {
                             st.jobs.add(job);
                         }
@@ -924,7 +938,9 @@ public final class Destruction {
                         creak(level, p);
                     } else {
                         st.pending.remove(ix--);
+                        chainGen = p.gen + 1;
                         release(level, st, p);
+                        chainGen = 0;
                     }
                 }
 
@@ -935,7 +951,9 @@ public final class Destruction {
                     budget -= run(level, job, budget);
                     if (job.index >= job.positions.length) {
                         st.jobs.poll();
+                        chainGen = job.gen + 1;
                         finish(level, job);
+                        chainGen = 0;
                     }
                 }
             }
@@ -1117,14 +1135,17 @@ public final class Destruction {
                             if (isStructural(level, m, level.getBlockState(m))) {
                                 // the unsupported part carries on above the survey: look again, taller, before
                                 // letting any of it go
-                                lst.requests.add(new Destruction.Request(q.center, q.r, Math.min(MAX_UP, q.up + 48), q.down, level.getGameTime(), q.drops));
+                                lst.requests.add(new Destruction.Request(q.center, q.r, Math.min(MAX_UP, q.up + 48), q.down, level.getGameTime(), q.drops, q.focus));
                                 return null;
                             }
                         }
                     }
                 }
 
-                crushOverloaded(level, q, kind, dist, states, sx, sy, sz, minX, minY, minZ);
+                if (q.gen == 0) {
+                    // buckling under load is what the first blow does; aftershocks only drop what truly hangs free
+                    crushOverloaded(level, q, kind, dist, states, sx, sy, sz, minX, minY, minZ);
+                }
                 int count = 0;
 
                 for (int i = 0; i < n; i++) {
@@ -1201,6 +1222,12 @@ public final class Destruction {
 
                     for (int id = 1; id < groups.size(); id++) {
                         IntArrayList members = groups.get(id);
+                        if (!nearFocus(members, q, sx, sz)) {
+                            // it hung like this before anything happened here: a wide span over the arena stands, a
+                            // balcony next door. Not this collapse's business.
+                            continue;
+                        }
+
                         if (members.size() <= SPLIT) {
                             if (!makeSection(level, lst, members, kind, dist, comp, id, states, sx, sy, sz, minX, minY, minZ, now, q.drops)) {
                                 loose.addAll(members);
@@ -1585,12 +1612,16 @@ public final class Destruction {
 
             for (int i : over) {
                 // only the bottom of an overloaded run gives way; what stands on it follows on the next pass
-                if (i >= sxz && over.contains(i - sxz) || crushed >= 48) {
+                if (i >= sxz && over.contains(i - sxz) || crushed >= 24) {
                     continue;
                 }
 
                 int x = i % sx;
                 int z = i / sx % sz;
+                if (Math.abs(x - (q.center.getX() - minX)) > q.focus || Math.abs(z - (q.center.getZ() - minZ)) > q.focus) {
+                    continue;
+                }
+
                 int y = i / sxz;
                 m.set(minX + x, minY + y, minZ + z);
                 if (level.getBlockState(m) == states[i]) {
@@ -1615,9 +1646,33 @@ public final class Destruction {
                 BlockState burst = states[over.iterator().nextInt()];
                 crumble(level, Vec3.atCenterOf(first), burst, Math.min(30, 6 + crushed * 2), 0.22F, 1.5F);
                 dustCloud(level, Vec3.atCenterOf(first), burst, Math.min(6.0F, 1.5F + (float)crushed * 0.3F), 1.2F);
-                requestCollapse(level, first, Math.max(16, q.r), Math.max(48, q.up), Math.max(6, q.down), q.drops);
+                chainGen = q.gen + 1;
+                requestCollapse(level, first, 14, Math.max(48, q.up), Math.max(6, q.down), q.drops, 2, 5);
+                chainGen = q.gen;
             }
         }
+    }
+
+    /**
+     * Generation of the collapse being handled right now (server thread only): 0 for whatever set it off directly - a
+     * blow, a blast, a block taken out - 1 for what that brought down. Anything past {@link #CHAIN_LIMIT} is not looked
+     * at, so one ruin can't shake a whole district down after it.
+     */
+    public static int chainGen;
+    public static final int CHAIN_LIMIT = 1;
+
+    private static boolean nearFocus(IntArrayList members, Destruction.Request q, int sx, int sz) {
+        // the survey is centred on q.center, so q.r is the centre's index on both axes
+        for (int k = 0; k < members.size(); k++) {
+            int c = members.getInt(k);
+            int x = c % sx;
+            int z = c / sx % sz;
+            if (Math.abs(x - q.r) <= q.focus && Math.abs(z - q.r) <= q.focus) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /** Tallest a survey grows to when it finds its falling piece running on above it. */
@@ -1942,6 +1997,7 @@ public final class Destruction {
 
                 FallingSectionEntity e = FallingSectionEntity.create(level, pos, st, valid, p.hinge, p.tip, p.hingeBlock);
                 e.drops = p.drops;
+                e.chainGen = chainGen;
                 level.addFreshEntity(e);
                 BlockPos at = BlockPos.of(pos[valid / 2]);
                 level.playSound(null, at, SoundEvents.GENERIC_EXPLODE.value(), SoundSource.BLOCKS, Math.min(6.0F, 1.5F + (float)valid / 120.0F), 0.35F);
@@ -1975,7 +2031,9 @@ public final class Destruction {
                 job.drops = p.drops;
                 lst.jobs.add(job);
                 // what was buried inside the piece crumbles along with it
-                lst.requests.add(new Destruction.Request(BlockPos.of(pos[0]), 16, 64, 8, level.getGameTime() + 2L, p.drops));
+                if (chainGen <= CHAIN_LIMIT) {
+                    lst.requests.add(new Destruction.Request(BlockPos.of(pos[0]), 12, 64, 8, level.getGameTime() + 2L, p.drops, 6));
+                }
             }
         }
     }
@@ -2007,10 +2065,11 @@ public final class Destruction {
             RandomSource rnd = level.random;
             int half = Math.max(x1 - x0, z1 - z0) / 2;
             BlockPos mid = new BlockPos((x0 + x1) / 2, y0, (z0 + z1) / 2);
-            requestCollapse(level, mid, Mth.clamp(half + 8, 10, 28), Math.max(24, y1 - y0 + 16), 6, drops, 6 + rnd.nextInt(8));
+            // only what was joined to the piece that went is looked at again: its own footprint plus a couple of blocks
+            requestCollapse(level, mid, Mth.clamp(half + 6, 8, 20), Math.max(24, y1 - y0 + 16), 6, drops, 6 + rnd.nextInt(8), half + 2);
 
-            for (int k = 0; k < contacts.length; k += 3) {
-                requestCollapse(level, BlockPos.of(contacts[k]), 14, 40, 6, drops, 8 + rnd.nextInt(12));
+            for (int k = 0; k < contacts.length; k += 6) {
+                requestCollapse(level, BlockPos.of(contacts[k]), 10, 40, 6, drops, 8 + rnd.nextInt(12), 3);
             }
         }
     }
@@ -2090,7 +2149,7 @@ public final class Destruction {
     private static void finish(ServerLevel level, Destruction.Job job) {
         cleanupAround(level, job.positions);
         rescanAfter(level, job.positions, job.positions.length, new long[0], job.drops);
-        AbstractTitan.shakeNearby(level, job.center, 48.0, Math.min(0.9F, 0.2F + (float)job.positions.length / 1500.0F), 20);
+        AbstractTitan.shakeNearby(level, job.center, 32.0, Math.min(0.55F, 0.12F + (float)job.positions.length / 2500.0F), 16);
     }
 
     private static void cleanupAround(ServerLevel level, long[] positions) {
@@ -2165,6 +2224,7 @@ public final class Destruction {
         int index;
         boolean wood;
         boolean drops;
+        final int gen = chainGen;
 
         Job(long[] positions, BlockState[] states, Vec3 center) {
             this.positions = positions;
@@ -2192,6 +2252,7 @@ public final class Destruction {
         final boolean wood;
         final long[] hidden;
         final boolean drops;
+        final int gen = chainGen;
         int age;
 
         Pending(
@@ -2217,14 +2278,17 @@ public final class Destruction {
         int down;
         long due;
         boolean drops;
+        int focus;
+        int gen = chainGen;
 
-        Request(BlockPos center, int r, int up, int down, long due, boolean drops) {
+        Request(BlockPos center, int r, int up, int down, long due, boolean drops, int focus) {
             this.center = center;
             this.r = r;
             this.up = up;
             this.down = down;
             this.due = due;
             this.drops = drops;
+            this.focus = Math.min(focus, r);
         }
     }
 }

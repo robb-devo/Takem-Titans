@@ -105,6 +105,8 @@ public class FallingSectionEntity extends Entity implements IEntityWithComplexSp
     public byte kind = 0;
     /** Felled by a player's axe: timber lands as logs to pick up rather than splinters. */
     public boolean drops;
+    /** Collapse generation this piece belongs to; what it knocks loose on landing is the next one (see Destruction.chainGen). */
+    public int chainGen;
     @Nullable
     private UUID owner;
     public final Quaternionf rotO = new Quaternionf();
@@ -443,7 +445,9 @@ public class FallingSectionEntity extends Entity implements IEntityWithComplexSp
 
                 if (this.life - this.lastCollapse > 6) {
                     this.lastCollapse = this.life;
+                    Destruction.chainGen = this.chainGen;
                     Destruction.requestCollapse(sl, BlockPos.containing(at), Mth.clamp((int)this.radius + 6, 8, 28), 56, 6);
+                    Destruction.chainGen = 0;
                 }
             }
 
@@ -660,7 +664,9 @@ public class FallingSectionEntity extends Entity implements IEntityWithComplexSp
         sl.playSound(null, at.x, at.y, at.z, SoundEvents.STONE_PLACE, SoundSource.BLOCKS, 2.0F, 0.5F);
         this.discard();
         // where it came to rest it may overhang a ledge: whatever sticks out unsupported breaks off next
+        Destruction.chainGen = this.chainGen;
         Destruction.requestCollapse(sl, BlockPos.containing(at), Mth.clamp((int)this.radius + 6, 8, 24), 24, 6, this.drops, 4);
+        Destruction.chainGen = 0;
     }
 
     private static boolean isGround(ServerLevel sl, MutableBlockPos m) {
@@ -823,7 +829,9 @@ public class FallingSectionEntity extends Entity implements IEntityWithComplexSp
             }
 
             AbstractTitan.shakeNearby(sl, hit, 40.0 + (double)size, Math.min(1.0F, 0.25F + (float)this.states.length / 900.0F), 22);
+            Destruction.chainGen = this.chainGen;
             Destruction.requestCollapse(sl, BlockPos.containing(hit), Mth.clamp((int)this.radius + 6, 10, 24), 56, 6);
+            Destruction.chainGen = 0;
             this.discard();
         }
     }
@@ -949,6 +957,7 @@ public class FallingSectionEntity extends Entity implements IEntityWithComplexSp
                         piece.floorY = this.floorY;
                         piece.massFactor = (float)Math.min(10.0, 1.0 + Math.sqrt((double)m) / 2.0);
                         piece.drops = this.drops;
+                        piece.chainGen = this.chainGen;
                         piece.generation = this.generation + 1;
                         piece.family = this.family;
                         piece.entityData.set(ROTATION, new Quaternionf());
@@ -1002,7 +1011,9 @@ public class FallingSectionEntity extends Entity implements IEntityWithComplexSp
             }
 
             AbstractTitan.shakeNearby(sl, hit, 40.0 + (double)sz, Math.min(1.0F, 0.25F + (float)alive / 900.0F), 22);
+            Destruction.chainGen = this.chainGen;
             Destruction.requestCollapse(sl, BlockPos.containing(hit), Mth.clamp((int)this.radius + 6, 10, 24), 56, 6);
+            Destruction.chainGen = 0;
             this.discard();
             return true;
         } else {

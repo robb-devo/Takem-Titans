@@ -157,7 +157,10 @@ public class DebrisEntity extends Entity {
                         if (h >= 0.0F && (double)Destruction.density(this.state) * v2 > (double)h * 0.9 + 0.25 && Destruction.canSmash(sl, ahead, hit, 3.0F)) {
                             Destruction.smash(sl, ahead, hit, v.scale(0.5).add(0.0, 0.05, 0.0), 0.2F);
                             if (this.punches == 0) {
+                                // a flying chunk can knock a hole in a wall, but what that brings down ends the chain
+                                Destruction.chainGen = Destruction.CHAIN_LIMIT;
                                 Destruction.requestCollapse(sl, ahead, 7, 40, 3);
+                                Destruction.chainGen = 0;
                             }
 
                             v = v.scale(0.65);
