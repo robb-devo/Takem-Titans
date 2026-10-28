@@ -14,23 +14,28 @@ import net.minecraft.util.FastColor.ARGB32;
 
 public class TitanRenderer extends MobRenderer<AbstractTitan, TitanModel> {
     private final ResourceLocation[] textures;
+    private final String[] styles;
     private final int bellyMask;
     private final float widthScale;
 
     public TitanRenderer(Context context, String name, int variants, int bellyMask, float widthScale) {
         super(context, new TitanModel(context.bakeLayer(TitanModel.LAYER)), 1.0F);
         this.addLayer(new WoundLayer(this));
+        this.addLayer(new TitanGlowLayer(this));
         this.bellyMask = bellyMask;
         this.widthScale = widthScale;
         this.textures = new ResourceLocation[variants];
+        this.styles = new String[variants];
 
         for (int i = 0; i < variants; i++) {
             this.textures[i] = TakemTitans.id("textures/entity/titan/" + name + "_" + i + ".png");
+            this.styles[i] = TitanModel.styleOf(name + "_" + i);
         }
     }
 
     public void render(AbstractTitan titan, float yaw, float pt, PoseStack ps, MultiBufferSource buffers, int light) {
         this.model.tint = -1;
+        this.model.style = this.styles[Math.floorMod(titan.getVariant(), this.textures.length)];
         this.model.showBelly = (this.bellyMask >> Math.floorMod(titan.getVariant(), this.textures.length) & 1) != 0;
         if (titan.dyingTicks > 40) {
             float e = Mth.clamp(((float)titan.dyingTicks + pt - 40.0F) / ((float)titan.evaporateTicks() - 40.0F), 0.0F, 1.0F);

@@ -73,6 +73,7 @@ public class GibRenderer extends EntityRenderer<TitanGibEntity> {
                 ps.scale(s, s, s);
                 ps.scale(-1.0F, -1.0F, 1.0F);
                 ps.translate(0.0F, -this.centres.get(g.joint()) / 16.0F, 0.0F);
+                TitanModel.showStyle(part, TitanModel.styleOf(g.skin()));
                 part.render(ps, buffers.getBuffer(RenderType.entityCutoutNoCull(this.getTextureLocation(g))), light, OverlayTexture.NO_OVERLAY);
                 part.render(ps, buffers.getBuffer(RenderType.entityCutoutNoCull(WoundLayer.WOUNDS[g.joint() == 2 ? 2 : 1])), light, OverlayTexture.NO_OVERLAY);
                 ps.popPose();

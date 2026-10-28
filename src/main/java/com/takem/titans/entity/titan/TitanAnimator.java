@@ -62,8 +62,34 @@ public final class TitanAnimator {
         p.xRot[2] = 0.07F + run * 0.45F + Mth.sin(time * 0.04F) * 0.02F;
         p.yRot[2] = s * 0.07F * amt;
         p.zRot[2] = s * 0.03F * amt;
+        // the hips swing against the shoulders and carry the weight from foot to foot; standing, the body sways
+        p.yRot[1] = -s * 0.09F * amt;
+        p.zRot[1] = c * 0.035F * amt;
+        float still = 1.0F - amt;
+        p.zRot[2] = p.zRot[2] + Mth.sin(time * 0.021F) * 0.035F * still;
+        p.xRot[11] = p.xRot[11] + Mth.sin(time * 0.021F) * 0.03F * still;
+        p.xRot[13] = p.xRot[13] - Mth.sin(time * 0.021F) * 0.03F * still;
+        // forearms swing a beat behind the upper arms, dangling rather than marching
+        p.xRot[6] = p.xRot[6] - Mth.cos(phase - 0.9F) * 0.16F * amt;
+        p.xRot[9] = p.xRot[9] + Mth.cos(phase - 0.9F) * 0.16F * amt;
         p.zRot[3] = Mth.sin(time * 0.013F) * 0.16F * t.headTilt();
         p.xRot[4] = 0.04F + Math.max(0.0F, Mth.sin(time * 0.05F)) * 0.06F;
+        // only the mindless ones: a shifter keeps its head
+        float tilt = t instanceof PureTitan || t instanceof AbnormalTitan && !(t instanceof JawTitan) ? Math.min(1.6F, t.headTilt()) : 0.0F;
+        if (tilt > 0.0F) {
+            // now and then the head jerks to one side and hangs there a moment - nothing human moves like that
+            float beat = time * 0.035F;
+            int n = Mth.floor(beat);
+            float frac = beat - (float)n;
+            int h = n * 73856093 ^ t.getId() * 19349663;
+            if ((h & 7) < 2) {
+                float jerk = frac < 0.12F ? frac / 0.12F : (frac < 0.7F ? 1.0F : 1.0F - (frac - 0.7F) / 0.3F);
+                float dir = (h >> 3 & 1) == 0 ? 1.0F : -1.0F;
+                p.zRot[3] = p.zRot[3] + jerk * dir * 0.38F * tilt;
+                p.yRot[3] = p.yRot[3] + jerk * dir * 0.22F * tilt;
+                p.xRot[4] = p.xRot[4] + jerk * 0.18F;
+            }
+        }
     }
 
     private static void crawl(AbstractTitan t, TitanSkeleton.Pose p, float time, float phase, float amt) {
