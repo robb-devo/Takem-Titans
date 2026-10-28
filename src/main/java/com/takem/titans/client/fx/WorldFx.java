@@ -303,6 +303,50 @@ public final class WorldFx {
         }
     }
 
+    /** Dark smoke that keeps rising where something blew up or burned, thinning out over its life. Draws nothing itself. */
+    public static final class SmokeColumn extends WorldFx.Effect {
+        final Vec3 c;
+        final float radius;
+
+        public SmokeColumn(Vec3 c, float radius, int life) {
+            super(life);
+            this.c = c;
+            this.radius = radius;
+        }
+
+        @Override
+        void tick() {
+            net.minecraft.client.multiplayer.ClientLevel level = Minecraft.getInstance().level;
+            if (level == null) {
+                return;
+            }
+
+            float k = 1.0F - (float)this.age / (float)this.life;
+            int n = k > 0.6F ? 4 + (int)(this.radius * 0.3F) : (level.random.nextFloat() < k * 1.8F ? 2 : 0);
+            for (int i = 0; i < n; i++) {
+                double a = level.random.nextDouble() * Math.PI * 2.0;
+                double r = level.random.nextDouble() * this.radius * 0.6;
+                // FLARE_SMOKE takes its colour from the velocity arguments
+                float g = 0.07F + level.random.nextFloat() * 0.08F;
+                ClientFx.spawn(
+                    level,
+                    com.takem.titans.registry.ModParticles.FLARE_SMOKE.get(),
+                    this.c.x + Math.cos(a) * r,
+                    this.c.y + level.random.nextDouble() * this.radius * 0.4,
+                    this.c.z + Math.sin(a) * r,
+                    g,
+                    g * 0.96F,
+                    g * 0.92F,
+                    2.4F + this.radius * 0.5F + level.random.nextFloat() * 2.0F
+                );
+            }
+        }
+
+        @Override
+        void render(WorldFx.Draw d, float pt) {
+        }
+    }
+
     public abstract static class Effect {
         int age;
         final int life;

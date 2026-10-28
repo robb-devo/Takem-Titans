@@ -468,6 +468,9 @@ LOOKS = [
     Look('training_dummy_0', material='wood', skin='b88a55', skin2='7a5631', hair='d9c27a', hairstyle='messy', face='dummy', eyes='small', seed=179, muscle=0.0),
 ]
 
+EVAPORATE = Look('evaporate', material='muscle', skin='9c2b22', skin2='4f0f0b', plate='d9cbb4', fur='5a1a14', hair='3a0c08',
+                 hairstyle='bald', face='colossal', eyes='void', seed=191, muscle=1.0)
+
 STYLE_OF = {
     'armored_titan': ['armored'], 'beast_titan': ['beast', 'messy'], 'jaw_titan': ['jaw', 'longhair'], 'cart_titan': ['cart', 'messy'],
     'female_titan': ['longhair'], 'war_hammer_titan': ['longhair'], 'ravager_titan': ['spiked'],
@@ -487,11 +490,11 @@ def styles_of(look):
 # --------------------------------------------------------------------------------------------------------------------
 # Painting
 # --------------------------------------------------------------------------------------------------------------------
-def paint(look, D):
+def paint(look, D, styles=None):
     W, H = ATLAS_W * D, ATLAS_H * D
     img = np.zeros((H, W, 4), dtype=float)
     glow = np.zeros((H, W, 4), dtype=float) if look.glow else None
-    styles = styles_of(look)
+    styles = styles_of(look) if styles is None else styles
     for c in OWNERS:
         if c.style is not None and c.style not in styles:
             continue
@@ -1143,6 +1146,11 @@ def main():
         elif os.path.exists(gpath):
             os.remove(gpath)
         print('  painted', look.name, img.shape[1], 'x', img.shape[0])
+    if only is None or only == 'evaporate':
+        # the raw body under every titan's skin, shown as it boils away (all extras painted: any titan may wear them)
+        img, _ = paint(EVAPORATE, D, STYLES)
+        save(img, os.path.join(TEX_DIR, 'evaporate.png'))
+        print('  painted evaporate')
     if only is None or only.startswith('wounds'):
         for lvl in (1, 2, 3):
             save(paint_wounds(lvl, D), os.path.join(TEX_DIR, 'wounds_%d.png' % lvl))

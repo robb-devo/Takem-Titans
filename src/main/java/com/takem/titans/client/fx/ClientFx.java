@@ -363,6 +363,7 @@ public final class ClientFx {
         }
 
         dustPlume(level, at.add(0.0, (double)(-radius) * 0.5, 0.0), radius * 1.5F, 1.5F);
+        WorldFx.add(new WorldFx.SmokeColumn(at, radius, 100 + (int)(radius * 12.0F)));
     }
 
     static void cyclone(ClientLevel level, Vec3 at, float radius, float yaw, float pitch, boolean red) {

@@ -844,6 +844,24 @@ public abstract class AbstractTitan extends Monster {
 
         if (this.dyingTicks > 0) {
             int n = this.dyingTicks < 40 ? 1 : (this.tickCount % 2 == 0 ? 1 + (int)(s * 0.5F) : 0);
+            if (this.dyingTicks > 30 && this.dyingTicks < this.evaporateTicks() - 20) {
+                // the flesh boils off where it is: steam pours off every limb, thickest from the chest
+                int jets = 2 + (int)(s * 0.6F);
+                for (int k = 0; k < jets; k++) {
+                    int joint = STEAM_JOINTS[this.random.nextInt(STEAM_JOINTS.length)];
+                    Vec3 p = this.skeletonPoint(joint, STEAM_LOCAL[joint]);
+                    this.level()
+                        .addAlwaysVisibleParticle(
+                            k == 0 ? ModParticles.BIG_STEAM.get() : ModParticles.STEAM.get(),
+                            p.x + (this.random.nextDouble() - 0.5) * s * 0.3,
+                            p.y + (this.random.nextDouble() - 0.5) * s * 0.3,
+                            p.z + (this.random.nextDouble() - 0.5) * s * 0.3,
+                            (this.random.nextDouble() - 0.5) * 0.05,
+                            0.08 + this.random.nextDouble() * 0.12,
+                            (this.random.nextDouble() - 0.5) * 0.05
+                        );
+                }
+            }
 
             for (int i = 0; i < n; i++) {
                 AABB b = this.getBoundingBox();
@@ -2082,6 +2100,13 @@ public abstract class AbstractTitan extends Monster {
     public int evaporateTicks() {
         return 260;
     }
+
+    private static final int[] STEAM_JOINTS = {2, 2, 2, 3, 5, 6, 8, 9, 11, 12, 13, 14};
+    private static final Vector3f[] STEAM_LOCAL = {
+        new Vector3f(), new Vector3f(), TitanSkeleton.TORSO_CENTER, TitanSkeleton.HEAD_CENTER, new Vector3f(), new Vector3f(0.0F, 7.0F, 0.0F),
+        TitanSkeleton.FOREARM_CENTER, new Vector3f(), new Vector3f(0.0F, 7.0F, 0.0F), TitanSkeleton.FOREARM_CENTER, new Vector3f(),
+        new Vector3f(0.0F, 5.0F, 0.0F), TitanSkeleton.SHIN_CENTER, new Vector3f(0.0F, 5.0F, 0.0F), TitanSkeleton.SHIN_CENTER
+    };
 
     protected void landed(ServerLevel level, float strength) {
         Vec3 fwdDir = Vec3.directionFromRotation(0.0F, this.yBodyRot);

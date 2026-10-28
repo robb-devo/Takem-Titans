@@ -22,6 +22,7 @@ public class TitanRenderer extends MobRenderer<AbstractTitan, TitanModel> {
         super(context, new TitanModel(context.bakeLayer(TitanModel.LAYER)), 1.0F);
         this.addLayer(new WoundLayer(this));
         this.addLayer(new TitanGlowLayer(this));
+        this.addLayer(new EvaporateLayer(this));
         this.bellyMask = bellyMask;
         this.widthScale = widthScale;
         this.textures = new ResourceLocation[variants];
