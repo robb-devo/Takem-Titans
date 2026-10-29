@@ -558,6 +558,9 @@ public final class Story {
         int badges = boss ? 0 : 1 + (int)(titan.getTitanHeight() / 6.0F) + titan.threat() / 2;
         give(player, new ItemStack(ModItems.MERIT_BADGE.get(), badges > 0 ? badges : 1));
         addXp(player, boss ? 300 : Math.round((15.0F + titan.getTitanHeight() * 5.0F) * (1.0F + 0.25F * (float)titan.threat())));
+        if (titan.elite() != com.takem.titans.entity.titan.Elite.NONE) {
+            eliteReward(player, titan);
+        }
         Story.Stage s = stage(d);
         switch (s.obj) {
             case KILL:
@@ -844,6 +847,27 @@ public final class Story {
         }
 
         PacketDistributor.sendToPlayer(player, new StoryPayload(tag));
+    }
+
+    /** A marked titan pays well: experience, badges and one piece of rare kit. */
+    private static void eliteReward(ServerPlayer player, AbstractTitan titan) {
+        int xp = 120 + 40 * titan.threat();
+        int badges = 5 + titan.threat();
+        give(player, new ItemStack(ModItems.MERIT_BADGE.get(), badges));
+        net.minecraft.world.item.Item[] rare = {
+            ModItems.ULTRAHARD_STEEL_INGOT.get(), ModItems.ULTRAHARD_STEEL_INGOT.get(), ModItems.ADRENALINE.get(), ModItems.MOD_RECYCLER.get(),
+            ModItems.MOD_WINCH.get(), ModItems.MOD_FRAME.get(), ModItems.MOD_LONG_HOOKS.get(), ModItems.MOD_BARBS.get(), ModItems.MOD_TWIN_CHAMBER.get()
+        };
+        ItemStack loot = new ItemStack(rare[player.getRandom().nextInt(rare.length)]);
+        give(player, loot.copy());
+        addXp(player, xp);
+        banner(
+            player,
+            "streak",
+            Component.translatable("story.takemtitans.elite_down", titan.elite().title(titan.getType().getDescription())),
+            Component.literal("+" + xp + " XP  ·  ").append(Component.translatable("story.takemtitans.badges", badges)).append("  ·  ").append(loot.getHoverName())
+        );
+        player.playNotifySound(ModSounds.NAPE_THUNDER.get(), SoundSource.PLAYERS, 1.0F, 0.7F);
     }
 
     public static void bannerFor(ServerPlayer player, String kind, Component title, Component sub) {

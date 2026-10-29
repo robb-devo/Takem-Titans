@@ -76,6 +76,7 @@ public abstract class AbstractTitan extends Monster {
     private static final EntityDataAccessor<Integer> DATA_TARGET = SynchedEntityData.defineId(AbstractTitan.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Byte> DATA_FLAGS = SynchedEntityData.defineId(AbstractTitan.class, EntityDataSerializers.BYTE);
     private static final EntityDataAccessor<Byte> DATA_GORE = SynchedEntityData.defineId(AbstractTitan.class, EntityDataSerializers.BYTE);
+    private static final EntityDataAccessor<Byte> DATA_ELITE = SynchedEntityData.defineId(AbstractTitan.class, EntityDataSerializers.BYTE);
     private float trauma;
     public static final int FLAG_RIGHT_ARM_CUT = 1;
     public static final int FLAG_LEFT_ARM_CUT = 2;
@@ -186,6 +187,43 @@ public abstract class AbstractTitan extends Monster {
         builder.define(DATA_TARGET, -1);
         builder.define(DATA_FLAGS, (byte)0);
         builder.define(DATA_GORE, (byte)0);
+        builder.define(DATA_ELITE, (byte)0);
+    }
+
+    public Elite elite() {
+        return Elite.of(this.entityData.get(DATA_ELITE));
+    }
+
+    /** Whether a mark suits this titan: the mindless kinds only, a shifter is dangerous enough. */
+    public boolean canBeElite() {
+        return this.isRegularTitan() && !this.isDummy();
+    }
+
+    /** Marks this titan (server side): its size, speed, name and nape change to fit. */
+    public void makeElite(Elite e) {
+        this.entityData.set(DATA_ELITE, (byte)e.ordinal());
+        if (e == Elite.GIANT) {
+            this.setTitanHeight(Math.min(this.getTitanHeight() * 1.6F, 22.0F));
+        }
+
+        if (e == Elite.SWIFT) {
+            AttributeInstance speed = this.getAttribute(Attributes.MOVEMENT_SPEED);
+            if (speed != null) {
+                speed.addOrReplacePermanentModifier(
+                    new net.minecraft.world.entity.ai.attributes.AttributeModifier(
+                        com.takem.titans.TakemTitans.id("elite_swift"), 0.6, net.minecraft.world.entity.ai.attributes.AttributeModifier.Operation.ADD_MULTIPLIED_BASE
+                    )
+                );
+            }
+        }
+
+        if (e != Elite.NONE) {
+            this.setCustomName(e.title(this.getType().getDescription()));
+            this.setCustomNameVisible(true);
+            this.setPersistenceRequired();
+        }
+
+        this.napeHealth = this.maxNapeHealth();
     }
 
     @Override
@@ -570,6 +608,7 @@ public abstract class AbstractTitan extends Monster {
         tag.putInt("ArmRegenR", this.armRegen[0]);
         tag.putInt("ArmRegenL", this.armRegen[1]);
         tag.putInt("Downed", this.downedTicks);
+        tag.putByte("Elite", this.entityData.get(DATA_ELITE));
     }
 
     @Override
@@ -593,6 +632,7 @@ public abstract class AbstractTitan extends Monster {
         this.armRegen[0] = tag.getInt("ArmRegenR");
         this.armRegen[1] = tag.getInt("ArmRegenL");
         this.downedTicks = tag.getInt("Downed");
+        this.entityData.set(DATA_ELITE, tag.getByte("Elite"));
     }
 
     @Override
@@ -627,6 +667,53 @@ public abstract class AbstractTitan extends Monster {
         this.updateParts();
         if (this.level().isClientSide) {
             this.clientEffects();
+            this.eliteEffects();
+        }
+    }
+
+    /** Scalding steam: whoever is close and not moving fast gets burned. */
+    private void scald() {
+        double r = (double)this.getTitanHeight() * 0.55 + 3.0;
+        for (Player p : this.level().getEntitiesOfClass(Player.class, this.getBoundingBox().inflate(r), p -> !p.isCreative() && !p.isSpectator())) {
+            if (p.getDeltaMovement().lengthSqr() < 0.36) {
+                p.hurt(this.damageSources().hotFloor(), 3.0F);
+            }
+        }
+    }
+
+    /** A wisp in the mark's colour rising from the nape, and what the mark itself looks like. */
+    private void eliteEffects() {
+        Elite e = this.elite();
+        if (e == Elite.NONE || this.dyingTicks > 0) {
+            return;
+        }
+
+        float s = this.getTitanScale();
+        if (this.tickCount % 3 == 0) {
+            Vec3 nape = this.skeletonPoint(3, TitanSkeleton.NAPE);
+            // FLARE_SMOKE takes its colour from the velocity arguments
+            this.level().addParticle(ModParticles.FLARE_SMOKE.get(), nape.x, nape.y, nape.z, e.red(), e.green(), e.blue());
+        }
+
+        if (e == Elite.SCALDING && this.random.nextInt(2) == 0) {
+            Vec3 p = this.skeletonPoint(2, TitanSkeleton.TORSO_CENTER);
+            this.level()
+                .addAlwaysVisibleParticle(
+                    ModParticles.BIG_STEAM.get(),
+                    p.x + (this.random.nextDouble() - 0.5) * s * 1.2,
+                    p.y + (this.random.nextDouble() - 0.5) * s * 1.6,
+                    p.z + (this.random.nextDouble() - 0.5) * s * 1.2,
+                    (this.random.nextDouble() - 0.5) * 0.1,
+                    0.1,
+                    (this.random.nextDouble() - 0.5) * 0.1
+                );
+        } else if (e == Elite.REGENERATOR && this.random.nextInt(4) == 0) {
+            int joint = new int[]{5, 6, 8, 9, 11, 12, 13, 14}[this.random.nextInt(8)];
+            Vec3 p = this.skeletonPoint(joint, new Vector3f(0.0F, 5.0F, 0.0F));
+            this.level().addParticle(ModParticles.STEAM.get(), p.x, p.y, p.z, 0.0, 0.06, 0.0);
+        } else if (e == Elite.HARDENED && this.random.nextInt(10) == 0) {
+            Vec3 nape = this.skeletonPoint(3, TitanSkeleton.NAPE);
+            this.level().addParticle(ModParticles.SPARK.get(), nape.x, nape.y, nape.z, 0.0, 0.05, 0.0);
         }
     }
 
@@ -982,6 +1069,11 @@ public abstract class AbstractTitan extends Monster {
 
         for (int i = 0; i < 2; i++) {
             int side = i == 0 ? -1 : 1;
+            if (this.elite() == Elite.REGENERATOR) {
+                this.armRegen[i] -= 3;
+                this.legRegen[i] -= 3;
+            }
+
             if (this.isArmCut(side) && --this.armRegen[i] <= 0) {
                 this.setFlag(side < 0 ? 1 : 2, false);
                 this.armDamage[i] = 0.0F;
@@ -1010,7 +1102,11 @@ public abstract class AbstractTitan extends Monster {
 
             float max = this.maxNapeHealth();
             if (this.napeHealth < max) {
-                this.napeHealth = Math.min(max, this.napeHealth + max * 0.01F);
+                this.napeHealth = Math.min(max, this.napeHealth + max * (this.elite() == Elite.REGENERATOR ? 0.035F : 0.01F));
+            }
+
+            if (this.elite() == Elite.SCALDING && this.tickCount % 20 == 0 && !this.isDeadOrDying()) {
+                this.scald();
             }
         }
 
@@ -1756,7 +1852,7 @@ public abstract class AbstractTitan extends Monster {
     }
 
     public float maxNapeHealth() {
-        return this.napeHealthFor(this.getTitanHeight()) * this.threatMul();
+        return this.napeHealthFor(this.getTitanHeight()) * this.threatMul() * this.elite().napeMul;
     }
 
     private float threatMul() {

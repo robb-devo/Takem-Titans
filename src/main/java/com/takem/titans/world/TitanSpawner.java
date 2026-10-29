@@ -110,6 +110,14 @@ public final class TitanSpawner {
                     titan.moveTo((double)x + 0.5, (double)y, (double)z + 0.5, r.nextFloat() * 360.0F, 0.0F);
                     titan.finalizeSpawn(level, level.getCurrentDifficultyAt(pos), MobSpawnType.NATURAL, null);
                     titan.applyThreat(tier);
+                    if (tier >= 2 && titan.canBeElite()) {
+                        // marked titans: rare at first, common once the hunt for them is on
+                        float chance = 0.04F + 0.02F * (float)tier + (com.takem.titans.odm.OdmServer.data(player).contractKind == 5 ? 0.2F : 0.0F);
+                        if (r.nextFloat() < chance) {
+                            titan.makeElite(com.takem.titans.entity.titan.Elite.roll(r));
+                        }
+                    }
+
                     titan.yBodyRot = titan.getYRot();
                     titan.yHeadRot = titan.getYRot();
                     AABB box = titan.getBoundingBox();

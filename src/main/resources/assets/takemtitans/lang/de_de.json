@@ -1191,5 +1191,12 @@
   "party.takemtitans.member_joined": "%s ist deiner Party beigetreten.",
   "party.takemtitans.left": "Du hast die Party verlassen.",
   "party.takemtitans.none": "Du bist in keiner Party.",
-  "party.takemtitans.list": "Party: %s"
+  "party.takemtitans.list": "Party: %s",
+  "elite.takemtitans.hardened": "Gehärteter %s",
+  "elite.takemtitans.swift": "Rasender %s",
+  "elite.takemtitans.regenerator": "Regenerierender %s",
+  "elite.takemtitans.giant": "Riesiger %s",
+  "elite.takemtitans.scalding": "Glühender %s",
+  "story.takemtitans.elite_down": "%s erlegt!",
+  "contract.takemtitans.kind.5": "Erlege gezeichnete Titanen (%s/%s)"
 }
