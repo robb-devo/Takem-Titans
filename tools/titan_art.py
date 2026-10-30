@@ -1073,6 +1073,10 @@ def mask_eye_glow(g):
 # Wounds: decals in the same atlas, three levels of damage
 # --------------------------------------------------------------------------------------------------------------------
 def paint_wounds(level, D):
+    """
+    Cuts that open up as a titan is hurt: clean gashes with dark lips and raw meat inside, a thin bruise round them,
+    blood running down from the lower edge, and at the worst a fine spatter - never broad blotches of red.
+    """
     W, H = ATLAS_W * D, ATLAS_H * D
     img = np.zeros((H, W, 4), dtype=float)
     rng = np.random.default_rng(1000 + level)
@@ -1086,32 +1090,47 @@ def paint_wounds(level, D):
             P = g.P
             out = np.zeros(P.shape[:-1] + (4,))
             area = g.ew * g.eh
-            cuts = rng.poisson(area * 0.006 * level * level)
+            cuts = rng.poisson(area * 0.004 * level * (level + 1) / 2)
+            n = vnoise(P, 2.0, 11)
             for _ in range(cuts):
                 cx, cy = rng.uniform(0, 1), rng.uniform(0, 1)
                 ang = rng.uniform(0, math.pi)
-                L = rng.uniform(2.0, 6.0) * (0.7 + 0.3 * level)
-                wdt = rng.uniform(0.25, 0.6) * (0.8 + 0.3 * level)
+                L = rng.uniform(2.0, 5.5) * (0.75 + 0.25 * level)
+                wdt = rng.uniform(0.2, 0.42) * (0.85 + 0.2 * level)
                 dx = (g.s - cx) * g.ew
                 dy = (g.t - cy) * g.eh
                 u = dx * math.cos(ang) + dy * math.sin(ang)
                 v = -dx * math.sin(ang) + dy * math.cos(ang)
-                taper = np.clip(1 - (u / (L * 0.5)) ** 2, 0, 1)
-                core = (np.abs(v) < wdt * taper) & (np.abs(u) < L * 0.5)
-                rim = (np.abs(v) < wdt * taper + 0.35 + 0.2 * level) & (np.abs(u) < L * 0.5 + 0.3)
-                n = vnoise(P, 2.0, 11)
-                flesh = rgb('6e0f0c') * (0.8 + 0.4 * n[..., None])
-                out[..., :3] = np.where(core[..., None], flesh, np.where(rim[..., None] & (out[..., 3:] < 0.5), rgb('8f1611') * (0.85 + 0.3 * n[..., None]), out[..., :3]))
-                out[..., 3] = np.maximum(out[..., 3], np.where(core, 1.0, np.where(rim, 0.85, 0.0)))
-                # blood runs down from the lower lip of the cut
+                taper = np.clip(1 - (u / (L * 0.5)) ** 2, 0, 1) ** 0.6
+                inside = np.abs(u) < L * 0.5
+                core = inside & (np.abs(v) < wdt * taper)
+                meat = inside & (np.abs(v) < wdt * taper * 0.45)
+                lip = inside & (np.abs(v) < wdt * taper + 0.12) & ~core
+                bruise = (np.abs(v) < wdt * taper + 0.18 + 0.05 * level) & (np.abs(u) < L * 0.5 + 0.2) & ~core & ~lip
+                free = out[..., 3] < 0.5
+                out[..., :3] = np.where((bruise & free)[..., None], rgb('7a2a24') * (0.9 + 0.2 * n[..., None]), out[..., :3])
+                out[..., 3] = np.where(bruise & free, np.maximum(out[..., 3], 0.35), out[..., 3])
+                out[..., :3] = np.where(lip[..., None], rgb('3a0806'), out[..., :3])
+                out[..., :3] = np.where(core[..., None], rgb('6e0f0c') * (0.85 + 0.3 * n[..., None]), out[..., :3])
+                out[..., :3] = np.where(meat[..., None], rgb('b0322a') * (0.85 + 0.3 * n[..., None]), out[..., :3])
+                out[..., 3] = np.maximum(out[..., 3], np.where(core | lip, 1.0, 0.0))
+                # blood runs down from the lower lip of the cut, in a few thin streams
                 if g.name not in ('top', 'bottom') and level >= 2:
-                    run = (dy > 0) & (np.abs(dx - math.cos(ang) * rng.uniform(-L / 2, L / 2)) < 0.25) & (dy < rng.uniform(2, 6) * level / 2)
-                    out[..., :3] = np.where(run[..., None] & (out[..., 3:] < 0.5), rgb('7a100c'), out[..., :3])
-                    out[..., 3] = np.maximum(out[..., 3], run * 0.9)
+                    for _k in range(rng.integers(1, 3)):
+                        sx_ = rng.uniform(-L / 2, L / 2)
+                        x0 = cx * g.ew + sx_ * math.cos(ang)
+                        y0 = cy * g.eh + sx_ * math.sin(ang)
+                        ln = rng.uniform(1.5, 4.5) * level / 2
+                        run = (np.abs(g.s * g.ew - x0) < 0.16 + 0.1 * (g.t * g.eh - y0 < 0.5)) & (g.t * g.eh > y0) & (g.t * g.eh < y0 + ln)
+                        out[..., :3] = np.where(run[..., None], rgb('6a0d0a'), out[..., :3])
+                        out[..., 3] = np.maximum(out[..., 3], run * 0.9)
             if level == 3:
-                splat = smooth(0.72, 0.8, fbm(P, 0.25, 501, 3))
-                out[..., :3] = np.where((splat > 0.5)[..., None] & (out[..., 3:] < 0.5), rgb('5a0b08'), out[..., :3])
-                out[..., 3] = np.maximum(out[..., 3], splat * 0.75)
+                # a fine spatter of blood: small drops, thicker towards the lower half of each limb
+                drops = vnoise(P, 3.2, 501)
+                spat = (drops > 0.86) & (fbm(P, 0.3, 502, 2) > 0.5)
+                free = out[..., 3] < 0.5
+                out[..., :3] = np.where((spat & free)[..., None], rgb('5a0b08'), out[..., :3])
+                out[..., 3] = np.where(spat & free, 0.85, out[..., 3])
             sl = (slice(g.py0, g.py1), slice(g.px0, g.px1))
             img[sl] = out
     return img
