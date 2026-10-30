@@ -1275,7 +1275,7 @@ public abstract class AbstractTitan extends Monster {
             } else {
                 Vector3f shoulder = TitanAnimator.stoopedShoulder(side, TitanAnimator.grabStoop(m));
                 float d = m.distance(shoulder);
-                if (!(d > reach) && !(m.z > 6.0F)) {
+                if (!(d > reach) && !(m.z > 6.0F) && !com.takem.titans.combat.TitanShift.isShifted(target)) {
                     this.setAction(side < 0 ? TitanAction.GRAB_RIGHT : TitanAction.GRAB_LEFT, target);
                     this.attackCooldown = 30 + this.random.nextInt(25);
                     return true;

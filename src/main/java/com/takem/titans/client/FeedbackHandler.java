@@ -23,7 +23,10 @@ public final class FeedbackHandler {
         switch (msg.kind()) {
             case 0:
                 OdmHud.addHit(msg.a(), msg.b(), msg.c());
-                ClientEffects.onHit(msg.a(), msg.b() == 1);
+                // the shake, red flash and slash across the view are a blade's; a shot or a titan's fist has its own
+                if (mc.player == null || !(mc.player.getMainHandItem().getItem() instanceof com.takem.titans.item.OdmPistolsItem) && !ShiftClient.local()) {
+                    ClientEffects.onHit(msg.a(), msg.b() == 1);
+                }
                 MusicDirector.combat();
                 break;
             case 1:
@@ -107,6 +110,14 @@ public final class FeedbackHandler {
                 break;
             case 16:
                 ScreenFx.blood((float)msg.a() / 100.0F, msg.b());
+                break;
+            case 30:
+                ShiftClient.status(msg.a(), msg.b(), msg.c());
+                break;
+            case 31:
+                if (mc.player != null) {
+                    mc.player.setDeltaMovement((double)msg.a() / 100.0, (double)msg.b() / 100.0, (double)msg.c() / 100.0);
+                }
                 break;
             case 17:
                 if (msg.b() >= 0 && msg.b() < ClientOdm.INSTANCE.cd.length) {

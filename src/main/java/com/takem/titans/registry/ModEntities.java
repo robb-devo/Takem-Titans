@@ -48,6 +48,15 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 
 public final class ModEntities {
     public static final DeferredRegister<EntityType<?>> ENTITIES = DeferredRegister.create(Registries.ENTITY_TYPE, "takemtitans");
+    /** The body a Titan Shift draws in a player's place: client-side only, never spawned. */
+    public static final DeferredHolder<EntityType<?>, EntityType<com.takem.titans.entity.titan.ShifterTitan>> SHIFTER_TITAN = ENTITIES.register(
+        "shifter_titan",
+        () -> Builder.<com.takem.titans.entity.titan.ShifterTitan>of(com.takem.titans.entity.titan.ShifterTitan::new, MobCategory.MISC)
+            .sized(2.0F, 8.0F)
+            .noSummon()
+            .clientTrackingRange(16)
+            .build("shifter_titan")
+    );
     public static final DeferredHolder<EntityType<?>, EntityType<PureTitan>> PURE_TITAN = ENTITIES.register(
         "pure_titan",
         () -> Builder.of(PureTitan::new, MobCategory.MONSTER).sized(2.0F, 8.0F).eyeHeight(7.2F).clientTrackingRange(16).updateInterval(2).build("pure_titan")
@@ -321,6 +330,7 @@ public final class ModEntities {
 
     public static void registerAttributes(EntityAttributeCreationEvent event) {
         event.put(PURE_TITAN.get(), AbstractTitan.createTitanAttributes().build());
+        event.put(SHIFTER_TITAN.get(), AbstractTitan.createTitanAttributes().build());
         event.put(ABNORMAL_TITAN.get(), AbstractTitan.createTitanAttributes().build());
         event.put(CRAWLER_TITAN.get(), AbstractTitan.createTitanAttributes().build());
         event.put(COLOSSAL_TITAN.get(), ColossalTitan.createColossalAttributes().build());

@@ -780,5 +780,135 @@
       "takemtitans:odm/swing3"
     ],
     "subtitle": "subtitles.takemtitans.odm.swing"
+  },
+  "shift.ignite": {
+    "subtitle": "subtitles.takemtitans.shift.ignite",
+    "sounds": [
+      {
+        "name": "takemtitans:shift/ignite1",
+        "attenuation_distance": 48
+      }
+    ]
+  },
+  "shift.transform": {
+    "subtitle": "subtitles.takemtitans.shift.transform",
+    "sounds": [
+      {
+        "name": "takemtitans:shift/transform1",
+        "attenuation_distance": 256
+      },
+      {
+        "name": "takemtitans:shift/transform2",
+        "attenuation_distance": 256
+      }
+    ]
+  },
+  "shift.punch": {
+    "subtitle": "subtitles.takemtitans.shift.punch",
+    "sounds": [
+      {
+        "name": "takemtitans:shift/punch1",
+        "attenuation_distance": 128
+      },
+      {
+        "name": "takemtitans:shift/punch2",
+        "attenuation_distance": 128
+      },
+      {
+        "name": "takemtitans:shift/punch3",
+        "attenuation_distance": 128
+      }
+    ]
+  },
+  "shift.stomp": {
+    "subtitle": "subtitles.takemtitans.shift.stomp",
+    "sounds": [
+      {
+        "name": "takemtitans:shift/stomp1",
+        "attenuation_distance": 160
+      },
+      {
+        "name": "takemtitans:shift/stomp2",
+        "attenuation_distance": 160
+      }
+    ]
+  },
+  "shift.roar": {
+    "subtitle": "subtitles.takemtitans.shift.roar",
+    "sounds": [
+      {
+        "name": "takemtitans:shift/roar1",
+        "attenuation_distance": 256
+      },
+      {
+        "name": "takemtitans:shift/roar2",
+        "attenuation_distance": 256
+      }
+    ]
+  },
+  "shift.eject": {
+    "subtitle": "subtitles.takemtitans.shift.eject",
+    "sounds": [
+      {
+        "name": "takemtitans:shift/eject1",
+        "attenuation_distance": 96
+      }
+    ]
+  },
+  "pistol.shot": {
+    "subtitle": "subtitles.takemtitans.pistol.shot",
+    "sounds": [
+      {
+        "name": "takemtitans:pistol/shot1",
+        "attenuation_distance": 96
+      },
+      {
+        "name": "takemtitans:pistol/shot2",
+        "attenuation_distance": 96
+      },
+      {
+        "name": "takemtitans:pistol/shot3",
+        "attenuation_distance": 96
+      },
+      {
+        "name": "takemtitans:pistol/shot4",
+        "attenuation_distance": 96
+      }
+    ]
+  },
+  "pistol.volley": {
+    "subtitle": "subtitles.takemtitans.pistol.volley",
+    "sounds": [
+      {
+        "name": "takemtitans:pistol/volley1",
+        "attenuation_distance": 128
+      },
+      {
+        "name": "takemtitans:pistol/volley2",
+        "attenuation_distance": 128
+      }
+    ]
+  },
+  "pistol.reload": {
+    "subtitle": "subtitles.takemtitans.pistol.reload",
+    "sounds": [
+      {
+        "name": "takemtitans:pistol/reload1",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "takemtitans:pistol/reload2",
+        "attenuation_distance": 24
+      }
+    ]
+  },
+  "pistol.charge": {
+    "subtitle": "subtitles.takemtitans.pistol.charge",
+    "sounds": [
+      {
+        "name": "takemtitans:pistol/charge1",
+        "attenuation_distance": 24
+      }
+    ]
   }
 }

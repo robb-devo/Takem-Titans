@@ -45,6 +45,12 @@ public class TitanRenderer extends MobRenderer<AbstractTitan, TitanModel> {
             this.model.tint = ARGB32.color(alpha, shade, (int)((float)shade * 0.92F), (int)((float)shade * 0.88F));
         }
 
+        if (titan instanceof com.takem.titans.entity.titan.ShifterTitan shifter && shifter.forming > 0.0F) {
+            // a shifter's body still forming: hot raw flesh, the skin closing over it
+            float f = Mth.lerp(pt, shifter.formingO, shifter.forming);
+            this.model.tint = ARGB32.color(255, 255, (int)(255.0F * (1.0F - 0.42F * f)), (int)(255.0F * (1.0F - 0.62F * f)));
+        }
+
         super.render(titan, yaw, pt, ps, buffers, light);
     }
 

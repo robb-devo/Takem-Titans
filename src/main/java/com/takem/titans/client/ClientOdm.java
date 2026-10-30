@@ -346,12 +346,16 @@ public final class ClientOdm implements OdmMovementHooks.Controller, OdmPhysics.
 
     @SubscribeEvent
     public static void onClientTickPre(Pre event) {
-        INSTANCE.tickPre();
+        if (!ShiftClient.local()) {
+            INSTANCE.tickPre();
+        }
     }
 
     @SubscribeEvent
     public static void onClientTickPost(Post event) {
-        INSTANCE.tickPost();
+        if (!ShiftClient.local()) {
+            INSTANCE.tickPost();
+        }
     }
 
     @SubscribeEvent

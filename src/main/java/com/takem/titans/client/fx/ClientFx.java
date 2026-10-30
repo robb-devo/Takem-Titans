@@ -191,6 +191,16 @@ public final class ClientFx {
                 default:
                     EpicFx.handle(level, msg, at);
                     break;
+                case 60:
+                case 61:
+                case 62:
+                case 63:
+                case 64:
+                case 65:
+                case 66:
+                case 68:
+                    CombatFx.handle(level, msg, at);
+                    break;
                 case 11:
                     Vec3 top = at.add((rnd.nextDouble() - 0.5) * 6.0, (double)msg.a(), (rnd.nextDouble() - 0.5) * 6.0);
                     WorldFx.add(new WorldFx.Bolt(top, at, 0.35F, 16771496, rnd));

@@ -195,6 +195,22 @@ public final class PhotoTour {
                         null
                     );
                 }
+                case "key" -> {
+                    // key <use|attack|sneak|hook> <tap|down|up>: presses a key as the player would
+                    String[] p = arg.split(" ");
+                    net.minecraft.client.KeyMapping k = switch (p[0]) {
+                        case "use" -> mc.options.keyUse;
+                        case "attack" -> mc.options.keyAttack;
+                        case "sneak" -> mc.options.keyShift;
+                        case "hook" -> OdmKeys.HOOK_LEFT;
+                        default -> null;
+                    };
+                    if (k != null && p[1].equals("tap")) {
+                        net.minecraft.client.KeyMapping.click(k.getKey());
+                    } else if (k != null) {
+                        k.setDown(p[1].equals("down"));
+                    }
+                }
                 case "quit" -> {
                     mc.stop();
                     return;

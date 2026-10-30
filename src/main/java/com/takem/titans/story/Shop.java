@@ -64,6 +64,7 @@ public final class Shop {
         new Shop.Offer(2, 8, 0, () -> new ItemStack(ModItems.SCOUT_CLOAK.get())),
         new Shop.Offer(2, 50, 6, () -> new ItemStack(ModItems.MOD_RECYCLER.get())),
         new Shop.Offer(2, 70, 9, () -> new ItemStack(ModItems.MOD_WINCH.get())),
+        new Shop.Offer(2, 180, 7, () -> new ItemStack(ModItems.ODM_PISTOLS.get())),
         new Shop.Offer(2, 90, 11, () -> new ItemStack(ModItems.MOD_FRAME.get())),
         new Shop.Offer(2, 95, 13, () -> new ItemStack(ModItems.MOD_LONG_HOOKS.get())),
         new Shop.Offer(2, 140, 17, () -> new ItemStack(ModItems.MOD_TWIN_CHAMBER.get())),
@@ -94,7 +95,8 @@ public final class Shop {
         // the one piece of gear that is meant to be absurd, priced like it
         new Shop.Offer(4, 3000, 29, () -> new ItemStack(ModItems.FOUNDER_BLADES.get())),
         new Shop.Offer(4, 200, 21, () -> new ItemStack(ModItems.RUMBLING_HORN.get())),
-        new Shop.Offer(4, 200, 31, () -> new ItemStack(ModItems.TITAN_HEART_SHARD.get(), 2))
+        new Shop.Offer(4, 200, 31, () -> new ItemStack(ModItems.TITAN_HEART_SHARD.get(), 2)),
+        new Shop.Offer(4, 420, 12, () -> new ItemStack(ModItems.SHIFTER_SERUM.get()))
     );
 
     private Shop() {

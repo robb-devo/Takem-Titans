@@ -358,6 +358,14 @@ public final class WorldEvents {
                     MeteorDive.slam(p, 2.0, FloatArgumentType.getFloat(ctx, "fall"), Vec3Argument.getVec3(ctx, "pos"));
                     return 1;
                 }))))
+                .then(Commands.literal("shift").executes(ctx -> {
+                    com.takem.titans.combat.TitanShift.begin(((CommandSourceStack)ctx.getSource()).getPlayerOrException());
+                    return 1;
+                }).then(Commands.argument("move", com.mojang.brigadier.arguments.IntegerArgumentType.integer(30, 33)).executes(ctx -> {
+                    ServerPlayer p = ((CommandSourceStack)ctx.getSource()).getPlayerOrException();
+                    com.takem.titans.combat.TitanShift.input(p, com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "move"));
+                    return 1;
+                })))
                 .then(Commands.literal("serum").then(Commands.argument("pos", Vec3Argument.vec3()).executes(ctx -> {
                     Vec3 pos = Vec3Argument.getVec3(ctx, "pos");
                     ColossalBlast.start(((CommandSourceStack)ctx.getSource()).getLevel(), pos, ((CommandSourceStack)ctx.getSource()).getEntity());

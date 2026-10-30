@@ -4,6 +4,11 @@
 
 Start a new world for this version: towns are generated with the new layout.
 
+### Combat
+- **Titan Shift.** Inject a Shifter Serum: sparks crawl over you and your heart hammers while the camera closes in, then a bolt of yellow lightning comes out of a clear sky and you grow into a sixteen-metre Titan in a blast of steam, raw muscle first and the skin closing over it, the camera thrown back to watch. For 45 seconds the body is yours. Everything you walk into comes down; your fists crush napes and tear limbs off; every third blow is a stomp that throws the street up; your roar flattens the titans around you, blinds the ones further off and bursts every window; a leap comes down as a Meteor Dive, crater and all. Damage goes to the Titan, not to you. When it's spent, or you hold sneak, you cut yourself out of the nape and the empty body crashes down and boils away. Legendary shop.
+- **Anti-personnel ODM pistols.** A pair of double-barrelled guns, four rounds of buckshot between them, fired barrel by barrel, both guns kicking in your hands, with muzzle fire, tracers, sparks, scorched bullet holes and shattered windows. In the air every shot throws you back along the line of fire; a shot to the eyes blinds a Titan. Sneak and hold to charge a volley: all four barrels at once, incendiary, and you go flying. Arms shop.
+- A full-screen effect pass for the big moments: the picture splits and smears outward from a blow, a shock ripple races across it from where it landed, and the air shimmers with heat while you're in a Titan's body.
+
 ### Titans
 - New titan body on the same skeleton: waist and ribcage, chest, shoulders, neck and nape, fingers that open and clench round what they grab, toes, kneecaps and teeth.
 - Each kind wears its own parts: the Armored Titan's hardened plates, the Beast's shaggy coat, the Jaw Titan's bone mask and claws, the Cart Titan's pack and helmet, spikes down the Ravager's back, long and messy hair.

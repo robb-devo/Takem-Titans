@@ -129,6 +129,7 @@ public class TitanModel extends HierarchicalModel<AbstractTitan> {
         Map.entry("armored_titan_1", "armored"),
         Map.entry("female_titan_0", "longhair"),
         Map.entry("female_titan_1", "longhair"),
+        Map.entry("shifter_titan_0", "longhair"),
         Map.entry("war_hammer_titan_0", "longhair"),
         Map.entry("cart_titan_0", "cart,messy"),
         Map.entry("cart_titan_1", "cart,messy"),

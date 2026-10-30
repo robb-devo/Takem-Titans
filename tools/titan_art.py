@@ -459,6 +459,7 @@ LOOKS = [
     Look('armored_titan_1', skin='9f8f86', skin2='6a5c55', plate='c3bcb0', hair='c9a95a', hairstyle='short', face='armored', eyes='glow', glow='ffd36a', seed=131, muscle=1.0, exposed=0.5),
     Look('female_titan_0', skin='e2b8a4', skin2='b78c7a', hair='f0d48a', hairstyle='bun', face='blank', eyes='small', iris='3a5d78', seed=137, muscle=0.9, exposed=0.25),
     Look('female_titan_1', skin='e9cbbf', skin2='bb9a8e', hair='f4dc98', hairstyle='bun', face='blank', eyes='glow', glow='9fd8ff', seed=139, muscle=1.0, exposed=0.4),
+    Look('shifter_titan_0', skin='c69a84', skin2='8c6452', hair='2a1a12', hairstyle='long', face='snarl', eyes='glow', glow='8dffbf', iris='3f9a6a', seed=193, muscle=1.0, exposed=0.3, scars=0.25),
     Look('war_hammer_titan_0', skin='ece6dc', skin2='b9b0a3', hair='f2efe6', hairstyle='long', face='blank', eyes='glow', glow='ffe9a8', seed=149, muscle=0.9, scars=0.5),
     Look('cart_titan_0', skin='a4968c', skin2='6d6058', hair='2a2420', hairstyle='messy', face='blank', eyes='small', seed=151, fat=0.2),
     Look('cart_titan_1', skin='8e8076', skin2='5d514a', hair='1a1614', hairstyle='messy', face='snarl', eyes='glow', glow='ffb070', seed=157),

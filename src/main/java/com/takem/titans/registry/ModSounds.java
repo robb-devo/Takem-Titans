@@ -10,6 +10,16 @@ public final class ModSounds {
     public static final DeferredRegister<SoundEvent> SOUNDS = DeferredRegister.create(Registries.SOUND_EVENT, "takemtitans");
     public static final DeferredHolder<SoundEvent, SoundEvent> HOOK_FIRE = reg("odm.hook_fire");
     public static final DeferredHolder<SoundEvent, SoundEvent> ODM_SWING = reg("odm.swing");
+    public static final DeferredHolder<SoundEvent, SoundEvent> SHIFT_IGNITE = reg("shift.ignite");
+    public static final DeferredHolder<SoundEvent, SoundEvent> SHIFT_TRANSFORM = reg("shift.transform");
+    public static final DeferredHolder<SoundEvent, SoundEvent> SHIFT_PUNCH = reg("shift.punch");
+    public static final DeferredHolder<SoundEvent, SoundEvent> SHIFT_STOMP = reg("shift.stomp");
+    public static final DeferredHolder<SoundEvent, SoundEvent> SHIFT_ROAR = reg("shift.roar");
+    public static final DeferredHolder<SoundEvent, SoundEvent> SHIFT_EJECT = reg("shift.eject");
+    public static final DeferredHolder<SoundEvent, SoundEvent> PISTOL_SHOT = reg("pistol.shot");
+    public static final DeferredHolder<SoundEvent, SoundEvent> PISTOL_VOLLEY = reg("pistol.volley");
+    public static final DeferredHolder<SoundEvent, SoundEvent> PISTOL_RELOAD = reg("pistol.reload");
+    public static final DeferredHolder<SoundEvent, SoundEvent> PISTOL_CHARGE = reg("pistol.charge");
     public static final DeferredHolder<SoundEvent, SoundEvent> HEART_BEAT = reg("tunnel.heart_beat");
     public static final DeferredHolder<SoundEvent, SoundEvent> HEART_HIT = reg("tunnel.heart_hit");
     public static final DeferredHolder<SoundEvent, SoundEvent> HEART_BURST = reg("tunnel.heart_burst");

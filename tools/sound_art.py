@@ -262,7 +262,7 @@ def loopable(x, xfade=0.25):
 LOUDNESS = {
     'blade/break': 0.05, 'blade/draw': 0.133, 'blade/hit': 0.123, 'blade/impact': 0.337, 'blade/nape': 0.248,
     'blade/reload': 0.05, 'blade/slash': 0.165, 'block/alarm_bell': 0.134, 'block/cannon_fire': 0.3,
-    'cannon/fire': 0.3, 'cannon/heavy': 0.32, 'cannon/battery': 0.34, 'cannon/reload': 0.1, 'odm/swing': 0.12, 'event/boulder_impact': 0.362, 'event/boulder_throw': 0.302, 'event/boulder_whoosh': 0.118,
+    'cannon/fire': 0.3, 'cannon/heavy': 0.32, 'cannon/battery': 0.34, 'cannon/reload': 0.1, 'odm/swing': 0.12, 'shift/ignite': 0.16, 'shift/transform': 0.36, 'shift/punch': 0.32, 'shift/stomp': 0.34, 'shift/roar': 0.3, 'shift/eject': 0.22, 'pistol/shot': 0.26, 'pistol/volley': 0.32, 'pistol/reload': 0.1, 'pistol/charge': 0.12, 'event/boulder_impact': 0.362, 'event/boulder_throw': 0.302, 'event/boulder_whoosh': 0.118,
     'event/building_collapse': 0.25, 'event/glass_shatter': 0.063, 'explosive/big_blast': 0.36,
     'explosive/blast_tail': 0.105, 'item/thunder_spear_blast': 0.364, 'item/thunder_spear_launch': 0.097,
     'odm/afterburner': 0.143, 'odm/equip': 0.071, 'odm/gas': 0.155, 'odm/gas_burst': 0.11, 'odm/gas_empty': 0.064,
@@ -1083,7 +1083,185 @@ def finish_music(bus, peak_db=-1.0):
 
 
 # ---------------------------------------------------------------------------------------------------------------------
+def shift_ignite(seed, d=1.5):
+    """The build-up to a transformation: the heart hammering faster, electricity crawling, a drone rising, a gasp."""
+    rng = np.random.default_rng(seed)
+    out = np.zeros(n_(d))
+    for k, at in enumerate((0.0, 0.42, 0.74, 0.98, 1.16, 1.28)):
+        g = 0.5 + 0.1 * k
+        place(out, osc(glide(0.22, 70, 38)) * env_exp(0.22, 0.05, 0.003), at, g)
+        place(out, osc(glide(0.18, 60, 34)) * env_exp(0.18, 0.04, 0.003), at + 0.11, g * 0.6)
+    crackle = hp(white(d, rng), 3000) * (smooth_noise(d, 60, rng) > 0.55) * np.linspace(0.05, 0.6, n_(d))
+    place(out, crackle, 0.0, 0.5)
+    place(out, osc(glide(d, 40, 95)) * np.linspace(0.0, 1.0, n_(d)) ** 2, 0.0, 0.35)
+    place(out, sweep(white(0.5, rng), glide(0.5, 800, 4000), 'band', 1.5) * env_ad(0.5, 0.4, 0.05), d - 0.5, 0.35)
+    return finish(fade(out, 0.01, 0.05))
+
+
+def shift_transform(seed, d=7.0):
+    """
+    The transformation: a bolt out of a clear sky, a blast that punches the air out of the street, the body boiling
+    into being in a roar of steam with bone and flesh knitting, debris coming down, and the Titan's first roar.
+    """
+    rng = np.random.default_rng(seed)
+    out = np.zeros(n_(d))
+    T = 0.012
+    t = tt(T)
+    place(out, (1 - 2 * t / T) * np.sin(np.pi * np.clip(t / T, 0, 1)) ** 0.15, 0.0, 1.0)
+    place(out, hp(white(0.08, rng), 1200) * env_exp(0.08, 0.012, 0.0002), 0.0, 0.9)
+    roll = lp(brown(4.0, rng), 260) * (0.6 + 0.4 * smooth_noise(4.0, 6, rng)) * env_ad(4.0, 0.02, 3.6, 0.2, 1.6)
+    place(out, roll, 0.02, 0.9)
+    place(out, osc(glide(2.2, 55, 18)) * env_exp(2.2, 0.6, 0.004), 0.0, 1.4)
+    place(out, lp(white(0.6, rng), 900) * env_exp(0.6, 0.12, 0.001), 0.003, 1.0)
+    hiss = bp(white(5.0, rng), 900, 7000) * env_ad(5.0, 0.25, 3.8, 0.8, 1.4) * (0.75 + 0.25 * smooth_noise(5.0, 12, rng))
+    place(out, hiss, 0.15, 0.5)
+    for k in range(14):
+        at = 0.3 + rng.uniform(0, 1.6)
+        place(out, bp(white(0.06, rng), 300, 2500) * env_exp(0.06, 0.012), at, rng.uniform(0.2, 0.45))
+        if k % 3 == 0:
+            place(out, bell(0.12, rng.uniform(500, 900), [1, 2.2], [0.03, 0.02], [0.3, 0.1], rng), at, 0.3)
+    place(out, debris(3.0, rng, 40, 0.25, 2.4), 0.0, 0.35)
+    place(out, titan_roar(seed + 900, d=3.4, pitch=0.78), 2.1, 0.75)
+    out = sat(out * 1.4, 2.0)
+    out = reverb(out, 3.2, 0.25, 2000, seed=seed)
+    return finish(fade(out, 0.0, 0.6))
+
+
+def shift_punch(seed, d=2.2):
+    """A Titan's fist landing: the air shoved ahead of it, the meaty slam, bone and masonry giving, the street ringing."""
+    rng = np.random.default_rng(seed)
+    out = np.zeros(n_(d))
+    place(out, sweep(white(0.22, rng), glide(0.22, 400, 2400), 'band', 1.2) * env_ad(0.22, 0.18, 0.04), 0.0, 0.35)
+    hit = 0.2
+    place(out, osc(glide(0.9, 75, 30)) * env_exp(0.9, 0.18, 0.002), hit, 1.3)
+    place(out, lp(white(0.35, rng), 1400) * env_exp(0.35, 0.05, 0.0005), hit, 1.1)
+    place(out, bp(white(0.2, rng), 200, 1600) * env_exp(0.2, 0.06, 0.001), hit + 0.004, 0.8)
+    for k in range(5):
+        place(out, hp(white(0.03, rng), 1500) * env_exp(0.03, 0.006), hit + rng.uniform(0.0, 0.08), rng.uniform(0.25, 0.5))
+    place(out, debris(d - hit, rng, 18, 0.05, 0.9), hit, 0.35)
+    place(out, lp(brown(d - hit, rng), 200) * env_ad(d - hit, 0.02, d - hit - 0.1, 0.0, 2.0), hit, 0.45)
+    out = sat(out * 1.5, 2.4)
+    out = reverb(out, 1.8, 0.2, 2400, seed=seed)
+    return finish(fade(out, 0.0, 0.3))
+
+
+def shift_stomp(seed, d=3.2):
+    """A heel the size of a cart coming down: a sub-bass blow, the ground rolling under it, rubble jumping."""
+    rng = np.random.default_rng(seed)
+    out = np.zeros(n_(d))
+    place(out, osc(glide(1.4, 48, 20)) * env_exp(1.4, 0.4, 0.003), 0.0, 1.5)
+    place(out, lp(white(0.5, rng), 700) * env_exp(0.5, 0.09, 0.001), 0.0, 1.1)
+    quake = lp(brown(d, rng), 140) * (0.6 + 0.4 * smooth_noise(d, 9, rng)) * env_ad(d, 0.03, d * 0.9, 0.0, 1.6)
+    place(out, quake, 0.0, 0.9)
+    place(out, debris(d, rng, 30, 0.05, 1.6), 0.0, 0.4)
+    place(out, bp(white(0.3, rng), 300, 2000) * env_exp(0.3, 0.07), 0.002, 0.5)
+    out = sat(out * 1.4, 2.0)
+    out = reverb(out, 2.4, 0.22, 1800, seed=seed)
+    return finish(fade(out, 0.0, 0.4))
+
+
+def shift_roar(seed, d=5.2):
+    """The shifter's roar: lower and harder than a wild Titan's, torn at the edges, the street throwing it back."""
+    rng = np.random.default_rng(seed)
+    out = np.zeros(n_(d))
+    place(out, titan_roar(seed, d=d - 0.2, pitch=0.8), 0.0, 1.0)
+    place(out, titan_roar(seed + 50, d=d - 0.3, pitch=0.62), 0.04, 0.6)
+    place(out, lp(brown(d, rng), 180) * env_ad(d, 0.3, d - 0.8, 0.4, 1.5), 0.0, 0.5)
+    out = sat(out * 1.3, 3.0)
+    out = reverb(out, 2.8, 0.28, 2200, seed=seed)
+    return finish(fade(out, 0.02, 0.6))
+
+
+def shift_eject(seed, d=3.0):
+    """Cutting out of the nape: tearing flesh, a burst of scalding steam, the empty body sighing as it goes."""
+    rng = np.random.default_rng(seed)
+    out = np.zeros(n_(d))
+    for k in range(6):
+        place(out, bp(white(0.08, rng), 250, 2200) * env_exp(0.08, 0.02), 0.02 + k * 0.035 + rng.uniform(0, 0.02), rng.uniform(0.3, 0.6))
+    place(out, bp(white(d, rng), 1200, 9000) * env_ad(d, 0.03, d - 0.4, 0.3, 1.3), 0.08, 0.7)
+    place(out, osc(glide(0.6, 90, 40)) * env_exp(0.6, 0.12), 0.06, 0.8)
+    place(out, lp(brown(d, rng), 300) * env_ad(d, 0.2, d - 0.6, 0.2), 0.3, 0.3)
+    out = reverb(out, 1.6, 0.2, 3500, seed=seed)
+    return finish(fade(out, 0.0, 0.4))
+
+
+def pistol_shot(seed, d=1.8):
+    """
+    An anti-personnel ODM pistol: a sharp supersonic crack, the bark of the charge, the hammer and barrel ringing,
+    slaps off the nearest walls and the report rolling away down the street.
+    """
+    rng = np.random.default_rng(seed)
+    out = np.zeros(n_(d))
+    T = 0.0022
+    t = tt(T)
+    place(out, (1 - 2 * t / T) * np.sin(np.pi * np.clip(t / T, 0, 1)) ** 0.15, 0.0, 1.0)
+    place(out, hp(white(0.02, rng), 1800) * env_exp(0.02, 0.0025, 0.0001), 0.0, 0.9)
+    place(out, bp(white(0.25, rng), 300, 3500) * env_exp(0.25, 0.035, 0.0004), 0.0004, 1.1)
+    place(out, osc(glide(0.35, 120, 60)) * env_exp(0.35, 0.06, 0.001), 0.0, 0.8)
+    place(out, bell(0.3, rng.uniform(2400, 2900), [1, 1.9, 3.1], [0.05, 0.03, 0.02], [0.12, 0.06, 0.03], rng), 0.002, 0.6)
+    slap = bp(white(0.12, rng), 400, 2600) * env_exp(0.12, 0.03, 0.001)
+    for delay, cut, g in ((0.07, 2600, 0.35), (0.16, 1800, 0.22), (0.31, 1200, 0.14), (0.55, 800, 0.08)):
+        place(out, lp(slap, cut), delay * rng.uniform(0.85, 1.2), g)
+    place(out, lp(brown(d, rng), 600) * env_ad(d, 0.01, d * 0.8, 0.0, 2.2), 0.005, 0.18)
+    out = sat(out * 1.6, 2.6)
+    out = reverb(out, 1.6, 0.2, 3000, seed=seed)
+    return finish(fade(out, 0.0, 0.3))
+
+
+def pistol_volley(seed, d=2.6):
+    """Every barrel at once: four cracks inside a few milliseconds fused into one blast, a whoosh of burning shot."""
+    rng = np.random.default_rng(seed)
+    out = np.zeros(n_(d))
+    for k in range(4):
+        place(out, pistol_shot(seed * 13 + k, d - 0.05), k * 0.009 + rng.uniform(0, 0.004), (1.0, 0.8, 0.85, 0.7)[k])
+    place(out, osc(glide(0.6, 70, 32)) * env_exp(0.6, 0.12, 0.002), 0.0, 1.2)
+    place(out, lp(brown(1.4, rng), 400) * env_ad(1.4, 0.02, 1.2), 0.0, 0.5)
+    place(out, sweep(white(0.9, rng), glide(0.9, 3500, 600), 'band', 1.6) * env_ad(0.9, 0.01, 0.85), 0.01, 0.25)
+    return finish(sat(out, 1.5))
+
+
+def pistol_reload(seed, d=1.1):
+    """Spent barrels knocked out, fresh ones snapped home on both guns, the hammers cocked."""
+    rng = np.random.default_rng(seed)
+    out = np.zeros(n_(d))
+
+    def click(at, f, g):
+        place(out, bell(0.18, f, [1, 2.4, 3.7], [0.04, 0.02, 0.015], [0.5, 0.25, 0.12], rng), at, g)
+        place(out, bp(white(0.012, rng), 2000, 9000) * env_exp(0.012, 0.002), at, g * 0.8)
+
+    place(out, sweep(white(0.2, rng), glide(0.2, 3000, 1500), 'band', 3.0) * env_ad(0.2, 0.02, 0.15), 0.0, 0.25)
+    click(0.05, rng.uniform(1500, 1800), 0.6)
+    click(0.12, rng.uniform(1300, 1600), 0.5)
+    click(0.42, rng.uniform(2100, 2500), 0.9)
+    click(0.5, rng.uniform(2000, 2400), 0.8)
+    click(0.78, rng.uniform(2800, 3200), 0.7)
+    click(0.84, rng.uniform(2700, 3100), 0.6)
+    return finish(fade(reverb(out, 0.5, 0.1, 6000, seed=seed), 0.002, 0.08), -3)
+
+
+def pistol_charge(seed, d=1.3):
+    """The volley winding up: a rising metallic whine over a hiss of gas, a click when it's ready."""
+    rng = np.random.default_rng(seed)
+    out = np.zeros(n_(d))
+    f = glide(d, 300, 1700)
+    whine = osc(f) * 0.5 + osc(f * 2.01) * 0.25 + osc(f * 3.03) * 0.12
+    place(out, whine * env_ad(d, 0.4, 0.3, d - 0.7, 1.0), 0.0, 0.5)
+    place(out, hp(white(d, rng), 2500) * env_ad(d, 0.6, 0.2, d - 0.8), 0.0, 0.25)
+    place(out, bell(0.3, 3200, [1, 2.1], [0.06, 0.03], [0.4, 0.2], rng), d - 0.3, 0.5)
+    return finish(fade(out, 0.02, 0.1), -4)
+
+
 JOBS = [
+    ('shift/ignite%d', [lambda k: shift_ignite(2100 + k)] * 1),
+    ('shift/transform%d', [lambda k: shift_transform(2200 + k)] * 2),
+    ('shift/punch%d', [lambda k: shift_punch(2300 + k)] * 3),
+    ('shift/stomp%d', [lambda k: shift_stomp(2400 + k)] * 2),
+    ('shift/roar%d', [lambda k: shift_roar(2500 + k)] * 2),
+    ('shift/eject%d', [lambda k: shift_eject(2600 + k)] * 1),
+    ('pistol/shot%d', [lambda k: pistol_shot(2700 + k)] * 4),
+    ('pistol/volley%d', [lambda k: pistol_volley(2800 + k)] * 2),
+    ('pistol/reload%d', [lambda k: pistol_reload(2900 + k)] * 2),
+    ('pistol/charge%d', [lambda k: pistol_charge(3000 + k)] * 1),
     ('titan/step%d', [lambda k: titan_step(100 + k)] * 4),
     ('titan/roar%d', [lambda k: titan_roar(200 + k, pitch=[1.0, 0.86, 1.12][k - 1])] * 3),
     ('titan/groan%d', [lambda k: titan_groan(300 + k)] * 3),

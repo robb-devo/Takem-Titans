@@ -26,8 +26,13 @@ public class EvaporateLayer extends RenderLayer<AbstractTitan, TitanModel> {
     public void render(
         PoseStack ps, MultiBufferSource buffers, int light, AbstractTitan t, float limbSwing, float limbAmount, float pt, float age, float yaw, float pitch
     ) {
-        if (t.dyingTicks > 24 && !t.isInvisible()) {
-            float k = Mth.clamp(((float)t.dyingTicks + pt - 24.0F) / 90.0F, 0.0F, 1.0F);
+        float k = t.dyingTicks > 24 ? Mth.clamp(((float)t.dyingTicks + pt - 24.0F) / 90.0F, 0.0F, 1.0F) : 0.0F;
+        if (t instanceof com.takem.titans.entity.titan.ShifterTitan s && t.dyingTicks <= 24) {
+            // a shifter's body forming runs the boiling-off backwards: raw muscle first, the skin closing over it
+            k = Mth.lerp(pt, s.formingO, s.forming);
+        }
+
+        if (k > 0.0F && !t.isInvisible()) {
             int a = (int)(255.0F * k * k * (3.0F - 2.0F * k));
             this.getParentModel().renderToBuffer(ps, buffers.getBuffer(RenderType.entityTranslucent(FLESH)), light, OverlayTexture.NO_OVERLAY, ARGB32.color(a, 255, 255, 255));
         }

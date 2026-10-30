@@ -58,6 +58,8 @@ public final class ModCreativeTabs {
                     out.accept(ModItems.HARDENED_PLATE.get());
                     out.accept(ModItems.HARDENED_BOOTS.get());
                     out.accept(ModItems.COLOSSAL_SERUM.get());
+                    out.accept(ModItems.SHIFTER_SERUM.get());
+                    out.accept(ModItems.ODM_PISTOLS.get());
                     out.accept(ModItems.RUMBLING_HORN.get());
                     out.accept(ModItems.BEAST_BOULDER.get());
                     out.accept(ModItems.PATHS_SHARD.get());

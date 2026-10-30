@@ -109,6 +109,12 @@ public final class ModItems {
     public static final DeferredItem<ColossalSerumItem> COLOSSAL_SERUM = ITEMS.register(
         "colossal_serum", () -> new ColossalSerumItem(new Properties().stacksTo(16).rarity(Rarity.EPIC))
     );
+    public static final DeferredItem<com.takem.titans.item.ShifterSerumItem> SHIFTER_SERUM = ITEMS.register(
+        "shifter_serum", () -> new com.takem.titans.item.ShifterSerumItem(new Properties().stacksTo(8).rarity(Rarity.EPIC))
+    );
+    public static final DeferredItem<com.takem.titans.item.OdmPistolsItem> ODM_PISTOLS = ITEMS.register(
+        "odm_pistols", () -> new com.takem.titans.item.OdmPistolsItem(new Properties().stacksTo(1).rarity(Rarity.RARE))
+    );
     public static final DeferredItem<HorseWhistleItem> HORSE_WHISTLE = ITEMS.register(
         "horse_whistle", () -> new HorseWhistleItem(new Properties().stacksTo(1).rarity(Rarity.UNCOMMON))
     );

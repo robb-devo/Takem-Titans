@@ -123,6 +123,8 @@ public final class TakemClient {
         event.registerAbove(OdmHud.PANEL, StoryClient.HUD, StoryClient::renderHud);
         event.registerAbove(VanillaGuiLayers.CROSSHAIR, CannonClient.HUD, CannonClient::render);
         event.registerAbove(VanillaGuiLayers.HOTBAR, AbilityHud.LAYER, AbilityHud::render);
+        event.registerAbove(AbilityHud.LAYER, ShiftClient.HUD, ShiftClient::renderHud);
+        event.registerAbove(VanillaGuiLayers.CROSSHAIR, PistolClient.HUD, PistolClient::renderHud);
         event.registerAbove(VanillaGuiLayers.HOTBAR, GearIntro.LAYER, GearIntro::render);
         event.registerAboveAll(Cutscene.LAYER, Cutscene::render);
     }
@@ -156,6 +158,7 @@ public final class TakemClient {
         event.registerEntityRenderer(ModEntities.DEBRIS.get(), DebrisRenderer::new);
         event.registerEntityRenderer(ModEntities.FALLING_SECTION.get(), FallingSectionRenderer::new);
         event.registerEntityRenderer(ModEntities.PURE_TITAN.get(), ctx -> new TitanRenderer(ctx, "pure_titan", 6, 27, 1.0F));
+        event.registerEntityRenderer(ModEntities.SHIFTER_TITAN.get(), ctx -> new TitanRenderer(ctx, "shifter_titan", 1, 0, 0.94F));
         event.registerEntityRenderer(ModEntities.TRAINING_DUMMY.get(), ctx -> new TitanRenderer(ctx, "training_dummy", 1, 0, 1.0F));
         event.registerEntityRenderer(ModEntities.ABNORMAL_TITAN.get(), ctx -> new TitanRenderer(ctx, "abnormal_titan", 3, 0, 0.88F));
         event.registerEntityRenderer(ModEntities.CRAWLER_TITAN.get(), ctx -> new TitanRenderer(ctx, "crawler_titan", 2, 2, 1.0F));
