@@ -1198,5 +1198,21 @@
   "elite.takemtitans.giant": "Riesiger %s",
   "elite.takemtitans.scalding": "Glühender %s",
   "story.takemtitans.elite_down": "%s erlegt!",
-  "contract.takemtitans.kind.5": "Erlege gezeichnete Titanen (%s/%s)"
+  "contract.takemtitans.kind.5": "Erlege gezeichnete Titanen (%s/%s)",
+  "block.takemtitans.plaster": "Weißer Putz",
+  "block.takemtitans.plaster_brace": "Weißer Putz mit Strebe",
+  "block.takemtitans.plaster_brace_mirrored": "Weißer Putz mit Strebe (gespiegelt)",
+  "block.takemtitans.plaster_cream": "Cremefarbener Putz",
+  "block.takemtitans.plaster_cream_brace": "Cremefarbener Putz mit Strebe",
+  "block.takemtitans.plaster_cream_brace_mirrored": "Cremefarbener Putz mit Strebe (gespiegelt)",
+  "block.takemtitans.plaster_ochre": "Ockerputz",
+  "block.takemtitans.roof_tiles": "Tondachziegel",
+  "block.takemtitans.roof_tiles_stairs": "Tondachziegel (Treppe)",
+  "block.takemtitans.roof_tiles_slab": "Tondachziegel (Stufe)",
+  "block.takemtitans.roof_tiles_dark": "Dunkle Dachziegel",
+  "block.takemtitans.roof_tiles_dark_stairs": "Dunkle Dachziegel (Treppe)",
+  "block.takemtitans.roof_tiles_dark_slab": "Dunkle Dachziegel (Stufe)",
+  "block.takemtitans.roof_tiles_slate": "Schieferdach",
+  "block.takemtitans.roof_tiles_slate_stairs": "Schieferdach (Treppe)",
+  "block.takemtitans.roof_tiles_slate_slab": "Schieferdach (Stufe)"
 }

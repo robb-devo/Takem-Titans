@@ -16,14 +16,19 @@ Start a new world for this version: towns are generated with the new layout.
 - Each district's main square is built: a fountain with benches and a ring of trees (Mitras gets its royal fountain back).
 - Plane trees, benches and flags along the main avenue, a market of striped stalls inside each gate, Garrison tents and stores along the walls.
 - Houses get dormer windows, shop awnings with wares outside, balconies and a style of their own.
+- Timber-framed houses rebuilt: jettied upper storeys on carved brackets over a stone ground floor, St. Andrew's crosses and chevrons in the panels, timber gables, rafter ends under the eaves and a hand-laid stone plinth.
+- New building blocks: white, cream and ochre lime plaster, plaster with timber braces, and clay, dark and slate roof tiles with stairs and slabs.
 
 ### Sound
-- Every core sound rebuilt in layers with several takes each: titan steps, roars, groans, screams and deaths, blades, the nape kill, ODM hooks, winch, gas and wind, explosions, collapses, glass, boulders, cannons and the alarm bell.
+- Every core sound rebuilt in layers with several takes each: titan steps, roars, groans, screams and deaths, blades, the nape kill, ODM hooks, winch, gas and wind, explosions, collapses, glass, boulders, cannons and the alarm bell. They play at the levels of the 2.0 mix.
 - A score that follows the fight: a calm theme now and then, a danger drone when titans are about, war drums in battle and a new boss theme.
 
 ### Gear and effects
 - New 3D blades for every tier and HD icons for blades, ODM gear, thunder spears and gas canisters.
-- Blasts leave a column of smoke.
 
-### Fixes
+### Cannons
+- Garrison cannons stand on stone gun ledges built out from the face of the wall (on the inside of the arena wall) and only fire on their side. Shells no longer blow up on the wall right at the gun.
+
+### Destruction
 - Collapses no longer chain through whole districts: one ruin can bring down what was joined to it, but no further.
+- Furniture only stands on the floor under it, and the boards next to a wall piece that falls give way too: a storey follows its walls down instead of hanging in the air until the last wall is gone.

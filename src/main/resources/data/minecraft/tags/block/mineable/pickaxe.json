@@ -9,6 +9,22 @@
     "takemtitans:wall_stone_slab",
     "takemtitans:ice_burst_ore",
     "takemtitans:deepslate_ice_burst_ore",
-    "takemtitans:gate_control"
+    "takemtitans:gate_control",
+    "takemtitans:plaster",
+    "takemtitans:plaster_brace",
+    "takemtitans:plaster_brace_mirrored",
+    "takemtitans:plaster_cream",
+    "takemtitans:plaster_cream_brace",
+    "takemtitans:plaster_cream_brace_mirrored",
+    "takemtitans:plaster_ochre",
+    "takemtitans:roof_tiles",
+    "takemtitans:roof_tiles_stairs",
+    "takemtitans:roof_tiles_slab",
+    "takemtitans:roof_tiles_dark",
+    "takemtitans:roof_tiles_dark_stairs",
+    "takemtitans:roof_tiles_dark_slab",
+    "takemtitans:roof_tiles_slate",
+    "takemtitans:roof_tiles_slate_stairs",
+    "takemtitans:roof_tiles_slate_slab"
   ]
 }

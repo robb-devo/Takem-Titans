@@ -257,10 +257,52 @@ def loopable(x, xfade=0.25):
     return y
 
 
+# How loud each family plays (RMS of its audible part), measured from the 2.0 sounds the game was mixed around, so a
+# new take lands at the level its old one had. Music sets the levels the MusicDirector's volumes were tuned for.
+LOUDNESS = {
+    'blade/break': 0.05, 'blade/draw': 0.133, 'blade/hit': 0.123, 'blade/impact': 0.337, 'blade/nape': 0.248,
+    'blade/reload': 0.05, 'blade/slash': 0.165, 'block/alarm_bell': 0.134, 'block/cannon_fire': 0.41,
+    'cannon/fire': 0.367, 'event/boulder_impact': 0.362, 'event/boulder_throw': 0.302, 'event/boulder_whoosh': 0.118,
+    'event/building_collapse': 0.25, 'event/glass_shatter': 0.063, 'explosive/big_blast': 0.36,
+    'explosive/blast_tail': 0.105, 'item/thunder_spear_blast': 0.364, 'item/thunder_spear_launch': 0.097,
+    'odm/afterburner': 0.143, 'odm/equip': 0.071, 'odm/gas': 0.155, 'odm/gas_burst': 0.11, 'odm/gas_empty': 0.064,
+    'odm/hook_fire': 0.058, 'odm/hook_hit': 0.133, 'odm/hook_hit_flesh': 0.187, 'odm/hook_retract': 0.085,
+    'odm/meteor_slam': 0.302, 'odm/reel': 0.217, 'odm/refill': 0.115, 'odm/sonic_boom': 0.174, 'odm/wind': 0.168,
+    'titan/death': 0.197, 'titan/fall': 0.352, 'titan/grab': 0.136, 'titan/groan': 0.216, 'titan/hurt': 0.271,
+    'titan/roar': 0.234, 'titan/screech': 0.289, 'titan/step': 0.324,
+    'story/boss_music': 0.365, 'music/battle': 0.33, 'music/danger': 0.26, 'music/explore': 0.2,
+}
+
+
+def active_rms(x):
+    """RMS over the frames within 30 dB of the loudest one: how loud a sound is while it plays, not counting its tail."""
+    m = x.mean(0) if x.ndim == 2 else x
+    f = 2048
+    n = len(m) // f
+    if n == 0:
+        return float(np.sqrt((m ** 2).mean()) + 1e-12)
+    fr = np.sqrt((m[:n * f].reshape(n, f) ** 2).mean(1))
+    a = fr[fr > fr.max() * 10 ** (-30 / 20)]
+    return float(np.sqrt((a ** 2).mean()) + 1e-12)
+
+
+def match_loudness(name, x):
+    """Brings a take to its family's level; a soft limiter keeps the peaks under full scale, as the old mix did."""
+    target = LOUDNESS.get(name.rstrip('0123456789'))
+    if target is None:
+        return x
+    y = x
+    for _ in range(4):
+        y = y * (target / active_rms(y))
+        y = 0.97 * np.tanh(y / 0.97)
+    return y
+
+
 def write(name, x, quality=0.5):
     """Encode with ffmpeg's libvorbis: libsndfile's own Vorbis writer overflows its stack on long buffers."""
     import subprocess
     import tempfile
+    x = match_loudness(name, x)
     path = os.path.join(OUT, name + '.ogg')
     os.makedirs(os.path.dirname(path), exist_ok=True)
     data = x.T if x.ndim == 2 else x

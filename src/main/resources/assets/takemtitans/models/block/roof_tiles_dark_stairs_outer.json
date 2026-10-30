@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/outer_stairs",
+  "textures": {
+    "bottom": "takemtitans:block/roof_tiles_dark",
+    "top": "takemtitans:block/roof_tiles_dark",
+    "side": "takemtitans:block/roof_tiles_dark"
+  }
+}

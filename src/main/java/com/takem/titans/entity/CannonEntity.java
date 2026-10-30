@@ -50,6 +50,8 @@ public class CannonEntity extends Entity {
     private int cooldown;
     private int hits;
     private boolean relocated;
+    /** The way a gun on a wall ledge faces; it only fires on that side, never back over its own wall. NaN: anywhere. */
+    private float homeYaw = Float.NaN;
 
     public CannonEntity(EntityType<? extends CannonEntity> type, Level level) {
         super(type, level);
@@ -80,6 +82,24 @@ public class CannonEntity extends Entity {
 
     public boolean crew() {
         return this.entityData.get(CREW);
+    }
+
+    /** Placed on a gun ledge by the Garrison: it stays there and keeps to the side it faces. */
+    public void mountOnLedge() {
+        this.relocated = true;
+        this.homeYaw = this.getYRot();
+    }
+
+    private boolean inArc(AbstractTitan t) {
+        if (Float.isNaN(this.homeYaw)) {
+            return true;
+        }
+
+        double dx = t.getX() - this.getX();
+        double dz = t.getZ() - this.getZ();
+        double fx = -Mth.sin(this.homeYaw * 0.017453292F);
+        double fz = Mth.cos(this.homeYaw * 0.017453292F);
+        return dx * fx + dz * fz > 0.35 * Math.sqrt(dx * dx + dz * dz);
     }
 
     public int reloadTicks() {
@@ -272,7 +292,7 @@ public class CannonEntity extends Entity {
             for (AbstractTitan t : sl.getEntitiesOfClass(
                 AbstractTitan.class,
                 new AABB(this.position(), this.position()).inflate(range, 80.0, range),
-                tx -> tx.isAlive() && !(tx instanceof RumblingTitan) && !tx.isDummy()
+                tx -> tx.isAlive() && !(tx instanceof RumblingTitan) && !tx.isDummy() && this.inArc(tx)
             )) {
                 double d = t.distanceToSqr(this);
                 if (d < bestD && d > 64.0) {
@@ -394,6 +414,7 @@ public class CannonEntity extends Entity {
         this.setTier(tag.getInt("Tier"));
         this.entityData.set(CREW, tag.getBoolean("Crew"));
         this.relocated = tag.getBoolean("Relocated");
+        this.homeYaw = tag.contains("HomeYaw") ? tag.getFloat("HomeYaw") : Float.NaN;
     }
 
     @Override
@@ -401,5 +422,8 @@ public class CannonEntity extends Entity {
         tag.putInt("Tier", this.tier());
         tag.putBoolean("Crew", this.crew());
         tag.putBoolean("Relocated", this.relocated);
+        if (!Float.isNaN(this.homeYaw)) {
+            tag.putFloat("HomeYaw", this.homeYaw);
+        }
     }
 }

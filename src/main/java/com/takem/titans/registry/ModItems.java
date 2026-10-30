@@ -252,6 +252,22 @@ public final class ModItems {
     public static final DeferredItem<BlockItem> WALL_GATE = ITEMS.registerSimpleBlockItem(ModBlocks.WALL_GATE);
     public static final DeferredItem<BlockItem> GATE_CONTROL = ITEMS.registerSimpleBlockItem(ModBlocks.GATE_CONTROL);
     public static final DeferredItem<BlockItem> WAYSTONE = ITEMS.registerSimpleBlockItem(ModBlocks.WAYSTONE);
+    public static final DeferredItem<BlockItem> PLASTER = ITEMS.registerSimpleBlockItem(ModBlocks.PLASTER);
+    public static final DeferredItem<BlockItem> PLASTER_BRACE = ITEMS.registerSimpleBlockItem(ModBlocks.PLASTER_BRACE);
+    public static final DeferredItem<BlockItem> PLASTER_BRACE_MIRRORED = ITEMS.registerSimpleBlockItem(ModBlocks.PLASTER_BRACE_MIRRORED);
+    public static final DeferredItem<BlockItem> PLASTER_CREAM = ITEMS.registerSimpleBlockItem(ModBlocks.PLASTER_CREAM);
+    public static final DeferredItem<BlockItem> PLASTER_CREAM_BRACE = ITEMS.registerSimpleBlockItem(ModBlocks.PLASTER_CREAM_BRACE);
+    public static final DeferredItem<BlockItem> PLASTER_CREAM_BRACE_MIRRORED = ITEMS.registerSimpleBlockItem(ModBlocks.PLASTER_CREAM_BRACE_MIRRORED);
+    public static final DeferredItem<BlockItem> PLASTER_OCHRE = ITEMS.registerSimpleBlockItem(ModBlocks.PLASTER_OCHRE);
+    public static final DeferredItem<BlockItem> ROOF_TILES = ITEMS.registerSimpleBlockItem(ModBlocks.ROOF_TILES);
+    public static final DeferredItem<BlockItem> ROOF_TILES_STAIRS = ITEMS.registerSimpleBlockItem(ModBlocks.ROOF_TILES_STAIRS);
+    public static final DeferredItem<BlockItem> ROOF_TILES_SLAB = ITEMS.registerSimpleBlockItem(ModBlocks.ROOF_TILES_SLAB);
+    public static final DeferredItem<BlockItem> ROOF_TILES_DARK = ITEMS.registerSimpleBlockItem(ModBlocks.ROOF_TILES_DARK);
+    public static final DeferredItem<BlockItem> ROOF_TILES_DARK_STAIRS = ITEMS.registerSimpleBlockItem(ModBlocks.ROOF_TILES_DARK_STAIRS);
+    public static final DeferredItem<BlockItem> ROOF_TILES_DARK_SLAB = ITEMS.registerSimpleBlockItem(ModBlocks.ROOF_TILES_DARK_SLAB);
+    public static final DeferredItem<BlockItem> ROOF_TILES_SLATE = ITEMS.registerSimpleBlockItem(ModBlocks.ROOF_TILES_SLATE);
+    public static final DeferredItem<BlockItem> ROOF_TILES_SLATE_STAIRS = ITEMS.registerSimpleBlockItem(ModBlocks.ROOF_TILES_SLATE_STAIRS);
+    public static final DeferredItem<BlockItem> ROOF_TILES_SLATE_SLAB = ITEMS.registerSimpleBlockItem(ModBlocks.ROOF_TILES_SLATE_SLAB);
 
     private static DeferredItem<GearModItem> gearMod(GearMod mod) {
         return ITEMS.register("mod_" + mod.id(), () -> new GearModItem(new Properties().stacksTo(1).rarity(Rarity.RARE), mod));

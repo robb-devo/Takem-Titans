@@ -689,10 +689,19 @@ public abstract class AbstractTitan extends Monster {
         }
 
         float s = this.getTitanScale();
-        if (this.tickCount % 3 == 0) {
+        if (this.tickCount % 4 == 0) {
+            // a few motes of the mark's colour drifting up from the nape; small and short-lived, they never pile up
             Vec3 nape = this.skeletonPoint(3, TitanSkeleton.NAPE);
-            // FLARE_SMOKE takes its colour from the velocity arguments
-            this.level().addParticle(ModParticles.FLARE_SMOKE.get(), nape.x, nape.y, nape.z, e.red(), e.green(), e.blue());
+            this.level()
+                .addParticle(
+                    new net.minecraft.core.particles.DustParticleOptions(new org.joml.Vector3f(e.red(), e.green(), e.blue()), 2.0F),
+                    nape.x + (this.random.nextDouble() - 0.5) * s * 0.4,
+                    nape.y + (this.random.nextDouble() - 0.5) * s * 0.3,
+                    nape.z + (this.random.nextDouble() - 0.5) * s * 0.4,
+                    0.0,
+                    0.08,
+                    0.0
+                );
         }
 
         if (e == Elite.SCALDING && this.random.nextInt(2) == 0) {

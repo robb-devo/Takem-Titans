@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.Nullable;
+import com.takem.titans.registry.ModBlocks;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Direction.Axis;
 import net.minecraft.world.level.block.AnvilBlock;
@@ -41,29 +42,29 @@ public final class TownPlan {
     static final double GATE_SQUARE_R = 34.0;
     static final TownPlan.Palette[] PALETTES = new TownPlan.Palette[]{
         new TownPlan.Palette(
-            Blocks.WHITE_TERRACOTTA.defaultBlockState(),
+            ModBlocks.PLASTER.get().defaultBlockState(),
             Blocks.STRIPPED_DARK_OAK_LOG,
             Blocks.STONE_BRICKS.defaultBlockState(),
-            Blocks.BRICKS.defaultBlockState(),
-            Blocks.BRICK_STAIRS.defaultBlockState(),
+            ModBlocks.ROOF_TILES.get().defaultBlockState(),
+            ModBlocks.ROOF_TILES_STAIRS.get().defaultBlockState(),
             Blocks.OAK_PLANKS.defaultBlockState(),
             Blocks.DARK_OAK_DOOR
         ),
         new TownPlan.Palette(
-            Blocks.SMOOTH_SANDSTONE.defaultBlockState(),
+            ModBlocks.PLASTER_CREAM.get().defaultBlockState(),
             Blocks.STRIPPED_SPRUCE_LOG,
             Blocks.COBBLESTONE.defaultBlockState(),
-            Blocks.DEEPSLATE_TILES.defaultBlockState(),
-            Blocks.DEEPSLATE_TILE_STAIRS.defaultBlockState(),
+            ModBlocks.ROOF_TILES_SLATE.get().defaultBlockState(),
+            ModBlocks.ROOF_TILES_SLATE_STAIRS.get().defaultBlockState(),
             Blocks.SPRUCE_PLANKS.defaultBlockState(),
             Blocks.SPRUCE_DOOR
         ),
         new TownPlan.Palette(
-            Blocks.CALCITE.defaultBlockState(),
+            ModBlocks.PLASTER.get().defaultBlockState(),
             Blocks.STRIPPED_OAK_LOG,
             Blocks.ANDESITE.defaultBlockState(),
-            Blocks.BRICKS.defaultBlockState(),
-            Blocks.BRICK_STAIRS.defaultBlockState(),
+            ModBlocks.ROOF_TILES_DARK.get().defaultBlockState(),
+            ModBlocks.ROOF_TILES_DARK_STAIRS.get().defaultBlockState(),
             Blocks.BIRCH_PLANKS.defaultBlockState(),
             Blocks.OAK_DOOR
         ),
@@ -86,11 +87,11 @@ public final class TownPlan {
             Blocks.SPRUCE_DOOR
         ),
         new TownPlan.Palette(
-            Blocks.WHITE_TERRACOTTA.defaultBlockState(),
-            Blocks.STRIPPED_SPRUCE_LOG,
+            ModBlocks.PLASTER_CREAM.get().defaultBlockState(),
+            Blocks.STRIPPED_DARK_OAK_LOG,
             Blocks.POLISHED_ANDESITE.defaultBlockState(),
-            Blocks.DEEPSLATE_TILES.defaultBlockState(),
-            Blocks.DEEPSLATE_TILE_STAIRS.defaultBlockState(),
+            ModBlocks.ROOF_TILES.get().defaultBlockState(),
+            ModBlocks.ROOF_TILES_STAIRS.get().defaultBlockState(),
             Blocks.OAK_PLANKS.defaultBlockState(),
             Blocks.OAK_DOOR
         ),
@@ -106,11 +107,11 @@ public final class TownPlan {
     };
     static final TownPlan.Palette[] TROST_PALETTES = new TownPlan.Palette[]{
         new TownPlan.Palette(
-            Blocks.SMOOTH_SANDSTONE.defaultBlockState(),
+            ModBlocks.PLASTER_OCHRE.get().defaultBlockState(),
             Blocks.STRIPPED_OAK_LOG,
             Blocks.CUT_SANDSTONE.defaultBlockState(),
-            Blocks.POLISHED_GRANITE.defaultBlockState(),
-            Blocks.POLISHED_GRANITE_STAIRS.defaultBlockState(),
+            ModBlocks.ROOF_TILES.get().defaultBlockState(),
+            ModBlocks.ROOF_TILES_STAIRS.get().defaultBlockState(),
             Blocks.OAK_PLANKS.defaultBlockState(),
             Blocks.OAK_DOOR
         ),
@@ -124,20 +125,20 @@ public final class TownPlan {
             Blocks.SPRUCE_DOOR
         ),
         new TownPlan.Palette(
-            Blocks.WHITE_TERRACOTTA.defaultBlockState(),
+            ModBlocks.PLASTER.get().defaultBlockState(),
             Blocks.STRIPPED_MANGROVE_LOG,
             Blocks.STONE_BRICKS.defaultBlockState(),
-            Blocks.MUD_BRICKS.defaultBlockState(),
-            Blocks.MUD_BRICK_STAIRS.defaultBlockState(),
+            ModBlocks.ROOF_TILES_DARK.get().defaultBlockState(),
+            ModBlocks.ROOF_TILES_DARK_STAIRS.get().defaultBlockState(),
             Blocks.MANGROVE_PLANKS.defaultBlockState(),
             Blocks.MANGROVE_DOOR
         ),
         new TownPlan.Palette(
-            Blocks.SMOOTH_SANDSTONE.defaultBlockState(),
+            ModBlocks.PLASTER_CREAM.get().defaultBlockState(),
             Blocks.STRIPPED_SPRUCE_LOG,
             Blocks.GRANITE.defaultBlockState(),
-            Blocks.DEEPSLATE_TILES.defaultBlockState(),
-            Blocks.DEEPSLATE_TILE_STAIRS.defaultBlockState(),
+            ModBlocks.ROOF_TILES_SLATE.get().defaultBlockState(),
+            ModBlocks.ROOF_TILES_SLATE_STAIRS.get().defaultBlockState(),
             Blocks.SPRUCE_PLANKS.defaultBlockState(),
             Blocks.SPRUCE_DOOR
         ),
@@ -732,7 +733,9 @@ public final class TownPlan {
             if (side == b.doorSide && b.floors >= 2 && Math.floorMod(look, 3) == 0) {
                 // a shop: a striped awning along the ground floor and its wares out on the pavement
                 Block stripe = AWNING_STRIPES[Math.floorMod(look >> 3, AWNING_STRIPES.length)];
-                setIfAir(col, 70, (along & 1) == 0 ? Blocks.WHITE_WOOL.defaultBlockState() : stripe.defaultBlockState());
+                if (!jettied(b)) {
+                    setIfAir(col, 70, (along & 1) == 0 ? Blocks.WHITE_WOOL.defaultBlockState() : stripe.defaultBlockState());
+                }
                 if (Math.abs(along - door) == 3 || Math.abs(along - door) == 4 && Math.floorMod(look >> 5, 2) == 0) {
                     setIfAir(col, 67, Math.floorMod(along + look, 3) == 0 ? Blocks.HAY_BLOCK.defaultBlockState() : Blocks.BARREL.defaultBlockState());
                     setIfAir(col, 68, POTS[Math.floorMod(along * 7 + look, POTS.length)].defaultBlockState());
@@ -745,7 +748,7 @@ public final class TownPlan {
             if (b.floors >= 4 && Math.floorMod(look >> 7, 3) != 0) {
                 // a narrow balcony in front of the middle window of one upper floor
                 int k = 2 + Math.floorMod(look >> 9, b.floors - 3);
-                int mid = middleWindow(len);
+                int mid = middleWindow(len, b);
                 if (mid > 0 && Math.abs(along - mid) <= 1) {
                     int floor = 66 + 4 * k;
                     boolean alongX = side.getAxis() == Axis.Z;
@@ -757,7 +760,7 @@ public final class TownPlan {
                 }
             }
         }
-        if (side == b.doorSide && Math.abs(along - door) <= 1) {
+        if (side == b.doorSide && Math.abs(along - door) <= 1 && !jettied(b)) {
             setIfAir(col, 69, pal.roofStairs.setValue(StairBlock.FACING, side.getOpposite()));
             if (along == door + 1) {
                 setIfAir(col, 68, Blocks.LANTERN.defaultBlockState().setValue(LanternBlock.HANGING, true));
@@ -775,19 +778,33 @@ public final class TownPlan {
             for (int k = 1; k < b.floors; k++) {
                 int floor = 66 + 4 * k;
                 boolean shut = shutters >= 3 || shutters == 2 && k == b.floors - 1;
-                if (windowSlot(along - 1, len) || windowSlot(along + 1, len)) {
+                if (windowSlot(along - 1, len, b) || windowSlot(along + 1, len, b)) {
                     if (shut) {
                         BlockState shutter = trapdoor.setValue(TrapDoorBlock.OPEN, true).setValue(TrapDoorBlock.HALF, Half.BOTTOM);
                         setIfAir(col, floor + 2, shutter);
                         setIfAir(col, floor + 3, shutter);
                     }
-                } else if (windowSlot(along, len)) {
+                } else if (windowSlot(along, len, b)) {
                     setIfAir(col, floor + 1, trapdoor.setValue(TrapDoorBlock.HALF, Half.TOP));
                     double r = WorldNoise.rand(col.x, floor, col.z, 77);
                     if (boxes && r < 0.75) {
                         setIfAir(col, floor + 2, POTS[Math.floorMod((int)(r * 1000.0), POTS.length)].defaultBlockState());
                     }
                 }
+            }
+        }
+
+        if (street && inner && !b.solidWalls) {
+            // one moulding where the timber storeys stand on the stone ground floor (a jetty is its own), and the rafter
+            // ends under the eaves
+            BlockState beam = stairsOf(pal.timber).setValue(StairBlock.FACING, side.getOpposite()).setValue(StairBlock.HALF, Half.TOP);
+            if (b.floors >= 2 && !(jettied(b) && side == b.doorSide)) {
+                setIfAir(col, 70, beam);
+            }
+
+            boolean verge = b.roof == TownPlan.Roof.GABLE_X ? outX : b.roof == TownPlan.Roof.GABLE_Z && outZ;
+            if (!verge && (along & 1) == 0) {
+                setIfAir(col, top - 1, beam);
             }
         }
     }
@@ -824,15 +841,16 @@ public final class TownPlan {
         }
     }
 
-    private static boolean windowSlot(int along, int len) {
-        return along > 0 && along < len - 1 && along % 3 == 1 && len > 4;
+    /** A window in this bay; houses with crosses keep every other bay for a cross. */
+    private static boolean windowSlot(int along, int len, TownPlan.Building b) {
+        return along > 0 && along < len - 1 && along % 3 == 1 && len > 4 && (timberStyle(b) != 1 || along / 3 % 2 == 0);
     }
 
     /** The window slot nearest the middle of a wall, or -1. */
-    private static int middleWindow(int len) {
+    private static int middleWindow(int len, TownPlan.Building b) {
         int best = -1;
         for (int a = 1; a < len - 1; a++) {
-            if (windowSlot(a, len) && (best < 0 || Math.abs(2 * a - (len - 1)) < Math.abs(2 * best - (len - 1)))) {
+            if (windowSlot(a, len, b) && (best < 0 || Math.abs(2 * a - (len - 1)) < Math.abs(2 * best - (len - 1)))) {
                 best = a;
             }
         }
@@ -996,7 +1014,14 @@ public final class TownPlan {
         }
 
         boolean wallAlongX = wallSide != null && wallSide.getAxis() == Axis.Z;
-        col.set(66, perim ? pal.base : pal.floor);
+        boolean jetty = jettied(b);
+        // the jettied front: its ground floor stands one block in, the storeys above run out over the street
+        boolean front = jetty && wallSide == b.doorSide;
+        boolean frontCorner = jetty && corner && depthFrom(b, bx, bz, b.doorSide) == 0;
+        int frontLen = b.doorSide.getAxis() == Axis.Z ? b.w : b.d;
+        int door = Math.min(b.doorAlong, (perim ? len : frontLen) - 2);
+        int style = timberStyle(b);
+        col.set(66, perim ? baseAt(pal, col.x, 66, col.z) : pal.floor);
 
         for (int y = 67; y <= top; y++) {
             int ly = y - 66;
@@ -1004,8 +1029,17 @@ public final class TownPlan {
             if (perim) {
                 BlockState s;
                 if (!b.solidWalls) {
-                    if (ly <= 4) {
-                        s = pal.base;
+                    if (front && ly <= 3) {
+                        // under the jetty: open, with a carved bracket under every other joist
+                        boolean bracket = ly == 3 && (along & 1) == 0 && along != door && along != door + 1;
+                        s = bracket ? stairsOf(pal.timber).setValue(StairBlock.FACING, wallSide.getOpposite()).setValue(StairBlock.HALF, Half.TOP) : AIR;
+                        if (ly == 3 && along == door + 1) {
+                            s = Blocks.LANTERN.defaultBlockState().setValue(LanternBlock.HANGING, true);
+                        }
+                    } else if (frontCorner && ly <= 4) {
+                        s = log(pal.timber, Axis.Y);
+                    } else if (ly <= 4 && !front) {
+                        s = baseAt(pal, col.x, y, col.z);
                     } else if (corner) {
                         s = log(pal.timber, Axis.Y);
                     } else if (fy == 0) {
@@ -1014,7 +1048,7 @@ public final class TownPlan {
                         // upright studs between the windows: a proper half-timbered frame, not just floor beams
                         s = log(pal.timber, Axis.Y);
                     } else {
-                        s = pal.plaster;
+                        s = infill(pal, style, along, fy, len, b);
                     }
                 } else {
                     s = corner || fy == 0 && ly > 4 ? log(pal.timber, Axis.Y) : pal.base;
@@ -1023,8 +1057,8 @@ public final class TownPlan {
                     }
                 }
 
-                if (wallSide != null) {
-                    boolean windowSlot = along > 0 && along < len - 1 && along % 3 == 1 && len > 4;
+                if (wallSide != null && !(front && ly <= 3)) {
+                    boolean windowSlot = windowSlot(along, len, b);
                     if (b.solidWalls) {
                         windowSlot = along > 1 && along < len - 2 && along % 4 == 2;
                     }
@@ -1033,7 +1067,7 @@ public final class TownPlan {
                         s = pane(wallAlongX);
                     }
 
-                    if (wallSide == b.doorSide && along == Math.min(b.doorAlong, len - 2) && (ly == 1 || ly == 2)) {
+                    if (wallSide == b.doorSide && along == door && (ly == 1 || ly == 2)) {
                         s = pal.door
                             .defaultBlockState()
                             .setValue(DoorBlock.FACING, wallSide)
@@ -1058,10 +1092,131 @@ public final class TownPlan {
 
         if (!perim) {
             furnish(col, b, bx, bz);
+            if (jetty && depthFrom(b, bx, bz, b.doorSide) == 1) {
+                insetWall(col, b, alongWall(bx, bz, b.doorSide), frontLen, door);
+            }
         }
 
         roof(col, b, bx, bz, top);
     }
+
+    /** The ground floor wall a jetty stands out over: stone, windows, and the door. */
+    private static void insetWall(ColumnBuffer col, TownPlan.Building b, int along, int len, int door) {
+        Direction side = b.doorSide;
+        boolean alongX = side.getAxis() == Axis.Z;
+        for (int y = 67; y <= 69; y++) {
+            BlockState s = baseAt(b.pal, col.x, y, col.z);
+            if (along == door && y <= 68) {
+                s = b.pal.door
+                    .defaultBlockState()
+                    .setValue(DoorBlock.FACING, side)
+                    .setValue(DoorBlock.HALF, y == 67 ? DoubleBlockHalf.LOWER : DoubleBlockHalf.UPPER)
+                    .setValue(DoorBlock.HINGE, DoorHingeSide.LEFT);
+            } else if (windowSlot(along, len, b) && y == 68 && Math.abs(along - door) > 1) {
+                s = pane(alongX);
+            }
+
+            col.set(y, s);
+        }
+    }
+
+    /**
+     * Whether a house has a jettied front: timber houses of two storeys or more, on two in three plots, as long as the
+     * front is wide enough to carry it.
+     */
+    static boolean jettied(TownPlan.Building b) {
+        int frontLen = b.doorSide.getAxis() == Axis.Z ? b.w : b.d;
+        return !b.solidWalls && b.floors >= 2 && frontLen >= 5 && Math.floorMod(WorldNoise.hash(b.x0, 5, b.z0, 3131), 3) != 0;
+    }
+
+    /**
+     * How the panels between the studs are filled: 0 plain render, 1 St. Andrew's crosses in the panels between the
+     * windows, 2 a chevron under every window. Crosses and chevrons need plaster that comes with braces.
+     */
+    private static int timberStyle(TownPlan.Building b) {
+        if (b.solidWalls || bracesFor(b.pal, false) == null) {
+            return 0;
+        } else {
+            return Math.floorMod(WorldNoise.hash(b.x0, 7, b.z0, 5151), 3);
+        }
+    }
+
+    private static BlockState infill(TownPlan.Palette pal, int style, int along, int fy, int len, TownPlan.Building b) {
+        int col = along % 3;
+        if (style == 1 && !windowSlot(along - col + 1, len, b) && fy >= 2) {
+            // an X across the upper two rows of a panel without a window
+            boolean leftHalf = col == 1;
+            boolean upper = fy == 3;
+            return bracesFor(pal, leftHalf == upper);
+        } else if (style == 2 && fy == 1 && col != 0) {
+            // a chevron in the parapet under the window: up from the left post, down to the right one
+            return bracesFor(pal, col == 2);
+        } else {
+            return pal.plaster;
+        }
+    }
+
+    /** The brace that goes with this plaster: "/" or, mirrored, "\"; null when the plaster has none. */
+    @Nullable
+    static BlockState bracesFor(TownPlan.Palette pal, boolean mirrored) {
+        if (pal.plaster.is(ModBlocks.PLASTER.get())) {
+            return (mirrored ? ModBlocks.PLASTER_BRACE_MIRRORED : ModBlocks.PLASTER_BRACE).get().defaultBlockState();
+        } else if (pal.plaster.is(ModBlocks.PLASTER_CREAM.get())) {
+            return (mirrored ? ModBlocks.PLASTER_CREAM_BRACE_MIRRORED : ModBlocks.PLASTER_CREAM_BRACE).get().defaultBlockState();
+        } else {
+            return null;
+        }
+    }
+
+    /** How far (bx, bz) lies in from a house's wall on that side: 0 in the wall itself. */
+    static int depthFrom(TownPlan.Building b, int bx, int bz, Direction side) {
+        return switch (side) {
+            case NORTH -> bz;
+            case SOUTH -> b.d - 1 - bz;
+            case WEST -> bx;
+            default -> b.w - 1 - bx;
+        };
+    }
+
+    static int alongWall(int bx, int bz, Direction side) {
+        return side.getAxis() == Axis.Z ? bx : bz;
+    }
+
+    /** A plinth laid by hand: mostly the palette's stone, here and there a cracked, mossy or odd one. */
+    private static BlockState baseAt(TownPlan.Palette pal, int x, int y, int z) {
+        double r = WorldNoise.rand(x, y, z, 6262);
+        if (pal.base.is(Blocks.STONE_BRICKS)) {
+            return r < 0.12 ? Blocks.CRACKED_STONE_BRICKS.defaultBlockState() : (r < 0.2 ? Blocks.MOSSY_STONE_BRICKS.defaultBlockState() : pal.base);
+        } else if (pal.base.is(Blocks.COBBLESTONE)) {
+            return r < 0.15 ? Blocks.MOSSY_COBBLESTONE.defaultBlockState() : (r < 0.22 ? Blocks.ANDESITE.defaultBlockState() : pal.base);
+        } else if (pal.base.is(Blocks.ANDESITE) || pal.base.is(Blocks.POLISHED_ANDESITE)) {
+            return r < 0.15 ? Blocks.COBBLESTONE.defaultBlockState() : pal.base;
+        } else {
+            return pal.base;
+        }
+    }
+
+    static BlockState stairsOf(Block timber) {
+        String name = net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(timber).getPath();
+        Block b;
+        if (name.contains("dark_oak")) {
+            b = Blocks.DARK_OAK_STAIRS;
+        } else if (name.contains("mangrove")) {
+            b = Blocks.MANGROVE_STAIRS;
+        } else if (name.contains("birch")) {
+            b = Blocks.BIRCH_STAIRS;
+        } else if (name.contains("quartz")) {
+            b = Blocks.QUARTZ_STAIRS;
+        } else if (name.contains("spruce")) {
+            b = Blocks.SPRUCE_STAIRS;
+        } else {
+            b = Blocks.OAK_STAIRS;
+        }
+
+        return b.defaultBlockState();
+    }
+
+    private static final BlockState AIR = Blocks.AIR.defaultBlockState();
 
     private static void furnish(ColumnBuffer col, TownPlan.Building b, int bx, int bz) {
         if (b.w >= 5 && b.d >= 5) {
@@ -1279,9 +1434,22 @@ public final class TownPlan {
         int rise = Math.round((float)e * b.pitch);
         int surface = top + 1 + rise;
         if (gableEnd) {
+            boolean timber = !b.solidWalls && b.pitch == 1.0F;
+            BlockState rake = timber ? bracesFor(pal, !rakeRises(b, bx, bz, up)) : null;
+            boolean gableX = b.roof == TownPlan.Roof.GABLE_X;
             for (int y = top + 1; y < surface; y++) {
-                boolean window = y == top + 2 && Math.abs(e - maxE) <= 0 && maxE >= 2;
-                col.set(y, window ? Blocks.GLASS.defaultBlockState() : pal.plaster);
+                BlockState s = pal.plaster;
+                if (timber && e == maxE) {
+                    s = log(pal.timber, Axis.Y);
+                } else if (timber && y == top + 2 && e == maxE - 1 && maxE >= 3) {
+                    s = pane(!gableX);
+                } else if (!timber && y == top + 2 && e == maxE && maxE >= 2) {
+                    s = Blocks.GLASS.defaultBlockState();
+                } else if (rake != null && y == surface - 1) {
+                    s = rake;
+                }
+
+                col.set(y, s);
             }
         } else if (b.pitch > 1.0F) {
             col.fill(top + 1, surface - 1, pal.roof);
@@ -1358,6 +1526,23 @@ public final class TownPlan {
 
             col.set(top + 4, pal.roof);
         }
+    }
+
+    /**
+     * Whether the roof rises to the right as seen from outside the gable wall this column belongs to: "/" braces then
+     * follow the slope, "\" on the falling side.
+     */
+    private static boolean rakeRises(TownPlan.Building b, int bx, int bz, Direction up) {
+        Direction out;
+        if (b.roof == TownPlan.Roof.GABLE_X) {
+            out = bx == 0 ? Direction.WEST : Direction.EAST;
+        } else {
+            out = bz == 0 ? Direction.NORTH : Direction.SOUTH;
+        }
+
+        // seen from outside, the viewer's right is the wall's outward direction turned counter-clockwise (from above)
+        Direction right = out.getCounterClockWise();
+        return up == right;
     }
 
     public static boolean isBuilding(int x, int z) {

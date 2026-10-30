@@ -1198,5 +1198,21 @@
   "elite.takemtitans.giant": "Towering %s",
   "elite.takemtitans.scalding": "Scalding %s",
   "story.takemtitans.elite_down": "%s brought down!",
-  "contract.takemtitans.kind.5": "Bring down marked titans (%s/%s)"
+  "contract.takemtitans.kind.5": "Bring down marked titans (%s/%s)",
+  "block.takemtitans.plaster": "White Plaster",
+  "block.takemtitans.plaster_brace": "White Plaster Brace",
+  "block.takemtitans.plaster_brace_mirrored": "White Plaster Brace (Mirrored)",
+  "block.takemtitans.plaster_cream": "Cream Plaster",
+  "block.takemtitans.plaster_cream_brace": "Cream Plaster Brace",
+  "block.takemtitans.plaster_cream_brace_mirrored": "Cream Plaster Brace (Mirrored)",
+  "block.takemtitans.plaster_ochre": "Ochre Plaster",
+  "block.takemtitans.roof_tiles": "Clay Roof Tiles",
+  "block.takemtitans.roof_tiles_stairs": "Clay Roof Tiles Stairs",
+  "block.takemtitans.roof_tiles_slab": "Clay Roof Tiles Slab",
+  "block.takemtitans.roof_tiles_dark": "Dark Roof Tiles",
+  "block.takemtitans.roof_tiles_dark_stairs": "Dark Roof Tiles Stairs",
+  "block.takemtitans.roof_tiles_dark_slab": "Dark Roof Tiles Slab",
+  "block.takemtitans.roof_tiles_slate": "Slate Roof Tiles",
+  "block.takemtitans.roof_tiles_slate_stairs": "Slate Roof Tiles Stairs",
+  "block.takemtitans.roof_tiles_slate_slab": "Slate Roof Tiles Slab"
 }

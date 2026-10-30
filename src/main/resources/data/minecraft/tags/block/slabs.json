@@ -1,6 +1,9 @@
 {
   "replace": false,
   "values": [
-    "takemtitans:wall_stone_slab"
+    "takemtitans:wall_stone_slab",
+    "takemtitans:roof_tiles_slab",
+    "takemtitans:roof_tiles_dark_slab",
+    "takemtitans:roof_tiles_slate_slab"
   ]
 }

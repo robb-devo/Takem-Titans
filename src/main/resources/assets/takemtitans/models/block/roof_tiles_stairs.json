@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/stairs",
+  "textures": {
+    "bottom": "takemtitans:block/roof_tiles",
+    "top": "takemtitans:block/roof_tiles",
+    "side": "takemtitans:block/roof_tiles"
+  }
+}

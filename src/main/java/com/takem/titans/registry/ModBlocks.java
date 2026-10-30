@@ -82,7 +82,41 @@ public final class ModBlocks {
         )
     );
 
+    // town building blocks: textures, models and loot from tools/block_art.py
+    public static final DeferredBlock<Block> PLASTER = BLOCKS.register("plaster", () -> new Block(plaster(MapColor.SNOW)));
+    public static final DeferredBlock<Block> PLASTER_BRACE = BLOCKS.register("plaster_brace", () -> new Block(plaster(MapColor.SNOW)));
+    public static final DeferredBlock<Block> PLASTER_BRACE_MIRRORED = BLOCKS.register("plaster_brace_mirrored", () -> new Block(plaster(MapColor.SNOW)));
+    public static final DeferredBlock<Block> PLASTER_CREAM = BLOCKS.register("plaster_cream", () -> new Block(plaster(MapColor.SAND)));
+    public static final DeferredBlock<Block> PLASTER_CREAM_BRACE = BLOCKS.register("plaster_cream_brace", () -> new Block(plaster(MapColor.SAND)));
+    public static final DeferredBlock<Block> PLASTER_CREAM_BRACE_MIRRORED = BLOCKS.register("plaster_cream_brace_mirrored", () -> new Block(plaster(MapColor.SAND)));
+    public static final DeferredBlock<Block> PLASTER_OCHRE = BLOCKS.register("plaster_ochre", () -> new Block(plaster(MapColor.COLOR_YELLOW)));
+    public static final DeferredBlock<Block> ROOF_TILES = BLOCKS.register("roof_tiles", () -> new Block(tiles(MapColor.TERRACOTTA_RED)));
+    public static final DeferredBlock<StairBlock> ROOF_TILES_STAIRS = BLOCKS.register(
+        "roof_tiles_stairs", () -> new StairBlock(ROOF_TILES.get().defaultBlockState(), tiles(MapColor.TERRACOTTA_RED))
+    );
+    public static final DeferredBlock<SlabBlock> ROOF_TILES_SLAB = BLOCKS.register("roof_tiles_slab", () -> new SlabBlock(tiles(MapColor.TERRACOTTA_RED)));
+    public static final DeferredBlock<Block> ROOF_TILES_DARK = BLOCKS.register("roof_tiles_dark", () -> new Block(tiles(MapColor.TERRACOTTA_BROWN)));
+    public static final DeferredBlock<StairBlock> ROOF_TILES_DARK_STAIRS = BLOCKS.register(
+        "roof_tiles_dark_stairs", () -> new StairBlock(ROOF_TILES_DARK.get().defaultBlockState(), tiles(MapColor.TERRACOTTA_BROWN))
+    );
+    public static final DeferredBlock<SlabBlock> ROOF_TILES_DARK_SLAB = BLOCKS.register("roof_tiles_dark_slab", () -> new SlabBlock(tiles(MapColor.TERRACOTTA_BROWN)));
+    public static final DeferredBlock<Block> ROOF_TILES_SLATE = BLOCKS.register("roof_tiles_slate", () -> new Block(tiles(MapColor.COLOR_GRAY)));
+    public static final DeferredBlock<StairBlock> ROOF_TILES_SLATE_STAIRS = BLOCKS.register(
+        "roof_tiles_slate_stairs", () -> new StairBlock(ROOF_TILES_SLATE.get().defaultBlockState(), tiles(MapColor.COLOR_GRAY))
+    );
+    public static final DeferredBlock<SlabBlock> ROOF_TILES_SLATE_SLAB = BLOCKS.register("roof_tiles_slate_slab", () -> new SlabBlock(tiles(MapColor.COLOR_GRAY)));
+
     private ModBlocks() {
+    }
+
+    /** Lime render on a timber frame: soft, breaks easily. */
+    private static Properties plaster(MapColor colour) {
+        return Properties.of().mapColor(colour).instrument(NoteBlockInstrument.BASEDRUM).requiresCorrectToolForDrops().strength(1.2F, 3.0F).sound(SoundType.CALCITE);
+    }
+
+    /** Fired clay or slate on the roof battens. */
+    private static Properties tiles(MapColor colour) {
+        return Properties.of().mapColor(colour).instrument(NoteBlockInstrument.BASEDRUM).requiresCorrectToolForDrops().strength(1.5F, 4.0F).sound(SoundType.MUD_BRICKS);
     }
 
     private static Properties wallStone() {

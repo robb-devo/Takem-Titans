@@ -106,11 +106,16 @@ public class CannonballEntity extends ThrowableItemProjectile {
 
     @Override
     protected void onHit(HitResult result) {
-        if (result instanceof BlockHitResult bhr
-            && this.origin != null
-            && bhr.getLocation().distanceTo(this.origin) < 12.0
-            && ShiganshinaLayout.isWall((double)bhr.getBlockPos().getX() + 0.5, (double)bhr.getBlockPos().getZ() + 0.5)) {
-            return;
+        // a shell flies clear of the gun's own wall, its gun ledge and parapet, and whatever is right at the muzzle;
+        // hitting them would blow up on the gun itself every shot
+        if (result instanceof BlockHitResult bhr && this.origin != null) {
+            double flown = bhr.getLocation().distanceTo(this.origin);
+            if (flown < 3.0
+                || flown < 12.0
+                    && (ShiganshinaLayout.isWall((double)bhr.getBlockPos().getX() + 0.5, (double)bhr.getBlockPos().getZ() + 0.5)
+                        || com.takem.titans.world.Destruction.isWallStone(this.level().getBlockState(bhr.getBlockPos())))) {
+                return;
+            }
         }
 
         super.onHit(result);

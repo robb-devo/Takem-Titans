@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/slab",
+  "textures": {
+    "bottom": "takemtitans:block/roof_tiles_slate",
+    "top": "takemtitans:block/roof_tiles_slate",
+    "side": "takemtitans:block/roof_tiles_slate"
+  }
+}

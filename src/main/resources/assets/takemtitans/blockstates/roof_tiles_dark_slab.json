@@ -1,0 +1,13 @@
+{
+  "variants": {
+    "type=bottom": {
+      "model": "takemtitans:block/roof_tiles_dark_slab"
+    },
+    "type=top": {
+      "model": "takemtitans:block/roof_tiles_dark_slab_top"
+    },
+    "type=double": {
+      "model": "takemtitans:block/roof_tiles_dark"
+    }
+  }
+}

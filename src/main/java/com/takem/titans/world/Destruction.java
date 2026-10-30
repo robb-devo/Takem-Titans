@@ -977,6 +977,7 @@ public final class Destruction {
             int n = sx * sy * sz;
             byte[] kind = new byte[n];
             java.util.BitSet wallCell = new java.util.BitSet(n);
+            java.util.BitSet furniture = new java.util.BitSet(n);
             java.util.BitSet anchorCell = new java.util.BitSet(n);
             BlockState[] states = new BlockState[n];
             MutableBlockPos m = new MutableBlockPos();
@@ -1002,6 +1003,9 @@ public final class Destruction {
                                     kind[i] = 2;
                                     states[i] = s;
                                     structural++;
+                                    if (isFurniture(s)) {
+                                        furniture.set(i);
+                                    }
                                 } else if (s.is(BlockTags.LEAVES)) {
                                     kind[i] = 3;
                                     states[i] = s;
@@ -1093,30 +1097,32 @@ public final class Destruction {
                                 relax(i + sx * sz, d, kind, dist, buckets);
                             }
 
-                            if (yxx > 0) {
+                            // furniture stands on the floor: nothing hangs a cupboard from the ceiling or props a room
+                            // up on one, so it is held from below only and passes no support sideways
+                            if (yxx > 0 && !furniture.get(i - sx * sz)) {
                                 relax(i - sx * sz, d + 12 + 3 * load[i - sx * sz], kind, dist, buckets);
                             }
 
                             // a house leaning on the Wall isn't held up by it: the Wall only carries what sits on top of it
-                            for (int k = 0; k < 4 && !wallCell.get(i); k++) {
+                            for (int k = 0; k < 4 && !wallCell.get(i) && !furniture.get(i); k++) {
                                 int nx = xx + hx[k];
                                 int nz = z + hz[k];
                                 if (nx >= 0 && nz >= 0 && nx < sx && nz < sz) {
                                     int j = (yxx * sz + nz) * sx + nx;
-                                    if (kind[j] == 2) {
+                                    if (kind[j] == 2 && !furniture.get(j)) {
                                         relax(j, d + 3 + 3 * load[j], kind, dist, buckets);
                                     }
 
                                     if (yxx + 1 < sy) {
                                         int ju = j + sx * sz;
-                                        if (kind[ju] == 2) {
+                                        if (kind[ju] == 2 && !furniture.get(ju)) {
                                             relax(ju, d + 2 + 3 * load[ju], kind, dist, buckets);
                                         }
                                     }
 
                                     if (yxx > 0) {
                                         int jd = j - sx * sz;
-                                        if (kind[jd] == 2) {
+                                        if (kind[jd] == 2 && !furniture.get(jd)) {
                                             relax(jd, d + 12 + 3 * load[jd], kind, dist, buckets);
                                         }
                                     }
@@ -1142,7 +1148,7 @@ public final class Destruction {
                     }
                 }
 
-                if (q.gen == 0) {
+                if (q.gen <= 1) {
                     // buckling under load is what the first blow does; aftershocks only drop what truly hangs free
                     crushOverloaded(level, q, kind, dist, states, sx, sy, sz, minX, minY, minZ);
                 }
@@ -1655,11 +1661,12 @@ public final class Destruction {
 
     /**
      * Generation of the collapse being handled right now (server thread only): 0 for whatever set it off directly - a
-     * blow, a blast, a block taken out - 1 for what that brought down. Anything past {@link #CHAIN_LIMIT} is not looked
-     * at, so one ruin can't shake a whole district down after it.
+     * blow, a blast, a block taken out - 1 for what that brought down, 2 for what came down after that. Anything past
+     * {@link #CHAIN_LIMIT} is not looked at, so one ruin can't shake a whole district down after it; every look only
+     * drops what lies close to what changed, so the chain stays inside the house it started in.
      */
     public static int chainGen;
-    public static final int CHAIN_LIMIT = 1;
+    public static final int CHAIN_LIMIT = 2;
 
     private static boolean nearFocus(IntArrayList members, Destruction.Request q, int sx, int sz) {
         // the survey is centred on q.center, so q.r is the centre's index on both axes
@@ -2017,6 +2024,7 @@ public final class Destruction {
                 }
 
                 cleanupAround(level, Arrays.copyOf(pos, valid));
+                sagFloors(level, lst, pos, valid, p.drops);
                 // the joints snap: a burst of chips where it tore away from what still stands
                 for (int k = 0; k < p.contacts.length; k += 2) {
                     BlockPos b = BlockPos.of(p.contacts[k]);
@@ -2144,6 +2152,86 @@ public final class Destruction {
         }
 
         return Math.max(1, done);
+    }
+
+    /**
+     * Joists lose their bearing where a wall goes: the floor boards and roof eaves within two blocks of a piece that came
+     * away, with open space under them, give way too. A storey follows its walls down instead of hanging in the air
+     * until the last of them is gone, and what stood on those boards drops on the look that follows.
+     */
+    private static void sagFloors(ServerLevel level, Destruction.LevelState lst, long[] positions, int count, boolean drops) {
+        it.unimi.dsi.fastutil.longs.LongOpenHashSet seen = new it.unimi.dsi.fastutil.longs.LongOpenHashSet();
+        it.unimi.dsi.fastutil.longs.LongArrayList out = new it.unimi.dsi.fastutil.longs.LongArrayList();
+        MutableBlockPos m = new MutableBlockPos();
+        MutableBlockPos below = new MutableBlockPos();
+        int step = Math.max(1, count / 500);
+
+        for (int i = 0; i < count && out.size() < 400; i += step) {
+            int px = BlockPos.getX(positions[i]);
+            int py = BlockPos.getY(positions[i]);
+            int pz = BlockPos.getZ(positions[i]);
+
+            for (int dy = -1; dy <= 1; dy++) {
+                for (int dx = -2; dx <= 2; dx++) {
+                    for (int dz = -2; dz <= 2; dz++) {
+                        m.set(px + dx, py + dy, pz + dz);
+                        long key = m.asLong();
+                        if (!seen.add(key) || lst.claimed.contains(key)) {
+                            continue;
+                        }
+
+                        BlockState s = level.getBlockState(m);
+                        if (s.isAir() || s.is(BlockTags.LOGS) || isWallStone(s) || !isStructural(level, m, s) || Rebuild.resists(level, m)) {
+                            continue;
+                        }
+
+                        // a wall has more wall under it; a board has a room (or a lantern) under it
+                        BlockState under = level.getBlockState(below.setWithOffset(m, Direction.DOWN));
+                        if (under.isAir() || isSoftFixture(under) || under.getCollisionShape(level, below).isEmpty()) {
+                            out.add(key);
+                        }
+                    }
+                }
+            }
+        }
+
+        if (!out.isEmpty()) {
+            long[] at = out.toLongArray();
+            BlockState[] states = new BlockState[at.length];
+            for (int i = 0; i < at.length; i++) {
+                states[i] = level.getBlockState(m.set(at[i]));
+            }
+
+            // its own follow-up look is always allowed: whatever stood on the boards must not be left in the air
+            int keep = chainGen;
+            chainGen = Math.min(chainGen, CHAIN_LIMIT - 1);
+            Destruction.Job job = new Destruction.Job(at, states, Vec3.atCenterOf(BlockPos.of(at[0])));
+            chainGen = keep;
+            job.wood = true;
+            job.drops = drops;
+            lst.jobs.add(job);
+        }
+    }
+
+    /** Furniture stands on a floor: it never carries a wall or a storey, and never hangs off one. */
+    static boolean isFurniture(BlockState s) {
+        net.minecraft.world.level.block.Block b = s.getBlock();
+        boolean vanilla = net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(b).getNamespace().equals("minecraft");
+        return vanilla && b instanceof net.minecraft.world.level.block.BaseEntityBlock
+            || s.is(BlockTags.WOOL_CARPETS)
+            || s.is(BlockTags.BEDS)
+            || s.is(BlockTags.ANVIL)
+            || s.is(net.minecraft.world.level.block.Blocks.BOOKSHELF)
+            || s.is(net.minecraft.world.level.block.Blocks.CRAFTING_TABLE)
+            || s.is(net.minecraft.world.level.block.Blocks.SMITHING_TABLE)
+            || s.is(net.minecraft.world.level.block.Blocks.FLETCHING_TABLE)
+            || s.is(net.minecraft.world.level.block.Blocks.CARTOGRAPHY_TABLE)
+            || s.is(net.minecraft.world.level.block.Blocks.LOOM)
+            || s.is(net.minecraft.world.level.block.Blocks.STONECUTTER)
+            || s.is(net.minecraft.world.level.block.Blocks.GRINDSTONE)
+            || s.is(net.minecraft.world.level.block.Blocks.COMPOSTER)
+            || s.is(net.minecraft.world.level.block.Blocks.CAULDRON)
+            || s.is(net.minecraft.world.level.block.Blocks.HAY_BLOCK);
     }
 
     private static void finish(ServerLevel level, Destruction.Job job) {
