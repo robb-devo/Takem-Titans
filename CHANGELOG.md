@@ -23,8 +23,14 @@ Start a new world for this version: towns are generated with the new layout.
 - Every core sound rebuilt in layers with several takes each: titan steps, roars, groans, screams and deaths, blades, the nape kill, ODM hooks, winch, gas and wind, explosions, collapses, glass, boulders, cannons and the alarm bell. They play at the levels of the 2.0 mix.
 - A score that follows the fight: a calm theme now and then, a danger drone when titans are about, war drums in battle and a new boss theme.
 
-### Gear and effects
-- New 3D blades for every tier and HD icons for blades, ODM gear, thunder spears and gas canisters.
+### Gear, look and feel
+- New 3D blades for every tier.
+- Everything you wear repainted: the Survey Corps jacket with the Wings of Freedom on back, chest and shoulder, the green Vanguard coat and steel helmet, the crystal Hardened set, the recon hood, buckled knee boots, white trousers with thigh straps, and every ODM rig tier in its own finish.
+- The cloak falls over the shoulders and carries a large emblem.
+- All 71 item icons redrawn in one style, each recognisable at a glance.
+- All 21 townsfolk, soldiers, builders and story characters repainted with faces, hair and the uniforms and emblems of their regiments.
+- A new title screen: the camera turns over Shiganshina at sunset while the Colossal Titan looks over the wall.
+- A nape kill erupts: a flash, more blood the bigger the titan, and blood and steam pouring out of the cut as it falls.
 
 ### Cannons
 - Garrison cannons stand on stone gun ledges built out from the face of the wall (on the inside of the arena wall) and only fire on their side. Shells no longer blow up on the wall right at the gun.
@@ -32,3 +38,4 @@ Start a new world for this version: towns are generated with the new layout.
 ### Destruction
 - Collapses no longer chain through whole districts: one ruin can bring down what was joined to it, but no further.
 - Furniture only stands on the floor under it, and the boards next to a wall piece that falls give way too: a storey follows its walls down instead of hanging in the air until the last wall is gone.
+- Corner posts and thin stretches of wall left standing alone after a collapse topple over as one piece.

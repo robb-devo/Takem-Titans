@@ -50,16 +50,20 @@ def main():
         if m and m.group(1) != new:
             old = m.group(1)
     if old is None:
-        raise SystemExit('no previous release in release/ to build from')
+        if not os.path.exists(os.path.join(REL, 'TakemTitans-%s.mrpack' % new)):
+            raise SystemExit('no previous release in release/ to build from')
+        old = new   # rebuilding this version's packages with a fresh jar
     for suffix in ('.mrpack', '-CurseForge.zip', '-Installer.zip'):
         src = os.path.join(REL, 'TakemTitans-%s%s' % (old, suffix))
         dst = os.path.join(REL, 'TakemTitans-%s%s' % (new, suffix))
-        rewrite(src, dst, old, new, jar)
-        os.remove(src)
+        tmp = src + '.prev'
+        os.replace(src, tmp)
+        rewrite(tmp, dst, old, new, jar)
+        os.remove(tmp)
         print('  %s' % os.path.basename(dst))
     shutil.copyfile(jar, os.path.join(REL, 'takemtitans-%s.jar' % new))
     old_jar = os.path.join(REL, 'takemtitans-%s.jar' % old)
-    if os.path.exists(old_jar):
+    if old != new and os.path.exists(old_jar):
         os.remove(old_jar)
     print('  takemtitans-%s.jar  (was %s)' % (new, old))
 

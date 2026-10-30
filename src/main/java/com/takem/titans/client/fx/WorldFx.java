@@ -303,6 +303,58 @@ public final class WorldFx {
         }
     }
 
+    /**
+     * The cut nape erupting: for a second or so, blood and steam keep pouring up out of the wound and fall back, harder
+     * at first. Spawns a bounded number of particles and draws nothing itself.
+     */
+    public static final class Geyser extends WorldFx.Effect {
+        final Vec3 c;
+        final float size;
+
+        public Geyser(Vec3 c, float size, int life) {
+            super(life);
+            this.c = c;
+            this.size = size;
+        }
+
+        @Override
+        void tick() {
+            net.minecraft.client.multiplayer.ClientLevel level = Minecraft.getInstance().level;
+            if (level == null) {
+                return;
+            }
+
+            float k = 1.0F - (float)this.age / (float)this.life;
+            net.minecraft.util.RandomSource r = level.random;
+            double up = 0.25 + 0.35 * k * Math.min(1.5, this.size / 10.0);
+            for (int i = 0; i < 2; i++) {
+                level.addAlwaysVisibleParticle(
+                    com.takem.titans.registry.ModParticles.BLOOD.get(),
+                    this.c.x, this.c.y, this.c.z,
+                    (r.nextDouble() - 0.5) * 0.25, up + r.nextDouble() * 0.2, (r.nextDouble() - 0.5) * 0.25
+                );
+            }
+
+            if (this.age % 2 == 0) {
+                ClientFx.spawn(
+                    level,
+                    com.takem.titans.registry.ModParticles.BIG_STEAM.get(),
+                    this.c.x + (r.nextDouble() - 0.5) * 0.6,
+                    this.c.y + 0.3,
+                    this.c.z + (r.nextDouble() - 0.5) * 0.6,
+                    (r.nextDouble() - 0.5) * 0.05,
+                    0.12 + 0.2 * k,
+                    (r.nextDouble() - 0.5) * 0.05,
+                    0.8F + this.size * 0.05F * k
+                );
+            }
+        }
+
+        @Override
+        void render(WorldFx.Draw d, float pt) {
+        }
+    }
+
     public abstract static class Effect {
         int age;
         final int life;

@@ -228,8 +228,11 @@ public final class ClientFx {
                     Vec3 burst = clearOfCamera(at, Math.max(5.0, (double)h * 0.6));
                     WorldFx.add(new WorldFx.Starburst(burst, 26, h * 0.9F, h * 0.06F, 12, color, rnd));
                     WorldFx.add(new WorldFx.ShockRing(burst, h * 1.6F, 14, h * 0.06F, 0.0F, color, 0.7F));
-                    bloodBurst(level, at, new Vec3(0.0, 1.0, 0.0), 9.0F);
-                    bloodBurst(level, at, randomDir(rnd), 5.0F);
+                    WorldFx.add(new WorldFx.Flash(burst, h * 0.35F, 5));
+                    // the bigger the titan, the more there is in it
+                    bloodBurst(level, at, new Vec3(0.0, 1.0, 0.0), 6.0F + h * 0.35F);
+                    bloodBurst(level, at, randomDir(rnd), 4.0F + h * 0.15F);
+                    WorldFx.add(new WorldFx.Geyser(at, h, 26));
                     Vec3 s = clearOfCamera(at, 4.0);
 
                     for (int i = 0; i < 30; i++) {
