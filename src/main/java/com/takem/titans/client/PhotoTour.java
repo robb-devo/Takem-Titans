@@ -43,7 +43,24 @@ public final class PhotoTour {
     private static int settleTicks;
     private static int inWorld;
 
+    /** -Dtakemtitans.tourMenu=true: no world; screenshots of the title screen and the adventure screen instead. */
+    private static final boolean MENU = Boolean.getBoolean("takemtitans.tourMenu");
+    private static int menuTicks;
+
     private PhotoTour() {
+    }
+
+    private static void menuTick(Minecraft mc) {
+        menuTicks++;
+        if (menuTicks == 200) {
+            Screenshot.grab(mc.gameDirectory, "menu_title.png", mc.getMainRenderTarget(), msg -> {});
+        } else if (menuTicks == 220 && mc.screen instanceof net.minecraft.client.gui.screens.TitleScreen title) {
+            mc.setScreen(new AdventureScreen(title));
+        } else if (menuTicks == 260) {
+            Screenshot.grab(mc.gameDirectory, "menu_adventure.png", mc.getMainRenderTarget(), msg -> {});
+        } else if (menuTicks == 280) {
+            mc.stop();
+        }
     }
 
     @SubscribeEvent
@@ -53,6 +70,11 @@ public final class PhotoTour {
         }
 
         Minecraft mc = Minecraft.getInstance();
+        if (MENU) {
+            menuTick(mc);
+            return;
+        }
+
         if (mc.player == null || mc.level == null) {
             inWorld = 0;
             return;

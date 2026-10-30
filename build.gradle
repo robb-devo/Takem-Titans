@@ -14,6 +14,11 @@ neoForge {
         client {
             client()
             // dev only: gradlew runClient -Ptour=path/to/script [-PtourWorld=folder] plays a PhotoTour script
+            if (project.hasProperty('tourMenu')) {
+                programArguments.addAll('--width', '1600', '--height', '900')
+                systemProperty 'takemtitans.tour', 'menu'
+                systemProperty 'takemtitans.tourMenu', 'true'
+            }
             if (project.hasProperty('tour')) {
                 programArguments.addAll('--quickPlaySingleplayer', project.findProperty('tourWorld') ?: 'tour', '--width', '1600', '--height', '900')
                 systemProperty 'takemtitans.tour', file(project.property('tour')).absolutePath

@@ -43,6 +43,11 @@ import net.neoforged.neoforge.client.event.ScreenEvent;
  */
 public class AdventureScreen extends Screen {
     private static final ResourceLocation LOGO = ResourceLocation.fromNamespaceAndPath("takemtitans", "textures/gui/title_logo.png");
+    /** "v2.1", from the mod's own version, so it never goes stale. */
+    private static final String VERSION = net.neoforged.fml.ModList.get()
+        .getModContainerById("takemtitans")
+        .map(c -> "v" + c.getModInfo().getVersion().getMajorVersion() + "." + c.getModInfo().getVersion().getMinorVersion())
+        .orElse("");
     private static final ResourceKey<WorldPreset> SHIGANSHINA = ResourceKey.create(
         Registries.WORLD_PRESET, ResourceLocation.fromNamespaceAndPath("takemtitans", "shiganshina")
     );
@@ -174,7 +179,7 @@ public class AdventureScreen extends Screen {
                 y += 10;
             }
         } else {
-            g.drawString(this.font, "v2.0", this.width - this.font.width("v2.0") - 4, this.height - 12, 0x6A6152);
+            g.drawString(this.font, VERSION, this.width - this.font.width(VERSION) - 4, this.height - 12, 0x6A6152);
         }
     }
 

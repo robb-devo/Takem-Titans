@@ -116,7 +116,8 @@ public final class RopeRenderer {
                 }
 
                 BlockPos story = StoryClient.beamTarget();
-                if (story != null) {
+                // F1 (and a panorama shot) gives a clean view: no guiding beam across it
+                if (story != null && !net.minecraft.client.Minecraft.getInstance().options.hideGui) {
                     long time = level.getGameTime();
                     ps.pushPose();
                     ps.translate((double)story.getX() + 0.5 - 0.5 - cam.x, (double)level.getMinBuildHeight() - cam.y, (double)story.getZ() - cam.z);
