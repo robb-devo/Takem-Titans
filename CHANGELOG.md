@@ -29,6 +29,7 @@ Start a new world for this version: towns are generated with the new layout.
 - The cloak falls over the shoulders and carries a large emblem.
 - All 71 item icons redrawn in one style, each recognisable at a glance.
 - All 21 townsfolk, soldiers, builders and story characters repainted with faces, hair and the uniforms and emblems of their regiments.
+- Your scout horse wears the Survey Corps barding: a green saddle cloth with a gold border and the Wings of Freedom on both flanks, a breast collar, a girth and white leg wraps.
 - A new title screen: the camera turns over Shiganshina at sunset while the Colossal Titan looks over the wall.
 - A nape kill erupts: a flash, more blood the bigger the titan, and blood and steam pouring out of the cut as it falls.
 - Wounds on titans are clean gashes with blood running down, no more broad red blotches.
