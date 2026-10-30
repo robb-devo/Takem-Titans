@@ -309,6 +309,13 @@ public class SkillScreen extends Screen {
     private static ItemStack icon(Skill s) {
         return new ItemStack((ItemLike)(switch (s) {
             case SHARPENED_STEEL -> (BladeItem)ModItems.ODM_BLADES.get();
+            case TITAN_BLOOD -> ModItems.SHIFTER_SERUM.get();
+            case HARDENED_SKIN -> Items.TURTLE_SCUTE;
+            case CRUSHING_FISTS -> Items.MACE;
+            case WAR_CRY -> Items.GOAT_HORN;
+            case EARTHSHAKER -> Items.HEAVY_CORE;
+            case STEAM_REGEN -> Items.GHAST_TEAR;
+            case COORDINATE -> Items.NETHER_STAR;
             case NAPE_SPECIALIST -> (BladeItem)ModItems.VETERAN_BLADES.get();
             case FLOWING_COMBO -> Items.FEATHER;
             case THUNDER_EXECUTION -> Items.LIGHTNING_ROD;

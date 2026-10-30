@@ -15,8 +15,8 @@ import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.level.Level;
 
 /**
- * A gear mod: use it while wearing ODM gear to fit it. With every slot taken, the oldest mod comes out and goes back
- * into your pack, so mods can be swapped between rigs freely.
+ * A gear extra. Using it opens the Gear Workshop, where extras are fitted into (and taken out of) the worn rig;
+ * nothing is lost, so extras can be swapped between rigs freely.
  */
 public class GearModItem extends Item {
     public final GearMod mod;
@@ -28,39 +28,49 @@ public class GearModItem extends Item {
 
     @Override
     public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
-        ItemStack held = player.getItemInHand(hand);
+        // the Gear Workshop does the fitting: it shows the rig's slots, what each extra does and how they pair up
+        if (level.isClientSide) {
+            com.takem.titans.client.gui.GearWorkshopScreen.open();
+        }
+        return InteractionResultHolder.sidedSuccess(player.getItemInHand(hand), level.isClientSide);
+    }
+
+    /**
+     * The workshop's buttons, on the server. Fitting needs a free slot and an extra of that kind in the pack (nothing is
+     * ever pushed out); taking one out puts it back in the pack.
+     */
+    public static void workshop(net.minecraft.server.level.ServerPlayer player, boolean fit, int ordinal) {
+        if (ordinal < 0 || ordinal >= GearMod.values().length) {
+            return;
+        }
+        GearMod mod = GearMod.values()[ordinal];
         ItemStack gear = OdmGear.getGear(player);
         if (gear.isEmpty()) {
-            if (!level.isClientSide) {
-                player.displayClientMessage(Component.translatable("message.takemtitans.mod_no_gear").withStyle(ChatFormatting.GRAY), true);
+            return;
+        }
+        Level level = player.level();
+        if (fit) {
+            if (OdmGear.hasMod(gear, mod) || Integer.bitCount(OdmGear.mods(gear)) >= GearMod.slots(OdmGear.tier(gear))) {
+                return;
             }
-
-            return InteractionResultHolder.fail(held);
-        } else if (OdmGear.hasMod(gear, this.mod)) {
-            if (!level.isClientSide) {
-                player.displayClientMessage(Component.translatable("message.takemtitans.mod_already").withStyle(ChatFormatting.GRAY), true);
-            }
-
-            return InteractionResultHolder.fail(held);
-        } else {
-            if (!level.isClientSide) {
-                GearMod removed = OdmGear.fitMod(gear, this.mod);
-                if (removed != null) {
-                    ItemStack back = new ItemStack(GearModItem.itemFor(removed));
-                    if (!player.getInventory().add(back)) {
-                        player.drop(back, false);
-                    }
+            net.minecraft.world.entity.player.Inventory inv = player.getInventory();
+            for (int i = 0; i < inv.getContainerSize(); i++) {
+                ItemStack s = inv.getItem(i);
+                if (s.getItem() instanceof GearModItem gm && gm.mod == mod) {
+                    s.shrink(1);
+                    OdmGear.fitMod(gear, mod);
+                    level.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.SMITHING_TABLE_USE, SoundSource.PLAYERS, 1.0F, 1.2F);
+                    level.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.ARMOR_EQUIP_NETHERITE.value(), SoundSource.PLAYERS, 1.0F, 1.0F);
+                    return;
                 }
-
-                held.consume(1, player);
-                level.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.SMITHING_TABLE_USE, SoundSource.PLAYERS, 1.0F, 1.2F);
-                level.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.ARMOR_EQUIP_NETHERITE.value(), SoundSource.PLAYERS, 1.0F, 1.0F);
-                player.displayClientMessage(
-                    Component.translatable("message.takemtitans.mod_fitted", Component.translatable(this.getDescriptionId())).withStyle(ChatFormatting.GOLD), true
-                );
             }
-
-            return InteractionResultHolder.sidedSuccess(held, level.isClientSide);
+        } else if (OdmGear.hasMod(gear, mod)) {
+            gear.set(com.takem.titans.registry.ModDataComponents.GEAR_MODS.get(), OdmGear.mods(gear) & ~mod.bit());
+            ItemStack back = new ItemStack(itemFor(mod));
+            if (!player.getInventory().add(back)) {
+                player.drop(back, false);
+            }
+            level.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.ARMOR_EQUIP_CHAIN.value(), SoundSource.PLAYERS, 1.0F, 0.8F);
         }
     }
 

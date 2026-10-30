@@ -151,6 +151,7 @@ public final class PhotoTour {
                     mc.setScreen(switch (arg) {
                         case "shop" -> new com.takem.titans.client.story.ShopScreen(-1, net.minecraft.network.chat.Component.translatable("npc.takemtitans.quartermaster"));
                         case "skills" -> new com.takem.titans.client.skill.SkillScreen();
+                        case "workshop" -> new com.takem.titans.client.gui.GearWorkshopScreen();
                         case "manual" -> new com.takem.titans.client.gui.FieldManualScreen();
                         case "dialogue" -> new com.takem.titans.client.story.DialogueScreen(
                             -1,

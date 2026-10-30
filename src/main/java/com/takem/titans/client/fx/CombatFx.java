@@ -67,6 +67,11 @@ public final class CombatFx {
             case 64 -> roar(level, at, msg.b(), msg.c(), rnd);
             case 65 -> quake(level, at, msg.a(), rnd);
             case 66 -> burst(level, at, (int)msg.a(), msg.b(), rnd);
+            case 67 -> {
+                WorldFx.add(new WorldFx.Bolt(at.add(0.0, 90.0, 0.0), at, 1.8F, 0xA8FFD8, rnd));
+                WorldFx.add(new WorldFx.Flash(at, 6.0F, 8));
+                PostFx.ripple(at, 0.6F * near(at, 80.0));
+            }
             case 68 -> shot(level, at, msg.a(), msg.b(), (int)msg.c(), (int)msg.d(), rnd);
             default -> {
             }

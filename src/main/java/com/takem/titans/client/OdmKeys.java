@@ -18,7 +18,8 @@ public final class OdmKeys {
     public static final KeyMapping GAS_NOVA = key("gas_nova", 71);
     public static final KeyMapping SKILLS = key("skills", 75);
     public static final KeyMapping MANUAL = key("manual", 74);
-    public static final KeyMapping[] ALL = new KeyMapping[]{HOOK_LEFT, HOOK_RIGHT, HOOK_BOTH, RELOAD, BOOST, DASH, WINCH_LOCK, GAS_NOVA, SKILLS, MANUAL};
+    public static final KeyMapping WORKSHOP = key("workshop", 85);
+    public static final KeyMapping[] ALL = new KeyMapping[]{HOOK_LEFT, HOOK_RIGHT, HOOK_BOTH, RELOAD, BOOST, DASH, WINCH_LOCK, GAS_NOVA, SKILLS, MANUAL, WORKSHOP};
 
     private OdmKeys() {
     }

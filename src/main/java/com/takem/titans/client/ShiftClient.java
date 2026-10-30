@@ -79,6 +79,7 @@ public final class ShiftClient {
     private static float hpShown = 1.0F;
     private static float hpGhost = 1.0F;
     private static int life;
+    private static int lifeMax = TitanShift.LIFE;
     private static int roarCd;
     private static int leapCd;
     private static int sneak;
@@ -110,9 +111,10 @@ public final class ShiftClient {
         }
         hud = true;
         life = b;
-        roarCd = (c & 255) * 2;
-        leapCd = (c >> 8 & 255) * 2;
+        roarCd = c & 255;
+        leapCd = c >> 8 & 255;
         sneak = c >> 16 & 15;
+        lifeMax = Math.max(20, (c >> 20 & 2047) * 20);
     }
 
     /** The serum's in: the camera leaves the player's eyes for the shot. */
@@ -473,7 +475,7 @@ public final class ShiftClient {
             g.fill(x0 + bw * i / 10, y0, x0 + bw * i / 10 + 1, y0 + 7, 0x40000000);
         }
         // the time left: the body is only borrowed
-        float t = Mth.clamp((float)life / (float)TitanShift.LIFE, 0.0F, 1.0F);
+        float t = Mth.clamp((float)life / (float)lifeMax, 0.0F, 1.0F);
         int timeColor = t < 0.2F ? 0xFFFFD25A : 0xFFE8B04A;
         g.fill(x0, y0 + 9, x0 + bw, y0 + 11, 0x60000000);
         g.fill(x0, y0 + 9, x0 + (int)((float)bw * t), y0 + 11, timeColor);
@@ -481,9 +483,9 @@ public final class ShiftClient {
         String secs = (life + 19) / 20 + "s";
         g.drawString(font, secs, x0 + bw - font.width(secs), y0 - 13, t < 0.2F ? 0xFFFFD25A : 0xFFE8DCC8, true);
         int roarW = chipWidth(font, Component.translatable("hud.takemtitans.shift.roar"), mc.options.keyUse.getTranslatedKeyMessage());
-        chip(g, font, x0 - 8 - roarW, y0 - 3, roarW, Component.translatable("hud.takemtitans.shift.roar"), mc.options.keyUse.getTranslatedKeyMessage(), roarCd, TitanShift.ROAR_CD);
+        chip(g, font, x0 - 8 - roarW, y0 - 3, roarW, Component.translatable("hud.takemtitans.shift.roar"), mc.options.keyUse.getTranslatedKeyMessage(), roarCd, 100);
         int leapW = chipWidth(font, Component.translatable("hud.takemtitans.shift.leap"), OdmKeys.HOOK_LEFT.getTranslatedKeyMessage());
-        chip(g, font, x0 + bw + 8, y0 - 3, leapW, Component.translatable("hud.takemtitans.shift.leap"), OdmKeys.HOOK_LEFT.getTranslatedKeyMessage(), leapCd, TitanShift.LEAP_CD);
+        chip(g, font, x0 + bw + 8, y0 - 3, leapW, Component.translatable("hud.takemtitans.shift.leap"), OdmKeys.HOOK_LEFT.getTranslatedKeyMessage(), leapCd, 100);
         Component hint = Component.translatable("hud.takemtitans.shift.release", mc.options.keyShift.getTranslatedKeyMessage());
         int hw = font.width(hint);
         int hy = y0 + 17;

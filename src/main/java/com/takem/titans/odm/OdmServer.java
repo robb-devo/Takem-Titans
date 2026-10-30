@@ -209,6 +209,10 @@ public final class OdmServer {
             // in a titan's body (or one of its moves): the ODM gear stands down
             return;
         }
+        if (ctx.player() instanceof ServerPlayer smith && (msg.action() == 40 || msg.action() == 41)) {
+            com.takem.titans.item.GearModItem.workshop(smith, msg.action() == 40, msg.value());
+            return;
+        }
         if (ctx.player() instanceof ServerPlayer player) {
             OdmPlayerData var10 = data(player);
             ItemStack gear = OdmGear.getGear(player);

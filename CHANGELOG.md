@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.2.0
+
+### Titan Shift skills
+- A seventh branch in the skill tree, **Titan Shift**, gathers everything that makes the shift stronger: Titan Blood (+10 seconds in the flesh per rank), Hardened Skin (+25% vitality per rank), Crushing Fists (blows reach further and blast wider, stomps shake a wider ring), War Cry (the roar comes back sooner, heals more and blinds titans further off), Earthshaker (leaps come back sooner, go further and land harder), Steam Regeneration (the body knits itself back together, and cutting free leaves you fully healed), and the mastery, **The Coordinate**: your roar calls lightning down onto the napes of the four nearest titans.
+
+### Gear Workshop
+- Gear extras have their own workshop: press U (or use any extra) to see the slots of the rig you wear, every extra with what it does and how many you carry, and fit or take one out with a click. Nothing is pushed out or lost; an extra you take out goes back into your pack.
+- A short guide opens the first time: what extras are, how to fit and swap them, how many slots each rig has, which extras pair well, and how to get more slots.
+
 ## 2.1.0
 
 Start a new world for this version: towns are generated with the new layout.

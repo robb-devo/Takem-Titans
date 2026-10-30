@@ -8,9 +8,12 @@ import com.takem.titans.entity.titan.TitanPart;
 import com.takem.titans.fx.Fx;
 import com.takem.titans.network.FeedbackPayload;
 import com.takem.titans.registry.ModSounds;
+import com.takem.titans.skill.Skill;
+import com.takem.titans.skill.Skills;
 import com.takem.titans.world.Destruction;
 import com.takem.titans.world.KillCam;
 import com.takem.titans.world.MeteorDive;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -104,6 +107,14 @@ public final class TitanShift {
         int sync;
         int lastCrunch;
         int lastCollapse;
+        // what the Titan Shift branch of the skill tree adds, read once when the serum goes in
+        float maxHp = MAX_HP;
+        int maxLife = LIFE;
+        int fists;
+        int cry;
+        int quake;
+        boolean regen;
+        boolean coordinate;
     }
 
     /** A player wearing a titan right now. True on both sides: the scale modifier rides the attribute sync. */
@@ -121,6 +132,15 @@ public final class TitanShift {
         }
         TitanShift.State s = new TitanShift.State();
         s.last = p.position();
+        s.maxLife = LIFE + 200 * Skills.rank(p, Skill.TITAN_BLOOD);
+        s.life = s.maxLife;
+        s.maxHp = MAX_HP * (1.0F + 0.25F * (float)Skills.rank(p, Skill.HARDENED_SKIN));
+        s.hp = s.maxHp;
+        s.fists = Skills.rank(p, Skill.CRUSHING_FISTS);
+        s.cry = Skills.rank(p, Skill.WAR_CRY);
+        s.quake = Skills.rank(p, Skill.EARTHSHAKER);
+        s.regen = Skills.has(p, Skill.STEAM_REGEN);
+        s.coordinate = Skills.has(p, Skill.COORDINATE);
         STATES.put(p.getUUID(), s);
         ServerLevel level = p.serverLevel();
         p.stopUsingItem();
@@ -200,6 +220,9 @@ public final class TitanShift {
             return;
         }
         s.life--;
+        if (s.regen && s.hp < s.maxHp) {
+            s.hp = Math.min(s.maxHp, s.hp + s.maxHp * 0.0015F);
+        }
         if (s.punchCd > 0) {
             s.punchCd--;
         }
@@ -213,7 +236,7 @@ public final class TitanShift {
             s.leapCd--;
         }
         if (s.hitIn >= 0 && --s.hitIn < 0) {
-            blow(p, level, s.hitKind);
+            blow(p, s, level, s.hitKind);
         }
         if (s.roarIn >= 0 && --s.roarIn < 0) {
             roarBlast(p, s, level);
@@ -369,7 +392,7 @@ public final class TitanShift {
         level.playSound(null, p.getX(), p.getEyeY(), p.getZ(), ModSounds.ODM_SWING.get(), SoundSource.PLAYERS, 3.0F, 0.42F);
     }
 
-    private static void blow(ServerPlayer p, ServerLevel level, int kind) {
+    private static void blow(ServerPlayer p, TitanShift.State s, ServerLevel level, int kind) {
         float h = 1.8F * p.getScale();
         Vec3 feet = p.position();
         Vec3 look = p.getLookAngle();
@@ -383,8 +406,8 @@ public final class TitanShift {
             Vec3 side = new Vec3(-flat.z, 0.0, flat.x).scale(kind == 0 ? -1.0 : 1.0);
             Vec3 fist = feet.add(flat.scale(reach)).add(side.scale((double)h * 0.06));
             fist = new Vec3(fist.x, y, fist.z);
-            int hit = strikeTitans(p, level, fist, (double)h * 0.32, src, false);
-            Destruction.blast(level, fist, 3.4);
+            int hit = strikeTitans(p, level, fist, (double)h * 0.32 * (1.0 + 0.2 * (double)s.fists), src, false);
+            Destruction.blast(level, fist, 3.4 + 0.7 * (double)s.fists);
             hurtSmall(p, level, fist, 5.5, 14.0F, flat);
             Fx.send(level, 63, fist.x, fist.y, fist.z, hit > 0 ? 1.0F : 0.6F, p.getYRot(), (float)hit, 0.0F, 256.0);
             level.playSound(null, fist.x, fist.y, fist.z, ModSounds.SHIFT_PUNCH.get(), SoundSource.PLAYERS, 6.0F, 0.9F + level.random.nextFloat() * 0.2F);
@@ -396,9 +419,10 @@ public final class TitanShift {
             // the stomp: the heel comes down a stride ahead and the street jumps
             Vec3 foot = feet.add(flat.scale((double)h * 0.22));
             strikeTitans(p, level, foot.add(0.0, (double)h * 0.12, 0.0), (double)h * 0.4, src, true);
-            Destruction.blast(level, foot.add(0.0, 1.5, 0.0), 3.2);
-            quake(p, level, foot, 22.0);
-            Fx.send(level, 65, foot.x, foot.y, foot.z, 22.0F, p.getYRot(), 0.0F, 0.0F, 256.0);
+            double ring = 22.0 + 5.0 * (double)s.fists;
+            Destruction.blast(level, foot.add(0.0, 1.5, 0.0), 3.2 + 0.5 * (double)s.fists);
+            quake(p, level, foot, ring);
+            Fx.send(level, 65, foot.x, foot.y, foot.z, (float)ring, p.getYRot(), 0.0F, 0.0F, 256.0);
             level.playSound(null, foot.x, foot.y, foot.z, ModSounds.SHIFT_STOMP.get(), SoundSource.PLAYERS, 8.0F, 1.0F);
             AbstractTitan.shakeNearby(level, foot, 80.0, 1.3F, 18);
         }
@@ -487,7 +511,7 @@ public final class TitanShift {
         if (s.roarCd > 0 || s.roarIn >= 0) {
             return;
         }
-        s.roarCd = ROAR_CD;
+        s.roarCd = roarMax(s);
         s.roarIn = 11;
         Fx.send(p.serverLevel(), 62, p.getX(), p.getY(), p.getZ(), (float)p.getId(), (float)TitanAction.ROAR.ordinal(), 0.0F, 0.0F, 256.0);
     }
@@ -499,12 +523,13 @@ public final class TitanShift {
         level.playSound(null, mouth.x, mouth.y, mouth.z, ModSounds.SHIFT_ROAR.get(), SoundSource.PLAYERS, 14.0F, 1.0F);
         Destruction.glassBurst(level, mouth, 30.0);
         AbstractTitan.shakeNearby(level, mouth, 90.0, 1.1F, 40);
-        for (LivingEntity e : level.getEntitiesOfClass(LivingEntity.class, p.getBoundingBox().inflate(52.0), e -> e != p && e.isAlive())) {
+        double reach = 52.0 + 12.0 * (double)s.cry;
+        for (LivingEntity e : level.getEntitiesOfClass(LivingEntity.class, p.getBoundingBox().inflate(reach), e -> e != p && e.isAlive())) {
             double d = e.distanceTo(p);
             if (e instanceof AbstractTitan t) {
                 if (d < 24.0) {
                     t.blastKnockDown(70);
-                } else if (d < 52.0) {
+                } else if (d < reach) {
                     t.blind(90);
                 }
             } else if (d < 26.0) {
@@ -512,8 +537,23 @@ public final class TitanShift {
                 e.hurtMarked = true;
             }
         }
+        if (s.coordinate) {
+            // the Coordinate: the roar calls lightning down onto the napes of the nearest titans
+            List<AbstractTitan> near = level.getEntitiesOfClass(AbstractTitan.class, p.getBoundingBox().inflate(48.0), AbstractTitan::isAlive);
+            near.sort(Comparator.comparingDouble(t -> t.distanceToSqr(p)));
+            for (int i = 0; i < Math.min(4, near.size()); i++) {
+                AbstractTitan t = near.get(i);
+                for (TitanPart part : t.getTitanParts()) {
+                    if (part.kind == 1) {
+                        Fx.send(level, 67, part.getX(), part.getY() + (double)part.getBbHeight() * 0.5, part.getZ(), 0.0F, 0.0F, 0.0F, 0.0F, 320.0);
+                        t.hurtPart(part, source(p), t.maxNapeHealth() * 14.0F + 60.0F);
+                    }
+                }
+            }
+            level.playSound(null, mouth.x, mouth.y, mouth.z, ModSounds.NAPE_THUNDER.get(), SoundSource.PLAYERS, 10.0F, 0.8F);
+        }
         // the roar burns off steam: some of the body's wounds close
-        s.hp = Math.min(MAX_HP, s.hp + MAX_HP * 0.12F);
+        s.hp = Math.min(s.maxHp, s.hp + s.maxHp * (0.12F + 0.1F * (float)s.cry));
         status(p, s);
     }
 
@@ -521,7 +561,7 @@ public final class TitanShift {
         if (s.leapCd > 0 || s.leapIn >= 0 || s.leaping || !p.onGround()) {
             return;
         }
-        s.leapCd = LEAP_CD;
+        s.leapCd = leapMax(s);
         s.leapIn = 6;
         Fx.send(p.serverLevel(), 62, p.getX(), p.getY(), p.getZ(), (float)p.getId(), (float)TitanAction.LEAP.ordinal(), 0.0F, 0.0F, 256.0);
     }
@@ -531,7 +571,7 @@ public final class TitanShift {
         Vec3 look = p.getLookAngle();
         Vec3 flat = new Vec3(look.x, 0.0, look.z);
         flat = flat.lengthSqr() < 1.0E-4 ? Vec3.directionFromRotation(0.0F, p.getYRot()) : flat.normalize();
-        Vec3 v = flat.scale(2.0).add(0.0, 1.25 + Math.max(0.0, look.y) * 0.6, 0.0);
+        Vec3 v = flat.scale(2.0 + 0.3 * (double)s.quake).add(0.0, 1.25 + Math.max(0.0, look.y) * 0.6, 0.0);
         p.setDeltaMovement(v);
         PacketDistributor.sendToPlayer(p, FeedbackPayload.of(31, (int)(v.x * 100.0), (int)(v.y * 100.0), (int)(v.z * 100.0)));
         s.leaping = true;
@@ -549,7 +589,7 @@ public final class TitanShift {
             if (s != null) {
                 if (s.leaping && s.air > 4 && s.ending < 0) {
                     s.leaping = false;
-                    land(p, event.getDistance());
+                    land(p, s, event.getDistance());
                 }
                 event.setCanceled(true);
             }
@@ -557,11 +597,11 @@ public final class TitanShift {
     }
 
     /** A sixteen-metre body coming down out of a leap lands as a Meteor Dive does: crater, shockwave and all. */
-    private static void land(ServerPlayer p, float fall) {
+    private static void land(ServerPlayer p, TitanShift.State s, float fall) {
         ServerLevel level = p.serverLevel();
         Vec3 feet = p.position();
-        MeteorDive.slam(p, 1.5, (double)Math.max(8.0F, fall) + 10.0, feet);
-        quake(p, level, feet, 30.0);
+        MeteorDive.slam(p, 1.5 + 0.6 * (double)s.quake, (double)Math.max(8.0F, fall) + 10.0, feet);
+        quake(p, level, feet, 30.0 + 6.0 * (double)s.quake);
         strikeTitans(p, level, feet.add(0.0, 3.0, 0.0), 9.0, source(p), true);
         Fx.send(level, 65, feet.x, feet.y, feet.z, 30.0F, p.getYRot(), 0.0F, 0.0F, 320.0);
         level.playSound(null, feet.x, feet.y, feet.z, ModSounds.SHIFT_STOMP.get(), SoundSource.PLAYERS, 10.0F, 0.8F);
@@ -590,13 +630,27 @@ public final class TitanShift {
         p.setDeltaMovement(back.scale(1.15).add(0.0, 0.9, 0.0));
         p.hurtMarked = true;
         p.fallDistance = 0.0F;
+        if (s.regen) {
+            p.setHealth(p.getMaxHealth());
+        }
         p.addEffect(new MobEffectInstance(MobEffects.SLOW_FALLING, 50, 0, false, false));
         PacketDistributor.sendToPlayer(p, FeedbackPayload.of(30, -1, 0, 0));
     }
 
+    private static int roarMax(TitanShift.State s) {
+        return (int)((float)ROAR_CD * (1.0F - 0.3F * (float)s.cry));
+    }
+
+    private static int leapMax(TitanShift.State s) {
+        return (int)((float)LEAP_CD * (1.0F - 0.3F * (float)s.quake));
+    }
+
     private static void status(ServerPlayer p, TitanShift.State s) {
-        int cds = Mth.clamp(s.roarCd / 2, 0, 255) | Mth.clamp(s.leapCd / 2, 0, 255) << 8 | Math.min(15, s.sneak) << 16;
-        PacketDistributor.sendToPlayer(p, FeedbackPayload.of(30, Math.round(Math.max(0.0F, s.hp) / MAX_HP * 1000.0F), s.life, cds));
+        // cooldowns as the percentage still to go, the body's full time (seconds) in the top bits
+        int roar = Mth.clamp(s.roarCd * 100 / Math.max(1, roarMax(s)), 0, 100);
+        int leap = Mth.clamp(s.leapCd * 100 / Math.max(1, leapMax(s)), 0, 100);
+        int cds = roar | leap << 8 | Math.min(15, s.sneak) << 16 | Math.min(2047, s.maxLife / 20) << 20;
+        PacketDistributor.sendToPlayer(p, FeedbackPayload.of(30, Math.round(Math.max(0.0F, s.hp) / s.maxHp * 1000.0F), s.life, cds));
     }
 
     /** While shifting the player can't be hurt; once in the flesh, everything that would hurt them hurts the body. */

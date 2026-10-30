@@ -39,17 +39,24 @@ public enum Skill {
     EXECUTIONER(5, 2, -1, 1, 14, KILL_CHAIN),
     STORM_DASH(5, 2, 1, 1, 14, AFTERSHOCK),
     SKYBREAKER(5, 3, 0, 1, 24, EXECUTIONER, STORM_DASH),
+    TITAN_BLOOD(6, 0, 0, 3, 6),
+    HARDENED_SKIN(6, 1, -1, 3, 8, TITAN_BLOOD),
+    CRUSHING_FISTS(6, 1, 1, 3, 8, TITAN_BLOOD),
+    WAR_CRY(6, 2, -1, 2, 14, HARDENED_SKIN),
+    EARTHSHAKER(6, 2, 1, 2, 14, CRUSHING_FISTS),
+    STEAM_REGEN(6, 3, 0, 1, 22, WAR_CRY, EARTHSHAKER),
     BLADE_DANCER(0, 4, 0, 1, 32, ACKERMAN_AWAKENING),
     SKY_LORD(1, 4, 0, 1, 32, TITAN_WINCH),
     CATACLYSM(2, 4, 0, 1, 32, EXTINCTION_EVENT),
     INFERNO(3, 4, 0, 1, 32, SUPERNOVA),
     LEGION(4, 4, 0, 1, 32, WINGS_OF_FREEDOM),
-    GODSLAYER(5, 4, 0, 1, 32, SKYBREAKER);
+    GODSLAYER(5, 4, 0, 1, 32, SKYBREAKER),
+    COORDINATE(6, 4, 0, 1, 32, STEAM_REGEN);
 
     public static final Skill[] ALL = values();
     public static final int COUNT = ALL.length;
-    public static final String[] BRANCHES = new String[]{"blade", "odm", "demolition", "firebrand", "command", "combo"};
-    public static final int[] BRANCH_COLORS = new int[]{14698556, 5223400, 15768106, 16738847, 7129951, 13073919};
+    public static final String[] BRANCHES = new String[]{"blade", "odm", "demolition", "firebrand", "command", "combo", "titan"};
+    public static final int[] BRANCH_COLORS = new int[]{14698556, 5223400, 15768106, 16738847, 7129951, 13073919, 14262374};
     public final int branch;
     public final int row;
     public final int lane;

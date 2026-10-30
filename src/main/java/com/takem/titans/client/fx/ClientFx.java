@@ -198,6 +198,7 @@ public final class ClientFx {
                 case 64:
                 case 65:
                 case 66:
+                case 67:
                 case 68:
                     CombatFx.handle(level, msg, at);
                     break;
