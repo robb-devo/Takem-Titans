@@ -1152,6 +1152,9 @@ public final class Destruction {
                     // buckling under load is what the first blow does; aftershocks only drop what truly hangs free
                     crushOverloaded(level, q, kind, dist, states, sx, sy, sz, minX, minY, minZ);
                 }
+
+                // a remnant that topples takes all of itself with it, so it may go on the last look too
+                toppleSlender(level, lst, q, kind, states, sx, sy, sz, minX, minY, minZ);
                 int count = 0;
 
                 for (int i = 0; i < n; i++) {
@@ -1680,6 +1683,184 @@ public final class Destruction {
         }
 
         return false;
+    }
+
+    /**
+     * What is left standing on its own after a house came down cannot stand for long: a pier at most three cells across
+     * and seven or more blocks tall (a corner post, the torn end of a wall), or a thin stretch of wall ten or more blocks
+     * tall with nothing left resting on top of it. It buckles at its foot and the rest of it topples after. A wall that
+     * still carries its roof stands; trees, the Wall and short things like lamp posts are left alone.
+     */
+    private static void toppleSlender(
+        ServerLevel level, Destruction.LevelState lst, Destruction.Request q, byte[] kind, BlockState[] states, int sx, int sy, int sz, int minX, int minY, int minZ
+    ) {
+        int sxz = sx * sz;
+        int w = sx + 1;
+        int[] sat = new int[w * (sz + 1)];
+        byte[] pier = new byte[kind.length];
+        byte[] thin = new byte[kind.length];
+
+        for (int y = 0; y < sy; y++) {
+            int base = y * sxz;
+            // a summed-area table of this level's building cells, to count any cell's 7x7 neighbourhood at once; the
+            // stubs of floors still sticking out of a wall are one block thin and brace nothing, so they don't count
+            for (int z = 0; z < sz; z++) {
+                int rowSum = 0;
+                for (int x = 0; x < sx; x++) {
+                    int j = base + z * sx + x;
+                    boolean plate = (y == 0 || kind[j - sxz] != 2) && (y == sy - 1 || kind[j + sxz] != 2);
+                    rowSum += kind[j] == 2 && !plate ? 1 : 0;
+                    sat[(z + 1) * w + x + 1] = sat[z * w + x + 1] + rowSum;
+                }
+            }
+
+            for (int c = 0; c < sxz; c++) {
+                int i = base + c;
+                if (kind[i] != 2 || isWallStone(states[i]) || isTreeLog(states[i])) {
+                    continue;
+                }
+
+                int x = c % sx;
+                int z = c / sx;
+                int x0 = Math.max(0, x - 3);
+                int x1 = Math.min(sx - 1, x + 3);
+                int z0 = Math.max(0, z - 3);
+                int z1 = Math.min(sz - 1, z + 3);
+                int around = sat[(z1 + 1) * w + x1 + 1] - sat[z0 * w + x1 + 1] - sat[(z1 + 1) * w + x0] + sat[z0 * w + x0];
+                if (around <= 7) {
+                    thin[i] = (byte)Math.min(120, (y > 0 ? thin[i - sxz] : 0) + 1);
+                    if (around <= 3) {
+                        pier[i] = (byte)Math.min(120, (y > 0 ? pier[i - sxz] : 0) + 1);
+                    }
+                }
+            }
+        }
+
+        // a run topples from its foot when it is tall enough and free at the top: nothing on it any more (a pier may
+        // still carry a scrap of roof); the top layer of the survey can't tell, so it never counts as free
+        java.util.BitSet falling = new java.util.BitSet(kind.length);
+        int marked = 0;
+        int cx0 = q.center.getX() - minX;
+        int cz0 = q.center.getZ() - minZ;
+        for (int i = 0; i < kind.length - sxz && marked < 3000; i++) {
+            int h = 0;
+            if (pier[i] >= SLENDER_TOPPLE && pier[i + sxz] == 0) {
+                h = pier[i];
+            } else if (thin[i] >= THIN_WALL_TOPPLE && kind[i + sxz] != 2) {
+                h = thin[i];
+            }
+
+            int x = i % sx;
+            int z = i / sx % sz;
+            if (h > 0 && Math.abs(x - cx0) <= q.focus + 2 && Math.abs(z - cz0) <= q.focus + 2) {
+                for (int k = 0; k < h; k++) {
+                    falling.set(i - k * sxz);
+                }
+
+                marked += h;
+            }
+        }
+
+        if (marked == 0) {
+            return;
+        }
+
+        // neighbouring columns go down together, as one piece of wall
+        Destruction.IntQueue queue = new Destruction.IntQueue();
+        java.util.BitSet seen = new java.util.BitSet(kind.length);
+        MutableBlockPos m = new MutableBlockPos();
+        for (int start = falling.nextSetBit(0); start >= 0; start = falling.nextSetBit(start + 1)) {
+            if (seen.get(start)) {
+                continue;
+            }
+
+            IntArrayList members = new IntArrayList();
+            queue.head = queue.tail = 0;
+            queue.add(start);
+            seen.set(start);
+            double bx = 0.0;
+            double bz = 0.0;
+            int lowest = Integer.MAX_VALUE;
+            while (!queue.isEmpty()) {
+                int c = queue.poll();
+                members.add(c);
+                int x = c % sx;
+                int rest = c / sx;
+                int z = rest % sz;
+                int y = rest / sz;
+                bx += x;
+                bz += z;
+                lowest = Math.min(lowest, y);
+                for (int k = 0; k < 6; k++) {
+                    int nx = x + NX[k];
+                    int ny = y + NY[k];
+                    int nz = z + NZ[k];
+                    if (nx >= 0 && ny >= 0 && nz >= 0 && nx < sx && ny < sy && nz < sz) {
+                        int j = (ny * sz + nz) * sx + nx;
+                        if (falling.get(j) && !seen.get(j)) {
+                            seen.set(j);
+                            queue.add(j);
+                        }
+                    }
+                }
+            }
+
+            bx /= members.size();
+            bz /= members.size();
+            // it falls away from whatever still stands beside its foot
+            double ax = 0.0;
+            double az = 0.0;
+            int base = lowest * sxz;
+            for (int dz = -5; dz <= 5; dz++) {
+                for (int dx = -5; dx <= 5; dx++) {
+                    int x = (int)Math.round(bx) + dx;
+                    int z = (int)Math.round(bz) + dz;
+                    if (x >= 0 && z >= 0 && x < sx && z < sz && kind[base + z * sx + x] == 2 && !falling.get(base + z * sx + x)) {
+                        ax += dx;
+                        az += dz;
+                    }
+                }
+            }
+
+            double len = Math.sqrt(ax * ax + az * az);
+            Vec3 tip;
+            if (len > 0.5) {
+                tip = new Vec3(-ax / len, 0.0, -az / len);
+            } else {
+                double a = level.random.nextDouble() * Math.PI * 2.0;
+                tip = new Vec3(Math.cos(a), 0.0, Math.sin(a));
+            }
+
+            long[] pos = new long[members.size()];
+            BlockState[] st = new BlockState[members.size()];
+            boolean wood = false;
+            for (int k = 0; k < members.size(); k++) {
+                int c = members.getInt(k);
+                pos[k] = BlockPos.asLong(minX + c % sx, minY + c / sxz, minZ + c / sx % sz);
+                st[k] = states[c];
+                wood |= isWood(states[c]);
+            }
+
+            Vec3 hinge = new Vec3(minX + bx + 0.5 + tip.x * 0.5, minY + lowest, minZ + bz + 0.5 + tip.z * 0.5);
+            BlockPos hb = new BlockPos(minX + (int)Math.round(bx), minY + lowest, minZ + (int)Math.round(bz));
+            if (DEBUG) {
+                TakemTitans.LOGGER.info("toppling a {}-block remnant at {}", pos.length, hb);
+            }
+
+            if (!queueSection(level, pos, st, new long[0], hinge, tip, hb, new long[0], 8 + level.random.nextInt(10), wood)) {
+                queueLoose(level, pos, st, Vec3.atCenterOf(hb), wood);
+            }
+        }
+    }
+
+    /** Height from which a free-standing pier topples. */
+    private static final int SLENDER_TOPPLE = 7;
+    /** ... and a free-standing thin stretch of wall. */
+    private static final int THIN_WALL_TOPPLE = 10;
+
+    /** A trunk of a living tree; timber in a house is stripped. */
+    private static boolean isTreeLog(BlockState s) {
+        return s.is(BlockTags.LOGS) && !net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(s.getBlock()).getPath().startsWith("stripped");
     }
 
     /** Tallest a survey grows to when it finds its falling piece running on above it. */
