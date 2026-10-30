@@ -35,6 +35,7 @@ Start a new world for this version: towns are generated with the new layout.
 - Small UI fixes: the skill tree's emblem no longer covers its title, locked shop items are dimmed with a readable label, and the field manual's subtitle fits its page.
 
 ### Cannons
+- The cannons are repainted: a bronze field gun, a banded heavy iron gun and a blackened three-barrelled battery, on oak carriages with iron straps and spoked wheels with iron tyres.
 - Garrison cannons stand on stone gun ledges built out from the face of the wall (on the inside of the arena wall) and only fire on their side. Shells no longer blow up on the wall right at the gun.
 
 ### Destruction
