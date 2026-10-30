@@ -122,7 +122,8 @@ public class SkillScreen extends Screen {
         }
 
         int cx = this.width / 2;
-        TTGui.sprite(g, cx - 31, this.panelY - 42, 62, 38, 0, 160, 62, 38, -1);
+        // the emblem sits above the title, clear of it
+        TTGui.sprite(g, cx - 22, Math.max(2, this.panelY - 50), 44, 27, 0, 160, 62, 38, -1);
         g.pose().pushPose();
         g.pose().translate((float)cx, (float)(this.panelY - 12), 0.0F);
         g.pose().scale(1.4F, 1.4F, 1.0F);

@@ -182,9 +182,13 @@ public class ShopScreen extends Screen {
                 g.pose().popPose();
                 g.drawString(this.font, price, ppx + 11, cy + 46, afford ? -6492048 : (open ? -1023920 : -8357776), true);
                 if (!open) {
+                    // over the item icon (items render well above z 0), so the whole tile dims and the label reads
+                    g.pose().pushPose();
+                    g.pose().translate(0.0F, 0.0F, 300.0F);
                     g.fill(cx + 2, cy + 2, cx + 60, cy + 56, -1610612736);
                     Component lock = Component.translatable("shop.takemtitans.locked_short");
                     g.drawCenteredString(this.font, lock, cx + 31, cy + 16, -4673376);
+                    g.pose().popPose();
                 }
             }
         }

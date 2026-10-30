@@ -31,6 +31,8 @@ Start a new world for this version: towns are generated with the new layout.
 - All 21 townsfolk, soldiers, builders and story characters repainted with faces, hair and the uniforms and emblems of their regiments.
 - A new title screen: the camera turns over Shiganshina at sunset while the Colossal Titan looks over the wall.
 - A nape kill erupts: a flash, more blood the bigger the titan, and blood and steam pouring out of the cut as it falls.
+- Wounds on titans are clean gashes with blood running down, no more broad red blotches.
+- Small UI fixes: the skill tree's emblem no longer covers its title, locked shop items are dimmed with a readable label, and the field manual's subtitle fits its page.
 
 ### Cannons
 - Garrison cannons stand on stone gun ledges built out from the face of the wall (on the inside of the arena wall) and only fire on their side. Shells no longer blow up on the wall right at the gun.

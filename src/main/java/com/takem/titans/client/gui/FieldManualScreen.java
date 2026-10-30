@@ -286,7 +286,13 @@ public class FieldManualScreen extends Screen {
         g.pose().scale(1.2F, 1.2F, 1.0F);
         g.drawString(f, Component.translatable("manual.takemtitans.title").withStyle(ChatFormatting.BOLD), 0, 0, HEAD, false);
         g.pose().popPose();
-        g.drawString(f, Component.translatable("manual.takemtitans.subtitle"), 18, 33, FADED, false);
+        Component sub = Component.translatable("manual.takemtitans.subtitle");
+        float subScale = Math.min(1.0F, (float)(W / 2 - 34) / (float)Math.max(1, f.width(sub)));
+        g.pose().pushPose();
+        g.pose().translate(18.0F, 33.0F, 0.0F);
+        g.pose().scale(subScale, subScale, 1.0F);
+        g.drawString(f, sub, 0, 0, FADED, false);
+        g.pose().popPose();
         g.fill(18, 46, W / 2 - 16, 47, 0x506A3A16);
         float b = Mth.lerp(pt, this.barO, this.bar);
         int barY = 58 + Math.round(b * 19.0F);

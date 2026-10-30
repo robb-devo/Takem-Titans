@@ -42,6 +42,7 @@ public final class PhotoTour {
     private static int settleMax;
     private static int settleTicks;
     private static int inWorld;
+    private static boolean keepScreen;
 
     /** -Dtakemtitans.tourMenu=true: no world; screenshots of the title screen and the adventure screen instead. */
     private static final boolean MENU = Boolean.getBoolean("takemtitans.tourMenu");
@@ -95,8 +96,8 @@ public final class PhotoTour {
             }
         }
 
-        // the story opens dialogues and cutscenes on a fresh world; the tour looks past them
-        if (mc.screen != null) {
+        // the story opens dialogues and cutscenes on a fresh world; the tour looks past them, unless it opened one itself
+        if (mc.screen != null && !keepScreen) {
             mc.setScreen(null);
         }
 
@@ -144,6 +145,28 @@ public final class PhotoTour {
                     return;
                 }
                 case "hud" -> mc.options.hideGui = arg.equals("off");
+                case "screen" -> {
+                    // screen shop|skills|manual|dialogue|none: opens one of the mod's screens for a picture
+                    keepScreen = !arg.equals("none");
+                    mc.setScreen(switch (arg) {
+                        case "shop" -> new com.takem.titans.client.story.ShopScreen(-1, net.minecraft.network.chat.Component.translatable("npc.takemtitans.quartermaster"));
+                        case "skills" -> new com.takem.titans.client.skill.SkillScreen();
+                        case "manual" -> new com.takem.titans.client.gui.FieldManualScreen();
+                        case "dialogue" -> new com.takem.titans.client.story.DialogueScreen(
+                            -1,
+                            net.minecraft.network.chat.Component.translatable("npc.takemtitans.commander"),
+                            2,
+                            java.util.List.of(
+                                net.minecraft.network.chat.Component.literal("Cadet. The Wall has stood for a hundred years."),
+                                net.minecraft.network.chat.Component.literal("Today we find out if it stands one more.")
+                            ),
+                            java.util.List.of(1, 2),
+                            java.util.List.of(net.minecraft.network.chat.Component.literal("I'm ready."), net.minecraft.network.chat.Component.literal("Not yet."))
+                        );
+                        default -> null;
+                    });
+                    return;
+                }
                 case "camera" -> mc.options.setCameraType(switch (arg) {
                     case "front" -> net.minecraft.client.CameraType.THIRD_PERSON_FRONT;
                     case "back" -> net.minecraft.client.CameraType.THIRD_PERSON_BACK;
