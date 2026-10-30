@@ -35,8 +35,10 @@ public class CloakLayer extends RenderLayer<AbstractClientPlayer, PlayerModel<Ab
     public static LayerDefinition createLayer() {
         MeshDefinition mesh = new MeshDefinition();
         PartDefinition root = mesh.getRoot();
-        root.addOrReplaceChild("cloak", CubeListBuilder.create().texOffs(0, 0).addBox(-6.0F, 0.0F, -1.0F, 12.0F, 19.0F, 1.0F), PartPose.ZERO);
-        root.addOrReplaceChild("hood", CubeListBuilder.create().texOffs(26, 0).addBox(-4.5F, -1.5F, -2.2F, 9.0F, 3.0F, 2.2F), PartPose.ZERO);
+        // wide enough to fall over the shoulders and arms, down to the knees; the hood lies bunched behind the neck
+        // (texture painted to these boxes by tools/gear_art.py)
+        root.addOrReplaceChild("cloak", CubeListBuilder.create().texOffs(0, 0).addBox(-8.0F, 0.0F, -1.0F, 16.0F, 20.0F, 1.0F), PartPose.ZERO);
+        root.addOrReplaceChild("hood", CubeListBuilder.create().texOffs(36, 0).addBox(-5.0F, -1.8F, -2.5F, 10.0F, 3.5F, 2.5F), PartPose.ZERO);
         return LayerDefinition.create(mesh, 64, 32);
     }
 

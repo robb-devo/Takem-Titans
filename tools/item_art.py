@@ -4,8 +4,7 @@ Takem Titans - blade models and HD item icons.
 * The held blades: a 3D model per tier (pommel, leather grip, trigger, blade housing with its clamp, and a long
   scored blade with a bright cutting edge and the oblique box-cutter tip) plus a broken one, all on one 128px
   texture per tier.
-* 32x32 icons for the items you look at most: the six blade tiers (whole and broken), the five ODM gear tiers,
-  the thunder spear and the gas canister. Painted at 8x and reduced, with a crisp alpha edge and a dark outline.
+* (The 32px icons are drawn by tools/icon_art.py.)
 
 Run from the repo root:  python tools/item_art.py
 """
@@ -157,11 +156,11 @@ def paint_blade_texture(tier, seed):
     # scored break lines every few units: the blade is made to snap off segment by segment
     seg = 2.95
     m = np.mod(along - 0.6, seg)
-    groove = (m < 0.16).astype(float) * (u < 0.86)
-    col = col * (1 - 0.45 * groove[..., None])
-    col = col + tier.edge * (((m >= 0.16) & (m < 0.26)).astype(float) * (u < 0.86) * 0.12)[..., None]
+    # faint: from a few blocks away the blade has to read as one clean piece of steel, not a saw
+    groove = (m < 0.12).astype(float) * (u > 0.08) * (u < 0.8)
+    col = col * (1 - 0.14 * groove[..., None])
     # scratches
-    for _ in range(14):
+    for _ in range(6):
         sy, sx = rng.uniform(0, h), rng.uniform(0, w)
         ang = rng.uniform(-0.25, 0.25)
         L = rng.uniform(4, 16)
@@ -405,6 +404,7 @@ def save(img, name):
 
 
 def main():
+    # the 32px icons of blades, rigs and everything else come from tools/icon_art.py
     for k, tier in enumerate(TIERS):
         tex = 'takemtitans:item/%s_blade_model' % tier.item
         save(paint_blade_texture(tier, 50 + k), '%s_blade_model' % tier.item)
@@ -412,18 +412,6 @@ def main():
             name = '%s_blades%s_3d' % (tier.item, '_broken' if broken else '')
             with open(os.path.join(MODELS, name + '.json'), 'w') as f:
                 json.dump(blade_model(tex, broken), f, indent=2)
-            save(icon_blade(tier, broken), '%s_blades%s' % (tier.item, '_broken' if broken else ''))
-    gears = [
-        ('odm_gear', rgb('5b5f66'), rgb('3aa0d8'), rgb('8b9097'), None),
-        ('advanced_odm_gear', rgb('3c3f45'), rgb('e0782e'), rgb('6f747b'), None),
-        ('phantom_odm_gear', rgb('283442'), rgb('9ee6ff'), rgb('3e5366'), rgb('c8f4ff')),
-        ('godspeed_odm_gear', rgb('2a2a2e'), rgb('f2c84b'), rgb('d9d4c4'), rgb('fff0b0')),
-        ('event_horizon_odm_gear', rgb('1b1426'), rgb('a65cff'), rgb('2e2140'), rgb('e0c4ff')),
-    ]
-    for i, (name, body, accent, tank, glow) in enumerate(gears):
-        save(icon_odm(i, body, accent, tank, glow), name)
-    save(icon_thunder_spear(), 'thunder_spear')
-    save(icon_gas_canister(), 'gas_canister')
 
 
 if __name__ == '__main__':

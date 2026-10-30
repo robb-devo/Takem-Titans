@@ -24,6 +24,9 @@ import net.neoforged.neoforge.client.event.ClientTickEvent.Post;
  * settle &lt;ticks&gt;     wait at least 40 ticks, then until the world has finished drawing, at most &lt;ticks&gt;
  * shot &lt;name&gt;       screenshots/&lt;name&gt;.png
  * hud on|off
+ * camera first|back|front
+ * panorama &lt;size&gt;  the six title-screen panorama faces
+ * fx &lt;kind&gt; &lt;x&gt; &lt;y&gt; &lt;z&gt; &lt;a&gt; &lt;b&gt; &lt;c&gt; &lt;d&gt;  a client effect, as if the server sent it
  * quit
  * </pre>
  */
@@ -119,6 +122,34 @@ public final class PhotoTour {
                     return;
                 }
                 case "hud" -> mc.options.hideGui = arg.equals("off");
+                case "camera" -> mc.options.setCameraType(switch (arg) {
+                    case "front" -> net.minecraft.client.CameraType.THIRD_PERSON_FRONT;
+                    case "back" -> net.minecraft.client.CameraType.THIRD_PERSON_BACK;
+                    default -> net.minecraft.client.CameraType.FIRST_PERSON;
+                });
+                case "panorama" -> {
+                    // the six faces of a title-screen panorama, as screenshots/panorama_0..5.png
+                    int size = Integer.parseInt(arg);
+                    mc.grabPanoramixScreenshot(mc.gameDirectory, size, size);
+                    return;
+                }
+                case "fx" -> {
+                    // fx <kind> <x> <y> <z> <a> <b> <c> <d>: plays a client effect as if the server had sent it
+                    String[] p = arg.split(" ");
+                    com.takem.titans.client.fx.ClientFx.handle(
+                        new com.takem.titans.network.FxPayload(
+                            Integer.parseInt(p[0]),
+                            Double.parseDouble(p[1]),
+                            Double.parseDouble(p[2]),
+                            Double.parseDouble(p[3]),
+                            Float.parseFloat(p[4]),
+                            Float.parseFloat(p[5]),
+                            Float.parseFloat(p[6]),
+                            Float.parseFloat(p[7])
+                        ),
+                        null
+                    );
+                }
                 case "quit" -> {
                     mc.stop();
                     return;
