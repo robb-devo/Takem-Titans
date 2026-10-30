@@ -59,7 +59,6 @@ public final class TakemConfig {
     public static final BooleanValue DESTRUCTION_FIRES;
     public static final BooleanValue METEOR_DIVE_BREAKS_BLOCKS;
     public static final DoubleValue METEOR_POWER;
-    public static final BooleanValue METEOR_BREAKS_WALLS;
     public static final BooleanValue EXPLOSIVES_BREAK_BLOCKS;
     public static final BooleanValue GRAB_DEBRIS;
     public static final BooleanValue JAEGER_PATROLS;
@@ -151,8 +150,6 @@ public final class TakemConfig {
                 "Scales the Meteor Dive. Impact power grows exponentially with the height you dive from; this multiplies the height that counts."
             )
             .defineInRange("meteorPower", 1.0, 0.1, 5.0);
-        METEOR_BREAKS_WALLS = b.comment("Cataclysm-level Meteor Dives (about 70+ blocks) can carve through the Walls themselves.")
-            .define("meteorBreaksWalls", true);
         EXPLOSIVES_BREAK_BLOCKS = b.comment("Gas Nova, thermobaric canisters, cluster spears and demolition charges break buildings.")
             .define("explosivesBreakBlocks", true);
         GRAB_DEBRIS = b.comment("ODM hooks can catch falling debris and chunks of buildings, swing them and throw them.").define("grabDebris", true);

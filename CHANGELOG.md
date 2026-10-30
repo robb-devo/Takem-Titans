@@ -35,7 +35,16 @@ Start a new world for this version: towns are generated with the new layout.
 - Wounds on titans are clean gashes with blood running down, no more broad red blotches.
 - Small UI fixes: the skill tree's emblem no longer covers its title, locked shop items are dimmed with a readable label, and the field manual's subtitle fits its page.
 
+### Meteor Dive
+- The Walls stop it dead: no crater, shock wave, flying rubble or dust gets past a Wall, and the Walls now reach down to the bedrock, so nothing digs under them.
+- A tighter blast and crater, still a hammer blow: one deep impact sound instead of a stack of thunder, a low fireball and rolling dust instead of a pillar into the sky and a mushroom cloud, no lightning, and a fraction of the debris and particles for smooth frames.
+
+### ODM gear
+- A rush of air at the bottom of every fast swing.
+
 ### Cannons
+- New gun sounds: the sharp crack of the muzzle blast, the thump in the chest, a roar rolling out over the land with echoes coming back off the hills. The heavy gun and the battery have their own, and the reload is new.
+- Gun crews take their time between shots and fire far less often.
 - The cannons are repainted: a bronze field gun, a banded heavy iron gun and a blackened three-barrelled battery, on oak carriages with iron straps and spoked wheels with iron tyres.
 - Garrison cannons stand on stone gun ledges built out from the face of the wall (on the inside of the arena wall) and only fire on their side. Shells no longer blow up on the wall right at the gun.
 

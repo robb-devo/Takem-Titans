@@ -261,8 +261,8 @@ def loopable(x, xfade=0.25):
 # new take lands at the level its old one had. Music sets the levels the MusicDirector's volumes were tuned for.
 LOUDNESS = {
     'blade/break': 0.05, 'blade/draw': 0.133, 'blade/hit': 0.123, 'blade/impact': 0.337, 'blade/nape': 0.248,
-    'blade/reload': 0.05, 'blade/slash': 0.165, 'block/alarm_bell': 0.134, 'block/cannon_fire': 0.41,
-    'cannon/fire': 0.367, 'event/boulder_impact': 0.362, 'event/boulder_throw': 0.302, 'event/boulder_whoosh': 0.118,
+    'blade/reload': 0.05, 'blade/slash': 0.165, 'block/alarm_bell': 0.134, 'block/cannon_fire': 0.3,
+    'cannon/fire': 0.3, 'cannon/heavy': 0.32, 'cannon/battery': 0.34, 'cannon/reload': 0.1, 'odm/swing': 0.12, 'event/boulder_impact': 0.362, 'event/boulder_throw': 0.302, 'event/boulder_whoosh': 0.118,
     'event/building_collapse': 0.25, 'event/glass_shatter': 0.063, 'explosive/big_blast': 0.36,
     'explosive/blast_tail': 0.105, 'item/thunder_spear_blast': 0.364, 'item/thunder_spear_launch': 0.097,
     'odm/afterburner': 0.143, 'odm/equip': 0.071, 'odm/gas': 0.155, 'odm/gas_burst': 0.11, 'odm/gas_empty': 0.064,
@@ -292,9 +292,10 @@ def match_loudness(name, x):
     if target is None:
         return x
     y = x
-    for _ in range(4):
-        y = y * (target / active_rms(y))
-        y = 0.97 * np.tanh(y / 0.97)
+    for _ in range(3):
+        # never more than about +4 dB a pass: a quiet take is lifted, a punchy one is not squashed flat
+        g = min(target / active_rms(y), 1.6)
+        y = 0.97 * np.tanh(y * g / 0.97)
     return y
 
 
@@ -801,15 +802,70 @@ def boulder_throw(seed, d=1.6):
     return finish(fade(out, 0.0005, 0.2))
 
 
-def cannon_fire(seed, d=2.8):
+def cannon_shot(seed, size=1.0, d=None, crack=1.0):
+    """
+    A muzzle-loader going off: the supersonic crack of the muzzle blast (an N-wave a few milliseconds long), the thump
+    of the charge in the chest, the roar rolling out over the land with echoes off hills and walls coming back later
+    and duller, and the gun itself jumping back on its carriage.
+    """
     rng = np.random.default_rng(seed)
-    out = explosion_raw(seed, d, 0.8)
-    place(out, hp(white(1.5, rng), 600) * contour(1.5, [(0, 0), (0.05, 0.25), (1, 0)]), 0.02, 1)   # smoke
-    out = reverb(out, 2.4, 0.35, 2500, seed=seed)
-    # the echo off the far wall
-    echo = np.zeros(len(out))
-    place(echo, lp(out, 1500) * 0.35, 0.42, 1)
-    return finish(fade(out + echo, 0.0005, 0.5))
+    d = d or (3.2 + 1.2 * size)
+    out = np.zeros(n_(d))
+    T = 0.006 * size ** 0.4
+    t = tt(T)
+    nwave = (1 - 2 * t / T) * np.sin(np.pi * np.clip(t / T, 0, 1)) ** 0.15
+    place(out, nwave, 0.0, 1.0 * crack)
+    place(out, hp(white(0.03, rng), 900) * env_exp(0.03, 0.004, 0.0002), 0.0, 0.7 * crack)
+    place(out, lp(white(0.5, rng), 700 / size ** 0.3) * env_exp(0.5, 0.07 * size, 0.0008), 0.0005, 1.2)
+    f0 = 68 / size ** 0.35
+    place(out, osc(glide(1.2 * size, f0, f0 * 0.5)) * env_exp(1.2 * size, 0.22 * size, 0.002), 0.0, 1.1)
+    roar = lp(brown(d, rng), 320) * env_ad(d, 0.05, d * 0.85, 0.05, 1.8)
+    place(out, roar, 0.01, 0.55)
+    body = lp(white(0.4, rng), 500) * env_exp(0.4, 0.09 * size, 0.003)
+    for delay, cut, g in ((0.32, 900, 0.32), (0.74, 650, 0.22), (1.35, 450, 0.15), (2.1, 320, 0.09)):
+        dl = delay * rng.uniform(0.85, 1.15)
+        place(out, lp(body, cut), dl, g)
+        place(out, osc(glide(0.5, f0 * 0.8, f0 * 0.5)) * env_exp(0.5, 0.15, 0.01), dl, g * 0.6)
+    # the carriage slams back and the barrel rings
+    place(out, lp(brown(0.25, rng), 400) * env_exp(0.25, 0.05), 0.03, 0.35)
+    place(out, bell(0.6, rng.uniform(380, 460) / size ** 0.3, [1, 2.32, 3.9], [0.18, 0.1, 0.05], [0.12, 0.06, 0.03], rng), 0.02, 1)
+    # the shell tearing away
+    place(out, sweep(white(0.5, rng), glide(0.5, 2600, 700), 'band', 2.0) * env_ad(0.5, 0.02, 0.45), 0.05, 0.12)
+    out = sat(out * 1.5, 2.2)
+    out = reverb(out, 2.6, 0.22, 2200, seed=seed)
+    return finish(fade(out, 0.0, 0.4))
+
+
+def cannon_battery(seed):
+    """Three barrels off in a ragged volley, a tenth of a second apart, under one long roar."""
+    rng = np.random.default_rng(seed)
+    d = 4.6
+    out = np.zeros(n_(d))
+    for k, at in enumerate((0.0, 0.13 + rng.uniform(-0.02, 0.02), 0.27 + rng.uniform(-0.02, 0.02))):
+        place(out, cannon_shot(seed * 7 + k, 0.9, d - at), at, (1.0, 0.85, 0.9)[k])
+    return finish(out)
+
+
+def cannon_reload(seed, d=1.6):
+    """The rammer scraping down the barrel, the charge seated with a thunk, the breech clanking home."""
+    rng = np.random.default_rng(seed)
+    out = np.zeros(n_(d))
+    scrape = sweep(white(0.6, rng), glide(0.6, 1800, 900), 'band', 3.0) * env_ad(0.6, 0.05, 0.5) * (0.7 + 0.3 * smooth_noise(0.6, 40, rng))
+    place(out, scrape, 0.0, 0.5)
+    place(out, lp(brown(0.2, rng), 300) * env_exp(0.2, 0.04), 0.62, 0.8)
+    for at in (0.95, 1.05):
+        place(out, bell(0.5, rng.uniform(900, 1100), [1, 2.7, 4.1], [0.12, 0.06, 0.03], [0.4, 0.2, 0.1], rng), at, 0.8)
+        place(out, bp(white(0.02, rng), 1500, 6000) * env_exp(0.02, 0.004), at, 0.6)
+    return finish(fade(reverb(out, 0.6, 0.12, 5000, seed=seed), 0.002, 0.1), -3)
+
+
+def swing_whoosh(seed, d=0.9):
+    """Air rushing past at the bottom of a swing: a band of noise sweeping up and down, a low push under it."""
+    rng = np.random.default_rng(seed)
+    centre = contour(d, [(0, 500), (0.45, 1500), (1, 600)]) * rng.uniform(0.9, 1.1)
+    w = sweep(pink(d, rng), centre, 'band', 1.4) * contour(d, [(0, 0), (0.4, 1), (1, 0)]) ** 1.6
+    low = lp(brown(d, rng), 220) * contour(d, [(0, 0), (0.45, 0.6), (1, 0)])
+    return finish(fade(w + low * 0.5, 0.01, 0.1), -3)
 
 
 def alarm_bell(seed, d=4.5):
@@ -1066,8 +1122,12 @@ JOBS = [
     ('event/boulder_impact%d', [lambda k: boulder_impact(3600 + k)] * 3),
     ('event/boulder_whoosh%d', [lambda k: boulder_whoosh(3700 + k)] * 2),
     ('event/boulder_throw%d', [lambda k: boulder_throw(3800 + k)] * 1),
-    ('cannon/fire%d', [lambda k: cannon_fire(3900 + k)] * 2),
-    ('block/cannon_fire%d', [lambda k: cannon_fire(3950 + k)] * 1),
+    ('cannon/fire%d', [lambda k: cannon_shot(3900 + k, 1.0)] * 2),
+    ('block/cannon_fire%d', [lambda k: cannon_shot(3950 + k, 1.0)] * 3),
+    ('cannon/heavy%d', [lambda k: cannon_shot(4050 + k, 1.45)] * 2),
+    ('cannon/battery%d', [lambda k: cannon_battery(4150 + k)] * 2),
+    ('cannon/reload%d', [lambda k: cannon_reload(4250 + k)] * 1),
+    ('odm/swing%d', [lambda k: swing_whoosh(4350 + k)] * 3),
     ('block/alarm_bell%d', [lambda k: alarm_bell(4000 + k)] * 1),
 ]
 

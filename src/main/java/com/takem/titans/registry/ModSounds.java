@@ -9,6 +9,7 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 public final class ModSounds {
     public static final DeferredRegister<SoundEvent> SOUNDS = DeferredRegister.create(Registries.SOUND_EVENT, "takemtitans");
     public static final DeferredHolder<SoundEvent, SoundEvent> HOOK_FIRE = reg("odm.hook_fire");
+    public static final DeferredHolder<SoundEvent, SoundEvent> ODM_SWING = reg("odm.swing");
     public static final DeferredHolder<SoundEvent, SoundEvent> HEART_BEAT = reg("tunnel.heart_beat");
     public static final DeferredHolder<SoundEvent, SoundEvent> HEART_HIT = reg("tunnel.heart_hit");
     public static final DeferredHolder<SoundEvent, SoundEvent> HEART_BURST = reg("tunnel.heart_burst");

@@ -264,7 +264,18 @@
   },
   "block.cannon_fire": {
     "sounds": [
-      "takemtitans:block/cannon_fire1"
+      {
+        "name": "takemtitans:block/cannon_fire1",
+        "attenuation_distance": 96
+      },
+      {
+        "name": "takemtitans:block/cannon_fire2",
+        "attenuation_distance": 96
+      },
+      {
+        "name": "takemtitans:block/cannon_fire3",
+        "attenuation_distance": 96
+      }
     ],
     "subtitle": "subtitles.takemtitans.block.cannon_fire"
   },
@@ -695,6 +706,10 @@
       {
         "name": "takemtitans:cannon/heavy1",
         "attenuation_distance": 96
+      },
+      {
+        "name": "takemtitans:cannon/heavy2",
+        "attenuation_distance": 96
       }
     ],
     "subtitle": "subtitles.takemtitans.cannon.heavy"
@@ -703,6 +718,10 @@
     "sounds": [
       {
         "name": "takemtitans:cannon/battery1",
+        "attenuation_distance": 96
+      },
+      {
+        "name": "takemtitans:cannon/battery2",
         "attenuation_distance": 96
       }
     ],
@@ -753,5 +772,13 @@
         "stream": true
       }
     ]
+  },
+  "odm.swing": {
+    "sounds": [
+      "takemtitans:odm/swing1",
+      "takemtitans:odm/swing2",
+      "takemtitans:odm/swing3"
+    ],
+    "subtitle": "subtitles.takemtitans.odm.swing"
   }
 }

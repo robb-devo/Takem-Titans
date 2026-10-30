@@ -168,6 +168,10 @@ public final class DebrisFx {
 
     @Nullable
     static DustParticle dust(ParticleOptions type, double x, double y, double z, double vx, double vy, double vz, float scale, float[] rgb) {
+        if (sideFilter != 0 && com.takem.titans.world.ShiganshinaLayout.region(x, z).ordinal() + 1 != sideFilter) {
+            return null;
+        }
+
         if (make(type, x, y, z, vx, vy, vz) instanceof DustParticle d) {
             // a little light and dark between puffs, or the cloud looks like one flat sticker
             float shade = 0.9F + (float)Math.random() * 0.18F;
@@ -426,6 +430,9 @@ public final class DebrisFx {
     }
 
     /** A wide, rolling dust surge for explosions and giants smashing into the ground. */
+    /** While set (a region's ordinal + 1), dust is only drawn on that side of the Walls: the blast stopped there. */
+    static int sideFilter;
+
     public static void dustSurge(ClientLevel level, Vec3 at, float R, float h) {
         RandomSource rnd = level.random;
         double ground = groundY(level, at.add(0.0, 1.0, 0.0), 10);

@@ -254,6 +254,13 @@ public class ShiganshinaChunkGenerator extends ChunkGenerator {
         double arc = arcPosition(x, z);
         int arcBlock = (int)Math.floor(arc);
 
+        // the foundations go all the way down to the bedrock: nothing digs under the Wall
+        for (int y = col.minY + 1; y < 60; y++) {
+            if (!col.get(y).is(Blocks.BEDROCK)) {
+                col.set(y, body);
+            }
+        }
+
         for (int y = 60; y <= 116; y++) {
             BlockState s = body;
             int ly = y - 66;

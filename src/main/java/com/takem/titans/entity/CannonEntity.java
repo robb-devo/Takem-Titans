@@ -310,7 +310,9 @@ public class CannonEntity extends Entity {
                     this.setXRot(Mth.approachDegrees(this.getXRot(), yp[1], 4.0F));
                     if (Math.abs(dy) < 3.0F && this.cooldown <= 0) {
                         this.fire(sl, null);
-                        this.cooldown += 30;
+                        // a gun crew sponges, loads and runs the gun out again between shots: far slower than a soldier
+                        // with his own hand on the lanyard
+                        this.cooldown = this.reloadTicks() * 2 + 80 + this.random.nextInt(90);
                     }
                 }
             }

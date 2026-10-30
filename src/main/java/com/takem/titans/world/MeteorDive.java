@@ -82,7 +82,9 @@ public final class MeteorDive {
 
     public static double radius(double e, boolean extinction) {
         double r = e <= 70.0 ? 4.0 + 0.45 * e + 0.004 * e * e : 55.1 + 5.0 * Math.sqrt(e - 70.0) + 0.02 * (e - 70.0);
-        return extinction ? r * 1.25 : r;
+        // tighter than it once was: a hard landing levels a street, not a district
+        r *= 0.78;
+        return extinction ? r * 1.2 : r;
     }
 
     public static double damage(double e) {
@@ -126,64 +128,40 @@ public final class MeteorDive {
         int shockRank = Skills.rank(player, Skill.SHOCKWAVE);
         double demo = Skills.demolition(player);
         double R = radius(e, extinction);
-        // no ceiling: past 48 blocks the crater keeps growing with the height of the fall, only a little slower, so a dive
-        // from a thousand blocks leaves a far bigger hole than one from three hundred and five thousand a bigger one still
-        double natural = Math.max(2.5, R * 0.5 * demo);
-        double craterR = natural <= 48.0 ? natural : 48.0 + Math.pow(natural - 48.0, 0.8);
-        double ringMax = R * (1.45 + 0.35 * (double)shockRank);
-        float k = (float)Math.min(6.0, e / 35.0);
+        // past 32 blocks the crater keeps growing with the height of the fall, ever more slowly
+        double natural = Math.max(2.5, R * 0.42 * demo);
+        double craterR = natural <= 32.0 ? natural : 32.0 + Math.pow(natural - 32.0, 0.7);
+        double ringMax = R * (1.35 + 0.3 * (double)shockRank);
+        float k = (float)Math.min(4.0, e / 35.0);
         Vec3 c = at;
         boolean red = OdmServer.isRed(player, d);
         d.immuneTicks = Math.max(d.immuneTicks, 70 + (int)Math.min(80.0, e));
         d.diveGrace = Math.max(d.diveGrace, 40);
-        Fx.send(level, 25, c.x, c.y + 0.1, c.z, (float)Math.min(R, 420.0), k, red ? 1.0F : 0.0F, 0.0F, 400.0 + R * 3.0);
+        MeteorDive.Impact impact = new MeteorDive.Impact(level, player, c, e, R, craterR, ringMax, demo, extinction, shockRank);
+        Fx.send(level, 25, c.x, c.y + 0.1, c.z, (float)Math.min(R, 160.0), k, red ? 1.0F : 0.0F, impact.sideCode(), 300.0 + R * 2.0);
         if (e >= 40.0) {
-            Fx.send(level, 26, c.x, c.y + 0.1, c.z, (float)R, (float)e, extinction ? 1.0F : 0.0F, red ? 1.0F : 0.0F, 600.0 + R * 4.0);
+            Fx.send(level, 26, c.x, c.y + 0.1, c.z, (float)R, (float)e, extinction ? 1.0F : 0.0F, red ? 1.0F : 0.0F, 400.0 + R * 3.0);
         }
 
-        float vol = (float)Math.min(60.0, 4.0 + e * 0.12);
+        // one deep impact and the rubble coming down after it; stacking thunder on top only turned it to noise
+        float vol = (float)Math.min(40.0, 4.0 + e * 0.1);
         level.playSound(null, c.x, c.y, c.z, ModSounds.METEOR_SLAM.get(), SoundSource.PLAYERS, vol, 0.8F + rnd.nextFloat() * 0.15F);
-        level.playSound(null, c.x, c.y, c.z, ModSounds.BOULDER_IMPACT.get(), SoundSource.PLAYERS, vol * 0.8F, 0.6F);
-        if (e > 25.0) {
-            level.playSound(null, c.x, c.y, c.z, ModSounds.NAPE_THUNDER.get(), SoundSource.PLAYERS, vol, 0.55F);
-        }
-
+        level.playSound(null, c.x, c.y, c.z, ModSounds.BOULDER_IMPACT.get(), SoundSource.PLAYERS, vol * 0.7F, 0.6F + rnd.nextFloat() * 0.1F);
         if (e > 55.0) {
-            level.playSound(null, c.x, c.y, c.z, ModSounds.RIFT_DETONATE.get(), SoundSource.PLAYERS, vol, 0.65F);
-            level.playSound(null, c.x, c.y, c.z, SoundEvents.GENERIC_EXPLODE.value(), SoundSource.PLAYERS, vol, 0.45F);
+            level.playSound(null, c.x, c.y, c.z, ModSounds.RUMBLING_QUAKE.get(), SoundSource.PLAYERS, vol * 0.8F, 0.75F);
         }
 
-        if (e > 90.0) {
-            level.playSound(null, c.x, c.y, c.z, ModSounds.COLOSSAL_ARRIVAL.get(), SoundSource.PLAYERS, vol, 0.7F);
-            level.playSound(null, c.x, c.y, c.z, ModSounds.RUMBLING_QUAKE.get(), SoundSource.PLAYERS, vol, 0.8F);
-        }
-
-        AbstractTitan.shakeNearby(level, c, 40.0 + R * 4.0, (float)Math.min(2.6, 0.5 + e / 70.0), 26 + (int)Math.min(100.0, e * 0.4));
+        AbstractTitan.shakeNearby(level, c, 32.0 + R * 3.0, (float)Math.min(2.2, 0.5 + e / 80.0), 24 + (int)Math.min(60.0, e * 0.3));
         if (e > 28.0) {
-            PacketDistributor.sendToPlayer(player, FeedbackPayload.of(10, 100, (int)Math.min(260.0, 120.0 + e), 0));
-            KillCam.slowMo(level.getServer(), (float)Math.max(3.0, 8.0 - e / 30.0), (long)Math.min(1300.0, 300.0 + e * 5.0), 800L);
-        }
-
-        if (e > 60.0) {
-            for (int i = 0; i < Math.min(48, (int)(e / 20.0)); i++) {
-                LightningBolt bolt = EntityType.LIGHTNING_BOLT.create(level);
-                if (bolt != null) {
-                    double a = rnd.nextDouble() * 3.141592653589793 * 2.0;
-                    double dd = R * (0.3 + rnd.nextDouble() * 0.9);
-                    bolt.moveTo(c.x + Math.cos(a) * dd, c.y, c.z + Math.sin(a) * dd);
-                    bolt.setVisualOnly(true);
-                    level.addFreshEntity(bolt);
-                }
-            }
+            PacketDistributor.sendToPlayer(player, FeedbackPayload.of(10, 100, (int)Math.min(220.0, 110.0 + e), 0));
+            KillCam.slowMo(level.getServer(), (float)Math.max(3.0, 7.0 - e / 30.0), (long)Math.min(900.0, 250.0 + e * 4.0), 700L);
         }
 
         TownLife.alarm(level, c, ringMax * 1.6 + 30.0, 0);
-        MeteorDive.Impact impact = new MeteorDive.Impact(level, player, c, e, R, craterR, ringMax, demo, extinction, shockRank);
+        impact.blocks = TakemConfig.METEOR_DIVE_BREAKS_BLOCKS.get();
         impact.core();
-        boolean blocks = TakemConfig.METEOR_DIVE_BREAKS_BLOCKS.get();
-        impact.blocks = blocks;
-        if (blocks) {
-            Destruction.glassBurst(level, c, R * 2.2);
+        if (impact.blocks) {
+            Destruction.glassBurst(level, c, impact.clampToSide(R * 1.6));
         }
 
         ACTIVE.add(impact);
@@ -279,12 +257,19 @@ public final class MeteorDive {
         final double demo;
         final boolean extinction;
         final int shockRank;
-        final boolean walls;
+        final double depth;
+        final double dome;
+        /** In the walled world the blast stays on the side of the Wall it hit: the Wall stops it dead. */
+        final boolean walled;
+        final ShiganshinaLayout.Region side;
+        /** Past this many blocks the shock wave only throws people about and rattles what is left. */
+        final int flattenCap;
         boolean blocks = true;
         double carved;
         double ring;
         int age;
         int thrown;
+        int flattened;
         double nextCollapse;
         final IntOpenHashSet hit = new IntOpenHashSet();
 
@@ -301,8 +286,26 @@ public final class MeteorDive {
             this.demo = demo;
             this.extinction = extinction;
             this.shockRank = shockRank;
-            this.walls = e >= 70.0 && TakemConfig.METEOR_BREAKS_WALLS.get();
+            this.depth = 1.5 + Math.min(craterR * 0.3, 16.0);
+            this.dome = Math.min(28.0, craterR * 0.45 + Math.min(12.0, e * 0.08));
+            this.walled = TitanSpawner.isShiganshina(level);
+            this.side = ShiganshinaLayout.region(c.x, c.z);
+            this.flattenCap = 700 + (int)Math.min(1800.0, e * 8.0);
             this.nextCollapse = Math.max(10.0, craterR);
+        }
+
+        boolean sameSide(double x, double z) {
+            return !this.walled || ShiganshinaLayout.region(x, z) == this.side;
+        }
+
+        /** The side for the client, so its dust stops at the Wall too: 0 anywhere, else the region's ordinal + 1. */
+        float sideCode() {
+            return this.walled ? (float)(this.side.ordinal() + 1) : 0.0F;
+        }
+
+        /** A radius for effects that can't tell sides apart, kept short of the Wall. */
+        double clampToSide(double r) {
+            return this.walled ? Math.min(r, Math.max(6.0, ShiganshinaLayout.distToWall(this.c.x, this.c.z))) : r;
         }
 
         @Nullable
@@ -321,16 +324,15 @@ public final class MeteorDive {
         boolean step() {
             this.age++;
             if (this.blocks && this.carved < this.craterR) {
-                double height = 1.5 + Math.min(this.craterR * 0.32, 30.0) + Math.min(80.0, this.craterR * 0.55 + Math.min(30.0, this.e * 0.15));
-                // a big crater opens over seconds, ring by ring, so the server keeps up and you watch it grow
-                double step = Mth.clamp(16000.0 / (6.283185307179586 * Math.max(4.0, this.carved + 2.0) * height), 0.25, 4.0);
+                // the crater opens over a second or two, ring by ring, so the server keeps up and you watch it grow
+                double step = Mth.clamp(12000.0 / (Math.PI * 2.0 * Math.max(4.0, this.carved + 2.0) * (this.depth + this.dome)), 0.5, 4.0);
                 double next = Math.min(this.craterR, this.carved + step);
                 this.carve(this.carved, next);
                 this.carved = next;
             }
 
             if (this.ring < this.ringMax) {
-                double speed = Math.min(11.0, 2.6 + this.e * 0.015);
+                double speed = Math.min(10.0, 2.6 + this.e * 0.015);
                 double prev = this.ring;
                 this.ring = Math.min(this.ringMax, this.ring + speed);
                 this.band(prev, this.ring);
@@ -338,12 +340,12 @@ public final class MeteorDive {
                     this.flatten(prev, this.ring);
                     if (this.ring >= this.nextCollapse) {
                         this.collapseRing(this.ring);
-                        this.nextCollapse = this.nextCollapse + Math.max(14.0, this.ringMax / 14.0);
+                        this.nextCollapse = this.nextCollapse + Math.max(14.0, this.ringMax / 10.0);
                     }
                 }
 
                 if (this.age % 3 == 1) {
-                    Fx.send(this.level, 22, this.c.x, this.c.y, this.c.z, (float)this.ring, (float)Math.min(14.0, 3.0 + this.e * 0.06), 0.0F, 0.0F, 400.0);
+                    Fx.send(this.level, 22, this.c.x, this.c.y, this.c.z, (float)this.ring, (float)Math.min(10.0, 3.0 + this.e * 0.05), this.sideCode(), 0.0F, 400.0);
                 }
             }
 
@@ -351,7 +353,7 @@ public final class MeteorDive {
             if (done && this.blocks) {
                 this.collapseRing(this.R * 0.7);
                 if (this.e > 45.0 && TakemConfig.DESTRUCTION_FIRES.get()) {
-                    Boom.ignite(this.level, this.c, this.R * 0.9, (int)Math.min(220.0, this.e * 0.5), this.level.random);
+                    Boom.ignite(this.level, this.c, this.clampToSide(this.R * 0.7), (int)Math.min(120.0, this.e * 0.4), this.level.random);
                 }
             }
 
@@ -365,56 +367,48 @@ public final class MeteorDive {
             AABB box = new AABB(this.c.x - r1, this.c.y - h, this.c.z - r1, this.c.x + r1, this.c.y + h + 10.0, this.c.z + r1);
 
             for (Entity ent : this.level.getEntities((Entity)null, box, Entity::isAlive)) {
-                if (ent != player && !(ent instanceof TitanPart) && !this.hit.contains(ent.getId())) {
-                    double dx = ent.getX() - this.c.x;
-                    double dz = ent.getZ() - this.c.z;
-                    double dist = Math.sqrt(dx * dx + dz * dz);
-                    if (!(dist > r1) && !(dist < r0 - 0.001)) {
-                        this.hit.add(ent.getId());
-                        double f = Mth.clamp(1.0 - dist / this.ringMax, 0.0, 1.0);
-                        double shock = 1.0 + 0.25 * (double)this.shockRank;
-                        Vec3 out = new Vec3(dx, 0.0, dz);
-                        out = out.lengthSqr() < 1.0E-4 ? new Vec3(0.0, 0.0, 0.0) : out.normalize();
-                        double fling = Math.min(7.0, (0.6 + this.e * 0.02) * f * shock);
-                        if (ent instanceof AbstractTitan) {
-                            AbstractTitan t = (AbstractTitan)ent;
-                            if (!(t instanceof RumblingTitan)) {
-                                this.titan(t, dist, f, player, src);
-                            }
-                        } else if (ent instanceof FallingSectionEntity fs) {
-                            fs.shove(out.scale(fling * 0.6).add(0.0, 0.3 + fling * 0.4, 0.0));
-                        } else if (ent instanceof DebrisEntity) {
-                            double f2 = Math.min(2.2, fling);
-                            ent.setDeltaMovement(ent.getDeltaMovement().add(out.scale(f2)).add(0.0, 0.3 + f2 * 0.4, 0.0));
-                        } else {
-                            if (ent instanceof Player) {
-                                Player p = (Player)ent;
-                                if (p.isCreative() || p.isSpectator()) {
-                                    continue;
-                                }
-                            }
+                if (ent == player || ent instanceof TitanPart || this.hit.contains(ent.getId()) || !this.sameSide(ent.getX(), ent.getZ())) {
+                    continue;
+                }
 
-                            ent.setDeltaMovement(ent.getDeltaMovement().add(out.scale(fling)).add(0.0, Math.min(3.5, 0.5 + fling * 0.55), 0.0));
-                            ent.hurtMarked = true;
-                            if (ent instanceof LivingEntity) {
-                                LivingEntity l = (LivingEntity)ent;
-                                if (ent instanceof TownsfolkEntity) {
-                                    TownsfolkEntity tf = (TownsfolkEntity)ent;
-                                    if (tf.isStoryCharacter()) {
-                                        continue;
-                                    }
-                                }
+                double dx = ent.getX() - this.c.x;
+                double dz = ent.getZ() - this.c.z;
+                double dist = Math.sqrt(dx * dx + dz * dz);
+                if (dist > r1 || dist < r0 - 0.001) {
+                    continue;
+                }
 
-                                double dmg = MeteorDive.damage(this.e) * Math.pow(f, 1.3) * shock;
-                                if (dmg >= 1.0) {
-                                    l.invulnerableTime = 0;
-                                    l.hurt(src, (float)Math.min(dmg, 1000000.0));
-                                }
+                this.hit.add(ent.getId());
+                double f = Mth.clamp(1.0 - dist / this.ringMax, 0.0, 1.0);
+                double shock = 1.0 + 0.25 * (double)this.shockRank;
+                Vec3 out = new Vec3(dx, 0.0, dz);
+                out = out.lengthSqr() < 1.0E-4 ? Vec3.ZERO : out.normalize();
+                double fling = Math.min(7.0, (0.6 + this.e * 0.02) * f * shock);
+                if (ent instanceof AbstractTitan t) {
+                    if (!(t instanceof RumblingTitan)) {
+                        this.titan(t, dist, f, player, src);
+                    }
+                } else if (ent instanceof FallingSectionEntity fs) {
+                    fs.shove(out.scale(fling * 0.6).add(0.0, 0.3 + fling * 0.4, 0.0));
+                } else if (ent instanceof DebrisEntity) {
+                    double f2 = Math.min(2.2, fling);
+                    ent.setDeltaMovement(ent.getDeltaMovement().add(out.scale(f2)).add(0.0, 0.3 + f2 * 0.4, 0.0));
+                } else {
+                    if (ent instanceof Player p && (p.isCreative() || p.isSpectator()) || ent instanceof TownsfolkEntity tf && tf.isStoryCharacter()) {
+                        continue;
+                    }
 
-                                if (this.e > 45.0 && f > 0.35) {
-                                    l.igniteForSeconds((float)(4.0 + 6.0 * f));
-                                }
-                            }
+                    ent.setDeltaMovement(ent.getDeltaMovement().add(out.scale(fling)).add(0.0, Math.min(3.5, 0.5 + fling * 0.55), 0.0));
+                    ent.hurtMarked = true;
+                    if (ent instanceof LivingEntity l) {
+                        double dmg = MeteorDive.damage(this.e) * Math.pow(f, 1.3) * shock;
+                        if (dmg >= 1.0) {
+                            l.invulnerableTime = 0;
+                            l.hurt(src, (float)Math.min(dmg, 1000000.0));
+                        }
+
+                        if (this.e > 45.0 && f > 0.35) {
+                            l.igniteForSeconds((float)(4.0 + 6.0 * f));
                         }
                     }
                 }
@@ -448,86 +442,85 @@ public final class MeteorDive {
         }
 
         private boolean breakable(BlockState s, BlockPos p) {
-            if (!Chunks.takes(this.level, p, s, 1)) {
+            // the Walls are not touched by any dive, however hard: they stop it dead
+            if (Destruction.isWallStone(s) || !Chunks.takes(this.level, p, s, 1)) {
                 return false;
             } else {
                 float h = s.getDestroySpeed(this.level, p);
-                return this.walls || !(h >= 20.0F);
+                return h >= 0.0F && h < 20.0F;
             }
         }
 
         private void carve(double r0, double r1) {
             RandomSource rnd = this.level.random;
             float rubble = TakemConfig.RUBBLE_CHANCE.get().floatValue();
-            double depth = 1.5 + Math.min(this.craterR * 0.32, 30.0);
-            double dome = Math.min(80.0, this.craterR * 0.55 + Math.min(30.0, this.e * 0.15));
             boolean molten = this.e >= 70.0;
             int r = (int)Math.ceil(r1);
             int cx = Mth.floor(this.c.x);
             int cy = Mth.floor(this.c.y);
             int cz = Mth.floor(this.c.z);
             MutableBlockPos m = new MutableBlockPos();
-            int budget = 520 + (int)Math.min(1600.0, this.e * 4.0);
+            // only so much of the bowl flies as rubble; the rest is simply gone
+            int budget = 120 + (int)Math.min(330.0, this.e * 1.5);
 
             for (int dx = -r; dx <= r; dx++) {
                 for (int dz = -r; dz <= r; dz++) {
                     double dist = Math.sqrt((double)(dx * dx + dz * dz));
-                    if (!(dist >= r1) && !(dist < r0) && this.level.hasChunk(cx + dx >> 4, cz + dz >> 4)) {
-                        double h = dist / this.craterR;
-                        int dig = (int)Math.round(depth * (1.0 - h * h) + rnd.nextDouble() * 1.2);
-                        int top = 1 + (int)(dome * (1.0 - h * h));
-                        Vec3 out = dist < 0.01 ? new Vec3(0.0, 1.0, 0.0) : new Vec3((double)dx / dist, 0.0, (double)dz / dist);
-                        int floor = -2147483648;
+                    if (dist >= r1 || dist < r0 || !this.level.hasChunk(cx + dx >> 4, cz + dz >> 4) || !this.sameSide(cx + dx + 0.5, cz + dz + 0.5)) {
+                        continue;
+                    }
 
-                        for (int dy = top; dy >= 1 - dig; dy--) {
-                            m.set(cx + dx, cy + dy, cz + dz);
-                            BlockState s = this.level.getBlockState(m);
-                            if (!s.isAir() && this.breakable(s, m)) {
-                                if (this.thrown < budget && rnd.nextFloat() < 0.4F) {
-                                    this.thrown++;
-                                    // ejecta leave the bowl at a steep angle and rain down around the rim
-                                    double kick = 0.4 + Math.min(1.4, this.e * 0.012);
-                                    Vec3 v = out.scale(0.5 + rnd.nextDouble() * kick).add(0.0, 0.45 + rnd.nextDouble() * kick * 0.9, 0.0);
-                                    Destruction.smash(this.level, m.immutable(), s, v, rubble, this.e > 40.0 ? 2 : 1);
-                                } else {
-                                    this.level.setBlock(m, Blocks.AIR.defaultBlockState(), 50);
-                                    Rebuild.mark(this.level, m);
-                                }
-                            } else if (!s.isAir() && (!s.getFluidState().isEmpty() && dy <= 0 || s.getCollisionShape(this.level, m).isEmpty() && s.getDestroySpeed(this.level, m) >= 0.0F)) {
+                    double h = dist / this.craterR;
+                    int dig = (int)Math.round(this.depth * (1.0 - h * h) + rnd.nextDouble() * 1.2);
+                    int top = 1 + (int)(this.dome * (1.0 - h * h));
+                    Vec3 out = dist < 0.01 ? new Vec3(0.0, 1.0, 0.0) : new Vec3((double)dx / dist, 0.0, (double)dz / dist);
+
+                    for (int dy = top; dy >= 1 - dig; dy--) {
+                        m.set(cx + dx, cy + dy, cz + dz);
+                        BlockState s = this.level.getBlockState(m);
+                        if (s.isAir()) {
+                            continue;
+                        }
+
+                        if (this.breakable(s, m)) {
+                            if (this.thrown < budget && rnd.nextFloat() < 0.3F) {
+                                this.thrown++;
+                                // ejecta leave the bowl at a steep angle and rain down around the rim
+                                double kick = 0.4 + Math.min(1.2, this.e * 0.01);
+                                Vec3 v = out.scale(0.5 + rnd.nextDouble() * kick).add(0.0, 0.45 + rnd.nextDouble() * kick * 0.9, 0.0);
+                                Destruction.smash(this.level, m.immutable(), s, v, rubble, this.e > 40.0 ? 2 : 1);
+                            } else {
                                 this.level.setBlock(m, Blocks.AIR.defaultBlockState(), 50);
                                 Rebuild.mark(this.level, m);
                             }
+                        } else if (!s.getFluidState().isEmpty() && dy <= 0 || s.getCollisionShape(this.level, m).isEmpty() && s.getDestroySpeed(this.level, m) >= 0.0F) {
+                            this.level.setBlock(m, Blocks.AIR.defaultBlockState(), 50);
+                            Rebuild.mark(this.level, m);
+                        }
+                    }
+
+                    m.set(cx + dx, cy - dig, cz + dz);
+                    BlockState below = this.level.getBlockState(m);
+                    if (!below.isAir() && below.getFluidState().isEmpty() && this.breakable(below, m)) {
+                        float roll = rnd.nextFloat();
+                        BlockState lining;
+                        if (molten) {
+                            lining = roll < 0.3F
+                                ? Blocks.MAGMA_BLOCK.defaultBlockState()
+                                : (roll < 0.55F ? Blocks.BLACKSTONE.defaultBlockState() : (roll < 0.8F ? Blocks.BASALT.defaultBlockState() : Blocks.OBSIDIAN.defaultBlockState()));
+                        } else {
+                            lining = roll < 0.45F
+                                ? Blocks.COARSE_DIRT.defaultBlockState()
+                                : (roll < 0.75F ? Blocks.COBBLED_DEEPSLATE.defaultBlockState() : Blocks.GRAVEL.defaultBlockState());
                         }
 
-                        floor = cy - dig;
-                        m.set(cx + dx, floor, cz + dz);
-                        BlockState below = this.level.getBlockState(m);
-                        if (!below.isAir() && below.getFluidState().isEmpty() && this.breakable(below, m)) {
-                            BlockState lining;
-                            if (molten) {
-                                float roll = rnd.nextFloat();
-                                lining = roll < 0.3F
-                                    ? Blocks.MAGMA_BLOCK.defaultBlockState()
-                                    : (
-                                        roll < 0.55F
-                                            ? Blocks.BLACKSTONE.defaultBlockState()
-                                            : (roll < 0.8F ? Blocks.BASALT.defaultBlockState() : Blocks.OBSIDIAN.defaultBlockState())
-                                    );
-                            } else {
-                                float roll = rnd.nextFloat();
-                                lining = roll < 0.45F
-                                    ? Blocks.COARSE_DIRT.defaultBlockState()
-                                    : (roll < 0.75F ? Blocks.COBBLED_DEEPSLATE.defaultBlockState() : Blocks.GRAVEL.defaultBlockState());
-                            }
-
-                            this.level.setBlock(m, lining, 3);
-                            Rebuild.mark(this.level, m);
-                            if (molten && rnd.nextFloat() < 0.12F && TakemConfig.DESTRUCTION_FIRES.get()) {
-                                m.move(0, 1, 0);
-                                if (this.level.getBlockState(m).isAir()) {
-                                    Destruction.flame(this.level, m);
-                                    Rebuild.mark(this.level, m);
-                                }
+                        this.level.setBlock(m, lining, 3);
+                        Rebuild.mark(this.level, m);
+                        if (molten && rnd.nextFloat() < 0.12F && TakemConfig.DESTRUCTION_FIRES.get()) {
+                            m.move(0, 1, 0);
+                            if (this.level.getBlockState(m).isAir()) {
+                                Destruction.flame(this.level, m);
+                                Rebuild.mark(this.level, m);
                             }
                         }
                     }
@@ -542,79 +535,92 @@ public final class MeteorDive {
         private void rim() {
             RandomSource rnd = this.level.random;
             MutableBlockPos m = new MutableBlockPos();
-            int rimN = (int)(40.0 + this.craterR * 8.0);
+            int rimN = (int)(30.0 + this.craterR * 6.0);
 
             for (int i = 0; i < rimN; i++) {
-                double a = rnd.nextDouble() * 3.141592653589793 * 2.0;
+                double a = rnd.nextDouble() * Math.PI * 2.0;
                 double d = this.craterR * (0.95 + rnd.nextDouble() * 0.45);
                 int x = Mth.floor(this.c.x + Math.cos(a) * d);
                 int z = Mth.floor(this.c.z + Math.sin(a) * d);
-                if (this.level.hasChunk(x >> 4, z >> 4)) {
-                    int y = this.level.getHeight(Types.MOTION_BLOCKING_NO_LEAVES, x, z);
-                    if (!(Math.abs((double)y - this.c.y) > this.craterR)) {
-                        int pile = 1 + rnd.nextInt(Math.max(1, (int)(this.craterR / 8.0) + 1));
+                if (!this.level.hasChunk(x >> 4, z >> 4) || !this.sameSide(x + 0.5, z + 0.5)) {
+                    continue;
+                }
 
-                        for (int k = 0; k < pile; k++) {
-                            m.set(x, y + k, z);
-                            if (this.level.getBlockState(m).isAir()) {
-                                BlockState s = this.e >= 70.0 && rnd.nextFloat() < 0.3F
-                                    ? Blocks.BLACKSTONE.defaultBlockState()
-                                    : (rnd.nextFloat() < 0.5F ? Blocks.COARSE_DIRT.defaultBlockState() : Blocks.COBBLESTONE.defaultBlockState());
-                                this.level.setBlock(m, s, 3);
-                                Rebuild.mark(this.level, m);
-                            }
-                        }
+                int y = this.level.getHeight(Types.MOTION_BLOCKING_NO_LEAVES, x, z);
+                if (Math.abs((double)y - this.c.y) > this.craterR) {
+                    continue;
+                }
+
+                int pile = 1 + rnd.nextInt(Math.max(1, (int)(this.craterR / 8.0) + 1));
+                for (int k = 0; k < pile; k++) {
+                    m.set(x, y + k, z);
+                    if (this.level.getBlockState(m).isAir()) {
+                        BlockState s = this.e >= 70.0 && rnd.nextFloat() < 0.3F
+                            ? Blocks.BLACKSTONE.defaultBlockState()
+                            : (rnd.nextFloat() < 0.5F ? Blocks.COARSE_DIRT.defaultBlockState() : Blocks.COBBLESTONE.defaultBlockState());
+                        this.level.setBlock(m, s, 3);
+                        Rebuild.mark(this.level, m);
                     }
                 }
             }
         }
 
         private void flatten(double r0, double r1) {
+            if (this.flattened >= this.flattenCap) {
+                return;
+            }
+
             RandomSource rnd = this.level.random;
-            float rubble = TakemConfig.RUBBLE_CHANCE.get().floatValue();
+            float rubble = TakemConfig.RUBBLE_CHANCE.get().floatValue() * 0.6F;
             double shock = (1.0 + 0.25 * (double)this.shockRank) * this.demo;
-            int budget = 1100 + (int)Math.min(2600.0, this.e * 6.0);
+            int budget = Math.min(this.flattenCap - this.flattened, 160 + (int)Math.min(420.0, this.e * 1.6));
             int cx = Mth.floor(this.c.x);
             int cy = Mth.floor(this.c.y);
             int cz = Mth.floor(this.c.z);
             MutableBlockPos m = new MutableBlockPos();
-            double circumference = 6.283185307179586 * r1;
-            int samples = Mth.clamp((int)(circumference * Math.max(1.0, r1 - r0) * 1.2), 16, 6000);
+            double circumference = Math.PI * 2.0 * r1;
+            int samples = Mth.clamp((int)(circumference * Math.max(1.0, r1 - r0) * 1.2), 16, 2400);
 
             for (int i = 0; i < samples && budget > 0; i++) {
-                double a = rnd.nextDouble() * 3.141592653589793 * 2.0;
+                double a = rnd.nextDouble() * Math.PI * 2.0;
                 double d = r0 + rnd.nextDouble() * (r1 - r0);
                 int x = cx + Mth.floor(Math.cos(a) * d);
                 int z = cz + Mth.floor(Math.sin(a) * d);
-                if (this.level.hasChunk(x >> 4, z >> 4)) {
-                    double f = 1.0 - d / this.ringMax;
-                    double reach = (2.0 + Math.min(60.0, this.e * 0.22) * f * f) * shock;
-                    double chance = Math.min(1.0, f * 1.35 * shock);
-                    Vec3 out = new Vec3(Math.cos(a), 0.0, Math.sin(a));
+                if (!this.level.hasChunk(x >> 4, z >> 4) || !this.sameSide(x + 0.5, z + 0.5)) {
+                    continue;
+                }
 
-                    for (int y = cy - 1; (double)y <= (double)cy + reach && budget > 0; y++) {
-                        m.set(x, y, z);
-                        BlockState s = this.level.getBlockState(m);
-                        if (!s.isAir() && Destruction.canSmash(this.level, m, s, 6.0F) && rnd.nextDouble() < chance) {
-                            double kick = Math.min(1.8, 0.45 + this.e * 0.016 * f);
-                            Vec3 v = out.scale(kick * (0.6 + rnd.nextDouble() * 0.6)).add(0.0, 0.25 + rnd.nextDouble() * kick * 0.6, 0.0);
-                            Destruction.smash(this.level, m.immutable(), s, v, rubble, kick > 1.4 ? 1 : 0);
-                            budget--;
-                        }
+                double f = 1.0 - d / this.ringMax;
+                double reach = (2.0 + Math.min(40.0, this.e * 0.16) * f * f) * shock;
+                double chance = Math.min(1.0, f * 1.35 * shock);
+                Vec3 out = new Vec3(Math.cos(a), 0.0, Math.sin(a));
+
+                for (int y = cy - 1; (double)y <= (double)cy + reach && budget > 0; y++) {
+                    m.set(x, y, z);
+                    BlockState s = this.level.getBlockState(m);
+                    if (!s.isAir() && !Destruction.isWallStone(s) && Destruction.canSmash(this.level, m, s, 6.0F) && rnd.nextDouble() < chance) {
+                        double kick = Math.min(1.6, 0.45 + this.e * 0.014 * f);
+                        Vec3 v = out.scale(kick * (0.6 + rnd.nextDouble() * 0.6)).add(0.0, 0.25 + rnd.nextDouble() * kick * 0.6, 0.0);
+                        Destruction.smash(this.level, m.immutable(), s, v, rubble, kick > 1.3 ? 1 : 0);
+                        budget--;
+                        this.flattened++;
                     }
                 }
             }
         }
 
         private void collapseRing(double r) {
-            int n = Mth.clamp((int)(r * 3.141592653589793 * 2.0 / 18.0), 3, 20);
-            double off = this.level.random.nextDouble() * 3.141592653589793 * 2.0;
+            int n = Mth.clamp((int)(r * Math.PI * 2.0 / 18.0), 3, 16);
+            double off = this.level.random.nextDouble() * Math.PI * 2.0;
             int span = Mth.clamp((int)(14.0 * this.demo), 12, 24);
 
             for (int i = 0; i < n; i++) {
-                double a = off + (double)i * 3.141592653589793 * 2.0 / (double)n;
-                BlockPos p = BlockPos.containing(this.c.x + Math.cos(a) * r, this.c.y + 2.0, this.c.z + Math.sin(a) * r);
-                Destruction.requestCollapse(this.level, p, span, 72, 6);
+                double a = off + (double)i * Math.PI * 2.0 / (double)n;
+                double x = this.c.x + Math.cos(a) * r;
+                double z = this.c.z + Math.sin(a) * r;
+                if (this.sameSide(x, z)) {
+                    Destruction.requestCollapse(this.level, BlockPos.containing(x, this.c.y + 2.0, z), span, 72, 6);
+                }
             }
         }
 
@@ -622,35 +628,40 @@ public final class MeteorDive {
             RandomSource rnd = this.level.random;
             ServerPlayer player = this.player();
             if (this.blocks) {
-                int lumps = (int)Math.min(28.0, 2.0 + this.e / 12.0);
-
+                // a few great clods of ground thrown out of the crater
+                int lumps = (int)Math.min(10.0, 2.0 + this.e / 16.0);
                 for (int i = 0; i < lumps; i++) {
-                    double a = rnd.nextDouble() * 3.141592653589793 * 2.0;
-                    BlockPos at = BlockPos.containing(this.c.x + Math.cos(a) * this.craterR * 0.8, this.c.y - 1.0, this.c.z + Math.sin(a) * this.craterR * 0.8);
-                    FallingSectionEntity lump = Chunks.rip(this.level, at, 2 + (this.e > 80.0 ? 1 : 0), 1, 6);
+                    double a = rnd.nextDouble() * Math.PI * 2.0;
+                    double x = this.c.x + Math.cos(a) * this.craterR * 0.8;
+                    double z = this.c.z + Math.sin(a) * this.craterR * 0.8;
+                    if (!this.sameSide(x, z)) {
+                        continue;
+                    }
+
+                    FallingSectionEntity lump = Chunks.rip(this.level, BlockPos.containing(x, this.c.y - 1.0, z), 2 + (this.e > 80.0 ? 1 : 0), 1, 6);
                     if (lump != null) {
                         Vec3 out = new Vec3(Math.cos(a), 0.0, Math.sin(a));
-                        double kick = Math.min(2.4, 0.5 + this.e * 0.015);
-                        lump.launch(
-                            out.scale(kick * (0.6 + rnd.nextDouble() * 0.5)).add(0.0, kick * (0.8 + rnd.nextDouble() * 0.6), 0.0), Chunks.tumble(rnd, 0.35F)
-                        );
+                        double kick = Math.min(2.0, 0.5 + this.e * 0.012);
+                        lump.launch(out.scale(kick * (0.6 + rnd.nextDouble() * 0.5)).add(0.0, kick * (0.8 + rnd.nextDouble() * 0.6), 0.0), Chunks.tumble(rnd, 0.35F));
                         this.level.addFreshEntity(lump);
                     }
                 }
             }
 
             if (this.e >= 60.0) {
-                int rocks = (int)Math.min(this.extinction ? 64.0 : 40.0, (this.e - 40.0) / 6.0);
-
+                // and boulders arcing out past the blast - never over the Wall
+                int rocks = (int)Math.min(this.extinction ? 16.0 : 10.0, (this.e - 40.0) / 10.0);
                 for (int ix = 0; ix < rocks; ix++) {
-                    double a = rnd.nextDouble() * 3.141592653589793 * 2.0;
-                    double dist = this.R * (0.9 + rnd.nextDouble() * 1.4);
+                    double a = rnd.nextDouble() * Math.PI * 2.0;
+                    double dist = this.R * (0.9 + rnd.nextDouble() * 1.1);
+                    if (!this.sameSide(this.c.x + Math.cos(a) * dist, this.c.z + Math.sin(a) * dist)) {
+                        continue;
+                    }
+
                     double t = 34.0 + rnd.nextDouble() * 22.0;
                     Vec3 from = this.c.add(Math.cos(a) * 3.0, 3.0, Math.sin(a) * 3.0);
                     Vec3 v = new Vec3(Math.cos(a) * dist / t, 0.02 * t, Math.sin(a) * dist / t);
-                    FallingSectionEntity rock = FallingSectionEntity.boulder(
-                        this.level, from, 1.2F + rnd.nextFloat() * 1.0F, player != null ? player.getUUID() : null
-                    );
+                    FallingSectionEntity rock = FallingSectionEntity.boulder(this.level, from, 1.2F + rnd.nextFloat() * 1.0F, player != null ? player.getUUID() : null);
                     rock.launch(v, Chunks.tumble(rnd, 0.4F));
                     this.level.addFreshEntity(rock);
                 }

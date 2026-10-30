@@ -124,7 +124,7 @@ public final class EpicFx {
                 waveCut(level, at, new Vec3((double)msg.a(), (double)msg.b(), (double)msg.c()), msg.d(), rnd);
                 break;
             case 22:
-                dustSurge(level, at, msg.a(), msg.b(), rnd);
+                dustSurge(level, at, msg.a(), msg.b(), (int)msg.c(), rnd);
                 break;
             case 23:
                 glass(level, at, msg.a(), rnd);
@@ -433,81 +433,84 @@ public final class EpicFx {
 
     private static void meteorSlam(ClientLevel level, Vec3 at, float R, float k, boolean red, RandomSource rnd) {
         int hot = red ? 16724016 : 16756832;
-        WorldFx.add(new WorldFx.Flash(at.add(0.0, 1.0, 0.0), 3.0F + R * 0.5F, 6));
-        WorldFx.add(new WorldFx.Starburst(at.add(0.0, 0.5, 0.0), 18 + (int)(k * 14.0F), 4.0F + R * 0.6F, 0.35F + k * 0.3F, 8, hot, rnd));
-        WorldFx.add(new WorldFx.ShockRing(at, R * 2.6F, 18, 1.4F, 0.6F, 16777215, 0.55F));
-        WorldFx.add(new WorldFx.ShockRing(at, R * 1.6F, 12, 1.0F, 0.0F, hot, 0.5F));
-        WorldFx.add(new WorldFx.ShockRing(at, R * 3.8F, 28, 2.2F, 1.2F, 14207144, 0.25F));
-        WorldFx.add(new WorldFx.SonicRing(at.add(0.0, 2.0, 0.0), new Vec3(0.0, 1.0, 0.0), R * 0.9F, 10, 16777215));
-        if (k > 0.6F) {
-            WorldFx.add(new WorldFx.Pillar(at, 1.5F + k * 1.5F, 25.0F + R * 2.0F, 14));
-        }
-
+        float kk = Math.min(k, 2.0F);
+        WorldFx.add(new WorldFx.Flash(at.add(0.0, 1.0, 0.0), 3.0F + R * 0.4F, 6));
+        WorldFx.add(new WorldFx.Starburst(at.add(0.0, 0.5, 0.0), 16 + (int)(kk * 10.0F), 4.0F + R * 0.45F, 0.35F + kk * 0.25F, 8, hot, rnd));
+        WorldFx.add(new WorldFx.ShockRing(at, R * 2.2F, 18, 1.4F, 0.6F, 16777215, 0.55F));
+        WorldFx.add(new WorldFx.ShockRing(at, R * 1.3F, 12, 1.0F, 0.0F, hot, 0.5F));
+        WorldFx.add(new WorldFx.SonicRing(at.add(0.0, 2.0, 0.0), new Vec3(0.0, 1.0, 0.0), R * 0.7F, 10, 16777215));
         BlockPos below = BlockPos.containing(at).below();
         BlockState ground = level.getBlockState(below);
         if (ground.isAir()) {
             ground = Blocks.DIRT.defaultBlockState();
         }
 
+        // one burst of earth, dust rolling out low and a spray of sparks: enough to read, few enough to keep the frame
         BlockParticleOption blockFx = new BlockParticleOption(ParticleTypes.BLOCK, ground);
-        int n = 60 + (int)(k * 120.0F);
-
+        int n = 40 + (int)(kk * 40.0F);
         for (int i = 0; i < n; i++) {
-            double a = rnd.nextDouble() * 6.2831854820251465;
-            double sp = 0.4 + rnd.nextDouble() * (0.6 + (double)k);
-            level.addAlwaysVisibleParticle(blockFx, at.x, at.y + 0.3, at.z, Math.cos(a) * sp, 0.3 + rnd.nextDouble() * (0.6 + (double)k), Math.sin(a) * sp);
+            double a = rnd.nextDouble() * Math.PI * 2.0;
+            double sp = 0.4 + rnd.nextDouble() * (0.6 + (double)kk);
+            level.addAlwaysVisibleParticle(blockFx, at.x, at.y + 0.3, at.z, Math.cos(a) * sp, 0.3 + rnd.nextDouble() * (0.5 + (double)kk * 0.6), Math.sin(a) * sp);
         }
 
-        for (int i = 0; i < 24 + (int)(k * 40.0F); i++) {
-            double a = rnd.nextDouble() * 6.2831854820251465;
-            double d = rnd.nextDouble() * (double)R * 0.5;
+        for (int i = 0; i < 14 + (int)(kk * 14.0F); i++) {
+            double a = rnd.nextDouble() * Math.PI * 2.0;
+            double d = rnd.nextDouble() * (double)R * 0.4;
             ClientFx.spawn(
                 level,
                 ModParticles.DUST_CLOUD.get(),
                 at.x + Math.cos(a) * d,
                 at.y + 0.5,
                 at.z + Math.sin(a) * d,
-                Math.cos(a) * (0.3 + (double)k * 0.4),
-                0.04 + rnd.nextDouble() * 0.08,
-                Math.sin(a) * (0.3 + (double)k * 0.4),
-                2.0F + k
+                Math.cos(a) * (0.3 + (double)kk * 0.4),
+                0.03 + rnd.nextDouble() * 0.05,
+                Math.sin(a) * (0.3 + (double)kk * 0.4),
+                2.0F + kk
             );
         }
 
-        for (int i = 0; i < 20 + (int)(k * 30.0F); i++) {
-            Vec3 v = ClientFx.randomDir(rnd).scale(0.5 + rnd.nextDouble() * (double)k);
+        for (int i = 0; i < 14 + (int)(kk * 12.0F); i++) {
+            Vec3 v = ClientFx.randomDir(rnd).scale(0.5 + rnd.nextDouble() * (double)kk);
             level.addAlwaysVisibleParticle(red ? ModParticles.EMBER.get() : ModParticles.SPARK.get(), at.x, at.y + 0.5, at.z, v.x, Math.abs(v.y) + 0.2, v.z);
         }
 
         if (k > 0.5F) {
-            tintSky(red ? 16728112 : 16767136, 0.25F * k, 10);
+            tintSky(red ? 16728112 : 16767136, 0.2F * kk, 10);
         }
     }
 
     static void megaMeteor(ClientLevel level, Vec3 at, float R, float e, boolean extinction, boolean red, RandomSource rnd) {
-        float k = Mth.clamp(e / 80.0F, 0.35F, 6.0F);
-        meteorSlam(level, at, R, Math.min(k, 3.0F), red, rnd);
-        WorldFx.add(new WorldFx.Fireball(at.add(0.0, (double)R * 0.4, 0.0), R * 0.85F, 8, (int)Math.min(260.0F, 120.0F + e * 0.2F)));
-        WorldFx.add(new WorldFx.Pillar(at, 2.0F + k * 2.0F, 40.0F + R * 3.5F, 22 + (int)(k * 4.0F)));
-        if (extinction || k > 1.2F) {
-            ColossalFx.handle(level, new FxPayload(10, at.x, at.y, at.z, Math.min(R * 0.55F, 220.0F), 0.0F, 0.0F, 0.0F), at);
+        float k = Mth.clamp(e / 80.0F, 0.35F, 4.0F);
+        meteorSlam(level, at, R, Math.min(k, 2.0F), red, rnd);
+        // a low fireball swelling out of the crater and rolling over the ground; then a column of dust, not a mushroom
+        WorldFx.add(new WorldFx.Fireball(at.add(0.0, (double)R * 0.12, 0.0), R * 0.42F, 6, (int)Math.min(90.0F, 40.0F + e * 0.15F)));
+        for (int i = 0; i < 10 + (int)(k * 6.0F); i++) {
+            double a = rnd.nextDouble() * Math.PI * 2.0;
+            double d = rnd.nextDouble() * (double)R * 0.35;
+            ClientFx.spawn(
+                level,
+                ModParticles.DUST_CLOUD.get(),
+                at.x + Math.cos(a) * d,
+                at.y + 1.0 + rnd.nextDouble() * (double)R * 0.2,
+                at.z + Math.sin(a) * d,
+                Math.cos(a) * 0.05,
+                0.06 + rnd.nextDouble() * 0.06,
+                Math.sin(a) * 0.05,
+                2.5F + k
+            );
         }
 
-        if (k > 2.5F) {
-            WorldFx.add(new WorldFx.Fireball(at.add(0.0, (double)R * 0.9, 0.0), R * 0.6F, 10, 200));
-            WorldFx.add(new WorldFx.ShockRing(at.add(0.0, (double)R * 0.5, 0.0), R * 4.5F, 40, 3.0F, 0.0F, 16756832, 0.3F));
-
-            for (int i = 0; i < 80 + (int)(k * 30.0F); i++) {
-                double a = rnd.nextDouble() * 3.141592653589793 * 2.0;
-                double sp = 0.8 + rnd.nextDouble() * (double)k * 0.5;
-                level.addAlwaysVisibleParticle(
-                    ModParticles.FIREBALL.get(), at.x, at.y + 1.0, at.z, Math.cos(a) * sp, 0.8 + rnd.nextDouble() * (double)k * 0.4, Math.sin(a) * sp
-                );
+        if (k > 1.5F) {
+            for (int i = 0; i < 16 + (int)(k * 8.0F); i++) {
+                double a = rnd.nextDouble() * Math.PI * 2.0;
+                double sp = 0.5 + rnd.nextDouble() * (double)k * 0.3;
+                level.addAlwaysVisibleParticle(ModParticles.FIREBALL.get(), at.x, at.y + 1.0, at.z, Math.cos(a) * sp, 0.3 + rnd.nextDouble() * 0.3, Math.sin(a) * sp);
             }
         }
 
-        tintSky(extinction ? 16724016 : 16756832, Math.min(0.9F, 0.35F * k), 18 + (int)(k * 6.0F));
-        ClientEffects.shake(Math.min(2.2F, 0.5F + k * 0.35F), 30 + (int)(k * 8.0F));
+        tintSky(extinction ? 16724016 : 16756832, Math.min(0.6F, 0.25F * k), 14 + (int)(k * 4.0F));
+        ClientEffects.shake(Math.min(1.8F, 0.5F + k * 0.3F), 26 + (int)(k * 6.0F));
     }
 
     static void novaFireball(ClientLevel level, Vec3 at, float R, boolean supernova, RandomSource rnd) {
@@ -561,9 +564,14 @@ public final class EpicFx {
         ClientFx.spawn(level, ModParticles.DUST_CLOUD.get(), at.x, at.y, at.z, dir.x * 0.1, 0.02, dir.z * 0.1, 1.5F);
     }
 
-    private static void dustSurge(ClientLevel level, Vec3 at, float R, float h, RandomSource rnd) {
-        // a rolling wall of dust along the ground, not a glowing ring
-        DebrisFx.dustSurge(level, at, R, h);
+    private static void dustSurge(ClientLevel level, Vec3 at, float R, float h, int side, RandomSource rnd) {
+        // a rolling wall of dust along the ground, not a glowing ring - and it stops at the Wall, as the blast does
+        DebrisFx.sideFilter = side;
+        try {
+            DebrisFx.dustSurge(level, at, R, h);
+        } finally {
+            DebrisFx.sideFilter = 0;
+        }
     }
 
     private static void glass(ClientLevel level, Vec3 at, float R, RandomSource rnd) {

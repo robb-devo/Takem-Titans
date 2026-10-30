@@ -1214,5 +1214,6 @@
   "block.takemtitans.roof_tiles_dark_slab": "Dunkle Dachziegel (Stufe)",
   "block.takemtitans.roof_tiles_slate": "Schieferdach",
   "block.takemtitans.roof_tiles_slate_stairs": "Schieferdach (Treppe)",
-  "block.takemtitans.roof_tiles_slate_slab": "Schieferdach (Stufe)"
+  "block.takemtitans.roof_tiles_slate_slab": "Schieferdach (Stufe)",
+  "subtitles.takemtitans.odm.swing": "Luft rauscht vorbei"
 }

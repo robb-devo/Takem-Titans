@@ -353,6 +353,11 @@ public final class WorldEvents {
                         Rumbling.start(((CommandSourceStack)ctx.getSource()).getLevel(), ((CommandSourceStack)ctx.getSource()).getEntityOrException());
                         return 1;
                     })))
+                .then(Commands.literal("meteor").then(Commands.argument("pos", Vec3Argument.vec3()).then(Commands.argument("fall", FloatArgumentType.floatArg(1.0F, 600.0F)).executes(ctx -> {
+                    ServerPlayer p = ((CommandSourceStack)ctx.getSource()).getPlayerOrException();
+                    MeteorDive.slam(p, 2.0, FloatArgumentType.getFloat(ctx, "fall"), Vec3Argument.getVec3(ctx, "pos"));
+                    return 1;
+                }))))
                 .then(Commands.literal("serum").then(Commands.argument("pos", Vec3Argument.vec3()).executes(ctx -> {
                     Vec3 pos = Vec3Argument.getVec3(ctx, "pos");
                     ColossalBlast.start(((CommandSourceStack)ctx.getSource()).getLevel(), pos, ((CommandSourceStack)ctx.getSource()).getEntity());
